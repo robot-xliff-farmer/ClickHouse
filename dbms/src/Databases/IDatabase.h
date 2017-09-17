@@ -94,7 +94,7 @@ public:
     /// Returns time of table's metadata change, 0 if there is no corresponding metadata file.
     virtual time_t getTableMetadataModificationTime(const String & name) = 0;
 
-    using ASTModifier = std::function<void(ASTPtr &)>;
+    using ASTModifier = std::function<void(IAST &)>;
 
     /// Change the table structure in metadata.
     /// You must call under the TableStructureLock of the corresponding table . If engine_modifier is empty, then engine does not change.
