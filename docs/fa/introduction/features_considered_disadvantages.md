@@ -1,9 +1,5 @@
-<div dir="rtl" markdown="1">
+# ClickHouse Features that Can be Considered Disadvantages
 
-# ویژگی های از ClickHouse که می تواند معایبی باشد.
-
-1. بدون پشتیبانی کامل از تراکنش
-2. عدم توانایی در تغییر و یا حذف داده های insert شده با rate بالا و latency کم. روشی برای پاک کردن دسته ای داده ها و یا مطابق با قوانین [GDPR](https://gdpr-info.eu) وجود دارد. بروزرسانی دسته ای از July 2018 در حال توسعه می باشد. 
-3. Sparse index باعث می شود ClickHouse چندان مناسب اجرای پرسمان های point query برای دریافت یک ردیف از داده ها با استفاده از کلید آنها نباشد.
-
-</div>
+1. No full-fledged transactions.
+2. Lack of ability to modify or delete already inserted data with high rate and low latency. There are batch deletes and updates available to clean up or modify data, for example to comply with [GDPR](https://gdpr-info.eu).
+3. The sparse index makes ClickHouse not really suitable for point queries retrieving single rows by their keys.
