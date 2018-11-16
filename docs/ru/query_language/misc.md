@@ -1,60 +1,57 @@
-<a name="queries"></a>
-
-<a name="queries-attach"></a>
+# Miscellaneous Queries
 
 ## ATTACH
-Запрос полностью аналогичен запросу `CREATE`, но:
 
-- вместо слова `CREATE` используется слово `ATTACH`;
-- запрос не создаёт данные на диске, а предполагает, что данные уже лежат в соответствующих местах, и всего лишь добавляет информацию о таблице в сервер.
+This query is exactly the same as `CREATE`, but
 
-После выполнения `ATTACH`, сервер будет знать о существовании таблицы.
+- instead of the word `CREATE` it uses the word `ATTACH`.
+- The query doesn't create data on the disk, but assumes that data is already in the appropriate places, and just adds information about the table to the server. After executing an ATTACH query, the server will know about the existence of the table.
 
-Если таблица перед этим была отсоединена (`DETACH`), т.е. её структура известна, то можно использовать сокращенную форму записи без определения структуры.
+If the table was previously detached (`DETACH`), meaning that its structure is known, you can use shorthand without defining the structure.
 
 ```sql
 ATTACH TABLE [IF NOT EXISTS] [db.]name [ON CLUSTER cluster]
 ```
 
-Этот запрос используется при старте сервера. Сервер хранит метаданные таблиц в виде файлов с запросами `ATTACH`, которые он просто исполняет при запуске (за исключением системных таблиц, создание которых явно вписано в сервер).
+This query is used when starting the server. The server stores table metadata as files with `ATTACH` queries, which it simply runs at launch (with the exception of system tables, which are explicitly created on the server).
 
 ## DROP
-Запрос имеет два вида: `DROP DATABASE` и `DROP TABLE`.
+
+This query has two types: `DROP DATABASE` and `DROP TABLE`.
 
 ```sql
 DROP DATABASE [IF EXISTS] db [ON CLUSTER cluster]
 ```
 
-Удаляет все таблицы внутри базы данных db, а затем саму базу данных db.
-Если указано `IF EXISTS` - не выдавать ошибку, если база данных не существует.
+Deletes all tables inside the 'db' database, then deletes the 'db' database itself. If `IF EXISTS` is specified, it doesn't return an error if the database doesn't exist.
 
 ```sql
 DROP [TEMPORARY] TABLE [IF EXISTS] [db.]name [ON CLUSTER cluster]
 ```
 
-Удаляет таблицу.
-Если указано `IF EXISTS` - не выдавать ошибку, если таблица не существует или база данных не существует.
+Deletes the table. If `IF EXISTS` is specified, it doesn't return an error if the table doesn't exist or the database doesn't exist.
 
 ## DETACH
-Удаляет из сервера информацию о таблице name. Сервер перестаёт знать о существовании таблицы.
+
+Deletes information about the 'name' table from the server. The server stops knowing about the table's existence.
 
 ```sql
 DETACH TABLE [IF EXISTS] [db.]name [ON CLUSTER cluster]
 ```
 
-Но ни данные, ни метаданные таблицы не удаляются. При следующем запуске сервера, сервер прочитает метаданные и снова узнает о таблице.
-Также, "отцепленную" таблицу можно прицепить заново запросом `ATTACH` (за исключением системных таблиц, для которых метаданные не хранятся).
+This does not delete the table's data or metadata. On the next server launch, the server will read the metadata and find out about the table again. Similarly, a "detached" table can be re-attached using the `ATTACH` query (with the exception of system tables, which do not have metadata stored for them).
 
-Запроса `DETACH DATABASE` нет.
+There is no `DETACH DATABASE` query.
 
 ## RENAME
-Переименовывает одну или несколько таблиц.
+
+Renames one or more tables.
 
 ```sql
 RENAME TABLE [db11.]name11 TO [db12.]name12, [db21.]name21 TO [db22.]name22, ... [ON CLUSTER cluster]
 ```
 
-Все таблицы переименовываются под глобальной блокировкой. Переименовывание таблицы является лёгкой операцией. Если вы указали после TO другую базу данных, то таблица будет перенесена в эту базу данных. При этом, директории с базами данных должны быть расположены в одной файловой системе (иначе возвращается ошибка).
+All tables are renamed under global locking. Renaming tables is a light operation. If you indicated another database after TO, the table will be moved to this database. However, the directories with databases must reside in the same file system (otherwise, an error is returned).
 
 ## SHOW DATABASES
 
@@ -62,10 +59,9 @@ RENAME TABLE [db11.]name11 TO [db12.]name12, [db21.]name21 TO [db22.]name22, ...
 SHOW DATABASES [INTO OUTFILE filename] [FORMAT format]
 ```
 
-Выводит список всех баз данных.
-Запрос полностью аналогичен запросу `SELECT name FROM system.databases [INTO OUTFILE filename] [FORMAT format]`.
+Prints a list of all databases. This query is identical to `SELECT name FROM system.databases [INTO OUTFILE filename] [FORMAT format]`.
 
-Смотрите также раздел "Форматы".
+See also the section "Formats".
 
 ## SHOW TABLES
 
@@ -73,14 +69,14 @@ SHOW DATABASES [INTO OUTFILE filename] [FORMAT format]
 SHOW [TEMPORARY] TABLES [FROM db] [LIKE 'pattern'] [INTO OUTFILE filename] [FORMAT format]
 ```
 
-Выводит список таблиц
+Displays a list of tables
 
--   из текущей БД или из БД db, если указано FROM db;
--   всех, или имя которых соответствует шаблону pattern, если указано LIKE 'pattern';
+- tables from the current database, or from the 'db' database if "FROM db" is specified.
+- all tables, or tables whose name matches the pattern, if "LIKE 'pattern'" is specified.
 
-Запрос полностью аналогичен запросу: `SELECT name FROM system.tables WHERE database = 'db' [AND name LIKE 'pattern'] [INTO OUTFILE filename] [FORMAT format]`.
+This query is identical to: `SELECT name FROM system.tables WHERE database = 'db' [AND name LIKE 'pattern'] [INTO OUTFILE filename] [FORMAT format]`.
 
-Смотрите также раздел "Оператор LIKE".
+See also the section "LIKE operator".
 
 ## SHOW PROCESSLIST
 
@@ -88,27 +84,27 @@ SHOW [TEMPORARY] TABLES [FROM db] [LIKE 'pattern'] [INTO OUTFILE filename] [FORM
 SHOW PROCESSLIST [INTO OUTFILE filename] [FORMAT format]
 ```
 
-Выводит список запросов, выполняющихся в данный момент времени, кроме запросов `SHOW PROCESSLIST`.
+Outputs a list of queries currently being processed, other than `SHOW PROCESSLIST` queries.
 
-Выдаёт таблицу, содержащую столбцы:
+Prints a table containing the columns:
 
-**user** - пользователь, под которым был задан запрос. Следует иметь ввиду, что при распределённой обработке запроса на удалённые серверы запросы отправляются под пользователем default. И SHOW PROCESSLIST показывает имя пользователя для конкретного запроса, а не для запроса, который данный запрос инициировал.
+**user** – The user who made the query. Keep in mind that for distributed processing, queries are sent to remote servers under the 'default' user. SHOW PROCESSLIST shows the username for a specific query, not for a query that this query initiated.
 
-**address** - имя хоста, с которого был отправлен запрос. При распределённой обработке запроса на удалённых серверах — это имя хоста-инициатора запроса. Чтобы проследить, откуда был задан распределённый запрос изначально, следует смотреть SHOW PROCESSLIST на сервере-инициаторе запроса.
+**address** – The name of the host that the query was sent from. For distributed processing, on remote servers, this is the name of the query requestor host. To track where a distributed query was originally made from, look at SHOW PROCESSLIST on the query requestor server.
 
-**elapsed** - время выполнения запроса, в секундах. Запросы выводятся упорядоченными по убыванию времени выполнения.
+**elapsed** – The execution time, in seconds. Queries are output in order of decreasing execution time.
 
-**rows_read**, **bytes_read** - сколько было прочитано строк, байт несжатых данных при обработке запроса. При распределённой обработке запроса суммируются данные со всех удалённых серверов. Именно эти данные используются для ограничений и квот.
+**rows_read**, **bytes_read** – How many rows and bytes of uncompressed data were read when processing the query. For distributed processing, data is totaled from all the remote servers. This is the data used for restrictions and quotas.
 
-**memory_usage** - текущее потребление оперативки в байтах. Смотрите настройку max_memory_usage.
+**memory_usage** – Current RAM usage in bytes. See the setting 'max_memory_usage'.
 
-**query** - сам запрос. В запросах INSERT данные для вставки не выводятся.
+**query** – The query itself. In INSERT queries, the data for insertion is not output.
 
-**query_id** - идентификатор запроса. Непустой, только если был явно задан пользователем. При распределённой обработке запроса идентификатор запроса не передаётся на удалённые серверы.
+**query_id** – The query identifier. Non-empty only if it was explicitly defined by the user. For distributed processing, the query ID is not passed to remote servers.
 
-Запрос полностью аналогичен запросу: `SELECT * FROM system.processes [INTO OUTFILE filename] [FORMAT format]`.
+This query is identical to: `SELECT * FROM system.processes [INTO OUTFILE filename] [FORMAT format]`.
 
-Полезный совет (выполните в консоли):
+Tip (execute in the console):
 
 ```bash
 watch -n1 "clickhouse-client --query='SHOW PROCESSLIST'"
@@ -120,7 +116,7 @@ watch -n1 "clickhouse-client --query='SHOW PROCESSLIST'"
 SHOW CREATE [TEMPORARY] TABLE [db.]table [INTO OUTFILE filename] [FORMAT format]
 ```
 
-Возвращает один столбец statement типа `String`, содержащий одно значение - запрос `CREATE`, с помощью которого создана указанная таблица.
+Returns a single `String`-type 'statement' column, which contains a single value – the `CREATE` query used for creating the specified table.
 
 ## DESCRIBE TABLE
 
@@ -128,9 +124,9 @@ SHOW CREATE [TEMPORARY] TABLE [db.]table [INTO OUTFILE filename] [FORMAT format]
 DESC|DESCRIBE TABLE [db.]table [INTO OUTFILE filename] [FORMAT format]
 ```
 
-Возвращает два столбца: `name`, `type` типа `String`, в которых описаны имена и типы столбцов указанной таблицы.
+Returns two `String`-type columns: `name` and `type`, which indicate the names and types of columns in the specified table.
 
-Вложенные структуры данных выводятся в "развёрнутом" виде. То есть, каждый столбец - по отдельности, с именем через точку.
+Nested data structures are output in "expanded" format. Each column is shown separately, with the name after a dot.
 
 ## EXISTS
 
@@ -138,7 +134,7 @@ DESC|DESCRIBE TABLE [db.]table [INTO OUTFILE filename] [FORMAT format]
 EXISTS [TEMPORARY] TABLE [db.]name [INTO OUTFILE filename] [FORMAT format]
 ```
 
-Возвращает один столбец типа `UInt8`, содержащий одно значение - `0`, если таблицы или БД не существует и `1`, если таблица в указанной БД существует.
+Returns a single `UInt8`-type column, which contains the single value `0` if the table or database doesn't exist, or `1` if the table exists in the specified database.
 
 ## USE
 
@@ -146,9 +142,7 @@ EXISTS [TEMPORARY] TABLE [db.]name [INTO OUTFILE filename] [FORMAT format]
 USE db
 ```
 
-Позволяет установить текущую базу данных для сессии.
-Текущая база данных используется для поиска таблиц, если база данных не указана в запросе явно через точку перед именем таблицы.
-При использовании HTTP протокола, запрос не может быть выполнен, так как понятия сессии не существует.
+Lets you set the current database for the session. The current database is used for searching for tables if the database is not explicitly defined in the query with a dot before the table name. This query can't be made when using the HTTP protocol, since there is no concept of a session.
 
 ## SET
 
@@ -156,12 +150,9 @@ USE db
 SET param = value
 ```
 
-Позволяет установить настройку `param` в значение `value`. Также можно одним запросом установить все настройки из заданного профиля настроек - для этого, укажите в качестве имени настройки profile. Подробнее смотри раздел "Настройки".
-Настройка устанавливается на сессию, или на сервер (глобально), если указано `GLOBAL`.
-При установке глобальной настройки, настройка на все уже запущенные сессии, включая текущую сессию, не устанавливается, а будет использована только для новых сессий.
+Allows you to set `param` to `value`. You can also make all the settings from the specified settings profile in a single query. To do this, specify 'profile' as the setting name. For more information, see the section "Settings". The setting is made for the session, or for the server (globally) if `GLOBAL` is specified. When making a global setting, the setting is not applied to sessions already running, including the current session. It will only be used for new sessions.
 
-При перезапуске сервера, теряются настройки, установленные с помощью `SET`.
-Установить настройки, которые переживут перезапуск сервера, можно только с помощью конфигурационного файла сервера.
+When the server is restarted, global settings made using `SET` are lost. To make settings that persist after a server restart, you can only use the server's config file.
 
 ## OPTIMIZE
 
@@ -169,13 +160,9 @@ SET param = value
 OPTIMIZE TABLE [db.]name [ON CLUSTER cluster] [PARTITION partition] [FINAL]
 ```
 
-Просит движок таблицы сделать что-нибудь, что может привести к более оптимальной работе.
-Поддерживается только движками `*MergeTree`, в котором выполнение этого запроса инициирует внеочередное слияние кусков данных.
-Если указан `PARTITION`, то оптимизация будет производиться только для указаной партиции.
-Если указан `FINAL`, то оптимизация будет производиться даже когда все данные уже лежат в одном куске.
+Asks the table engine to do something for optimization. Supported only by `*MergeTree` engines, in which this query initializes a non-scheduled merge of data parts. If you specify a `PARTITION`, only the specified partition will be optimized. If you specify `FINAL`, optimization will be performed even when all the data is already in one part.
 
-!!! warning "Внимание"
-    Запрос OPTIMIZE не может устранить причину появления ошибки "Too many parts".
+!!! warning OPTIMIZE can't fix the "Too many parts" error.
 
 ## KILL QUERY
 
@@ -186,27 +173,26 @@ KILL QUERY [ON CLUSTER cluster]
   [FORMAT format]
 ```
 
-Пытается принудительно остановить исполняющиеся в данный момент запросы.
-Запросы для принудительной остановки выбираются из таблицы system.processes с помощью условия, указанного в секции `WHERE` запроса `KILL`.
+Attempts to forcibly terminate the currently running queries. The queries to terminate are selected from the system.processes table using the criteria defined in the `WHERE` clause of the `KILL` query.
 
-Примеры:
+Examples:
+
 ```sql
--- Принудительно останавливает все запросы с указанным query_id:
+-- Forcibly terminates all queries with the specified query_id:
 KILL QUERY WHERE query_id='2-857d-4a57-9ee0-327da5d60a90'
 
--- Синхронно останавливает все запросы пользователя 'username':
+-- Synchronously terminates all queries run by 'username':
 KILL QUERY WHERE user='username' SYNC
 ```
 
-Readonly-пользователи могут останавливать только свои запросы.
+Read-only users can only stop their own queries.
 
-По умолчанию используется асинхронный вариант запроса (`ASYNC`), который не дожидается подтверждения остановки запросов.
+By default, the asynchronous version of queries is used (`ASYNC`), which doesn't wait for confirmation that queries have stopped.
 
-Синхронный вариант (`SYNC`) ожидает остановки всех запросов и построчно выводит информацию о процессах по ходу их остановки.
-Ответ содержит колонку `kill_status`, которая может принимать следующие значения:
+The synchronous version (`SYNC`) waits for all queries to stop and displays information about each process as it stops. The response contains the `kill_status` column, which can take the following values:
 
-1.  'finished' - запрос был успешно остановлен;
-2.  'waiting' - запросу отправлен сигнал завершения, ожидается его остановка;
-3.  остальные значения описывают причину невозможности остановки запроса.
+1. 'finished' – The query was terminated successfully.
+2. 'waiting' – Waiting for the query to end after sending it a signal to terminate.
+3. The other values ​​explain why the query can't be stopped.
 
-Тестовый вариант запроса (`TEST`) только проверяет права пользователя и выводит список запросов для остановки.
+A test query (`TEST`) only checks the user's rights and displays a list of queries to stop.
