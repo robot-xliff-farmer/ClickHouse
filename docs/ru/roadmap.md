@@ -2,19 +2,21 @@
 
 ## Q3 2018
 
-- `ALTER UPDATE` для массового изменения данных с использованием подхода, аналогичного `ALTER DELETE`
-- Добавление Protobuf и Parquet к ассортименту поддерживаемых форматов ввода-вывода
-- Улучшением совместимости с Tableau и другими инструментами бизнес-аналитики
+- `ALTER UPDATE` for batch changing the data with approach similar to `ALTER DELETE`
+- Protobuf and Parquet input and output formats
+- Improved compatibility with Tableau and other BI tools
 
 ## Q4 2018
 
-- Соответствующий SQL стандарту синтаксис JOIN:
-    - Несколько `JOIN`ов в одном `SELECT`
-    - Указание связи между таблицами через `ON`
-    - Возможность сослаться на имя таблицы вместо обязательного использования подзапроса
+- JOIN syntax compatible with SQL standard:
+    
+    - Mutliple `JOIN`s in single `SELECT`
+    - Connecting tables with `ON`
+    - Support table reference instead of subquery
 
-- Улучшения в исполнении JOIN:
-    - Распределённый JOIN, не ограниченный оперативной памятью
-    - Перенос зависящих только от одной стороны предикатов сквозь JOIN
+- JOIN execution improvements:
+    
+    - Distributed join not limited by memory
+    - Predicate pushdown through join
 
-- Пулы ресурсов для более точного распределения мощностей кластера между его пользователями
+- Resource pools for more precise distribution of cluster capacity between users
