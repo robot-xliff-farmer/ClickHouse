@@ -2,7 +2,7 @@
 
 # OnTime
 
-Скачивание данных:
+Downloading data:
 
 ```bash
 for s in `seq 1987 2017`
@@ -14,9 +14,9 @@ done
 done
 ```
 
-(из <https://github.com/Percona-Lab/ontime-airline-performance/blob/master/download.sh> )
+(from <https://github.com/Percona-Lab/ontime-airline-performance/blob/master/download.sh> )
 
-Создание таблицы:
+Creating a table:
 
 ```sql
 CREATE TABLE `ontime` (
@@ -132,13 +132,13 @@ CREATE TABLE `ontime` (
 ) ENGINE = MergeTree(FlightDate, (Year, FlightDate), 8192)
 ```
 
-Загрузка данных:
+Loading data:
 
 ```bash
 for i in *.zip; do echo $i; unzip -cq $i '*.csv' | sed 's/\.00//g' | clickhouse-client --host=example-perftest01j --query="INSERT INTO ontime FORMAT CSVWithNames"; done
 ```
 
-Запросы:
+Queries:
 
 Q0.
 
@@ -146,31 +146,31 @@ Q0.
 select avg(c1) from (select Year, Month, count(*) as c1 from ontime group by Year, Month);
 ```
 
-Q1. Количество полетов в день с 2000 по 2008 года
+Q1. The number of flights per day from the year 2000 to 2008
 
 ```sql
 SELECT DayOfWeek, count(*) AS c FROM ontime WHERE Year >= 2000 AND Year <= 2008 GROUP BY DayOfWeek ORDER BY c DESC;
 ```
 
-Q2. Количество полетов, задержанных более чем на 10 минут, с группировкой по дням неделе, за 2000-2008 года
+Q2. The number of flights delayed by more than 10 minutes, grouped by the day of the week, for 2000-2008
 
 ```sql
 SELECT DayOfWeek, count(*) AS c FROM ontime WHERE DepDelay>10 AND Year >= 2000 AND Year <= 2008 GROUP BY DayOfWeek ORDER BY c DESC
 ```
 
-Q3. Количество задержек по аэропортам за 2000-2008
+Q3. The number of delays by airport for 2000-2008
 
 ```sql
 SELECT Origin, count(*) AS c FROM ontime WHERE DepDelay>10 AND Year >= 2000 AND Year <= 2008 GROUP BY Origin ORDER BY c DESC LIMIT 10
 ```
 
-Q4. Количество задержек по перевозчикам за 2007 год
+Q4. The number of delays by carrier for 2007
 
 ```sql
 SELECT Carrier, count(*) FROM ontime WHERE DepDelay>10  AND Year = 2007 GROUP BY Carrier ORDER BY count(*) DESC
 ```
 
-Q5. Процент задержек по перевозчикам за 2007 год
+Q5. The percentage of delays by carrier for 2007
 
 ```sql
 SELECT Carrier, c, c2, c*1000/c2 as c3
@@ -196,13 +196,13 @@ ANY INNER JOIN
 ORDER BY c3 DESC;
 ```
 
-Более оптимальная версия того же запроса:
+Better version of the same query:
 
 ```sql
 SELECT Carrier, avg(DepDelay > 10) * 1000 AS c3 FROM ontime WHERE Year = 2007 GROUP BY Carrier ORDER BY Carrier
 ```
 
-Q6. Предыдущий запрос за более широкий диапазон лет, 2000-2008
+Q6. The previous request for a broader range of years, 2000-2008
 
 ```sql
 SELECT Carrier, c, c2, c*1000/c2 as c3
@@ -228,13 +228,13 @@ ANY INNER JOIN
 ORDER BY c3 DESC;
 ```
 
-Более оптимальная версия того же запроса:
+Better version of the same query:
 
 ```sql
 SELECT Carrier, avg(DepDelay > 10) * 1000 AS c3 FROM ontime WHERE Year >= 2000 AND Year <= 2008 GROUP BY Carrier ORDER BY Carrier
 ```
 
-Q7. Процент полетов, задержанных на более 10 минут, в разбивке по годам
+Q7. Percentage of flights delayed for more than 10 minutes, by year
 
 ```sql
 SELECT Year, c1/c2
@@ -258,13 +258,13 @@ ANY INNER JOIN
 ORDER BY Year
 ```
 
-Более оптимальная версия того же запроса:
+Better version of the same query:
 
 ```sql
 SELECT Year, avg(DepDelay > 10) FROM ontime GROUP BY Year ORDER BY Year
 ```
 
-Q8. Самые популярные направления по количеству напрямую соединенных городов для различных диапазонов лет
+Q8. The most popular destinations by the number of directly connected cities for various year ranges
 
 ```sql
 SELECT DestCityName, uniqExact(OriginCityName) AS u FROM ontime WHERE Year >= 2000 and Year <= 2010 GROUP BY DestCityName ORDER BY u DESC LIMIT 10;
@@ -294,7 +294,7 @@ ORDER by rate DESC
 LIMIT 1000;
 ```
 
-Бонус:
+Bonus:
 
 ```sql
 SELECT avg(cnt) FROM (SELECT Year,Month,count(*) AS cnt FROM ontime WHERE DepDel15=1 GROUP BY Year,Month)
@@ -308,11 +308,11 @@ SELECT OriginCityName, DestCityName, count() AS c FROM ontime GROUP BY OriginCit
 SELECT OriginCityName, count() AS c FROM ontime GROUP BY OriginCityName ORDER BY c DESC LIMIT 10;
 ```
 
-Данный тест производительности был создан Вадимом Ткаченко, статьи по теме:
+This performance test was created by Vadim Tkachenko. See:
 
--   <https://www.percona.com/blog/2009/10/02/analyzing-air-traffic-performance-with-infobright-and-monetdb/>
--   <https://www.percona.com/blog/2009/10/26/air-traffic-queries-in-luciddb/>
--   <https://www.percona.com/blog/2009/11/02/air-traffic-queries-in-infinidb-early-alpha/>
--   <https://www.percona.com/blog/2014/04/21/using-apache-hadoop-and-impala-together-with-mysql-for-data-analysis/>
--   <https://www.percona.com/blog/2016/01/07/apache-spark-with-air-ontime-performance-data/>
--   <http://nickmakos.blogspot.ru/2012/08/analyzing-air-traffic-performance-with.html>
+- <https://www.percona.com/blog/2009/10/02/analyzing-air-traffic-performance-with-infobright-and-monetdb/>
+- <https://www.percona.com/blog/2009/10/26/air-traffic-queries-in-luciddb/>
+- <https://www.percona.com/blog/2009/11/02/air-traffic-queries-in-infinidb-early-alpha/>
+- <https://www.percona.com/blog/2014/04/21/using-apache-hadoop-and-impala-together-with-mysql-for-data-analysis/>
+- <https://www.percona.com/blog/2016/01/07/apache-spark-with-air-ontime-performance-data/>
+- <http://nickmakos.blogspot.ru/2012/08/analyzing-air-traffic-performance-with.html>
