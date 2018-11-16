@@ -1,8 +1,8 @@
-# Функции для работы с датами и временем
+# Functions for working with dates and times
 
-Поддержка часовых поясов
+Support for time zones
 
-Все функции по работе с датой и временем, для которых это имеет смысл, могут принимать второй, необязательный аргумент - имя часового пояса. Пример: Asia/Yekaterinburg. В этом случае, они используют не локальный часовой пояс (по умолчанию), а указанный.
+All functions for working with the date and time that have a logical use for the time zone can accept a second optional time zone argument. Example: Asia/Yekaterinburg. In this case, they use the specified time zone instead of the local (default) one.
 
 ```sql
 SELECT
@@ -18,138 +18,153 @@ SELECT
 └─────────────────────┴────────────┴────────────┴─────────────────────┘
 ```
 
-Поддерживаются только часовые пояса, отличающиеся от UTC на целое число часов.
+Only time zones that differ from UTC by a whole number of hours are supported.
 
 ## toYear
-Переводит дату или дату-с-временем в число типа UInt16, содержащее номер года (AD).
+
+Converts a date or date with time to a UInt16 number containing the year number (AD).
 
 ## toMonth
-Переводит дату или дату-с-временем в число типа UInt8, содержащее номер месяца (1-12).
+
+Converts a date or date with time to a UInt8 number containing the month number (1-12).
 
 ## toDayOfMonth
-Переводит дату или дату-с-временем в число типа UInt8, содержащее номер дня в месяце (1-31).
+
+-Converts a date or date with time to a UInt8 number containing the number of the day of the month (1-31).
 
 ## toDayOfWeek
-Переводит дату или дату-с-временем в число типа UInt8, содержащее номер дня в неделе (понедельник - 1, воскресенье - 7).
+
+Converts a date or date with time to a UInt8 number containing the number of the day of the week (Monday is 1, and Sunday is 7).
 
 ## toHour
-Переводит дату-с-временем в число типа UInt8, содержащее номер часа в сутках (0-23).
-Функция исходит из допущения, что перевод стрелок вперёд, если осуществляется, то на час, в два часа ночи, а перевод стрелок назад, если осуществляется, то на час, в три часа ночи (что, в общем, не верно - даже в Москве два раза перевод стрелок был осуществлён в другое время).
+
+Converts a date with time to a UInt8 number containing the number of the hour in 24-hour time (0-23). This function assumes that if clocks are moved ahead, it is by one hour and occurs at 2 a.m., and if clocks are moved back, it is by one hour and occurs at 3 a.m. (which is not always true – even in Moscow the clocks were twice changed at a different time).
 
 ## toMinute
-Переводит дату-с-временем в число типа UInt8, содержащее номер минуты в часе (0-59).
+
+Converts a date with time to a UInt8 number containing the number of the minute of the hour (0-59).
 
 ## toSecond
-Переводит дату-с-временем в число типа UInt8, содержащее номер секунды в минуте (0-59).
-Секунды координации не учитываются.
+
+Converts a date with time to a UInt8 number containing the number of the second in the minute (0-59). Leap seconds are not accounted for.
 
 ## toMonday
-Округляет дату или дату-с-временем вниз до ближайшего понедельника.
-Возвращается дата.
+
+Rounds down a date or date with time to the nearest Monday. Returns the date.
 
 ## toStartOfMonth
-Округляет дату или дату-с-временем вниз до первого дня месяца.
-Возвращается дата.
+
+Rounds down a date or date with time to the first day of the month. Returns the date.
 
 ## toStartOfQuarter
-Округляет дату или дату-с-временем вниз до первого дня квартала.
-Первый день квартала - это одно из 1 января, 1 апреля, 1 июля, 1 октября.
-Возвращается дата.
+
+Rounds down a date or date with time to the first day of the quarter. The first day of the quarter is either 1 January, 1 April, 1 July, or 1 October. Returns the date.
 
 ## toStartOfYear
-Округляет дату или дату-с-временем вниз до первого дня года.
-Возвращается дата.
+
+Rounds down a date or date with time to the first day of the year. Returns the date.
 
 ## toStartOfMinute
-Округляет дату-с-временем вниз до начала минуты.
+
+Rounds down a date with time to the start of the minute.
 
 ## toStartOfFiveMinute
-Округляет дату-с-временем вниз до начала пятиминутного интервала.
+
+Rounds down a date with time to the start of the hour.
 
 ## toStartOfFifteenMinutes
-Округляет дату-с-временем вниз до начала пятнадцатиминутного интервала.
 
-Замечание: если вам нужно округлить дату-с-временем до какого-либо другого количества секунд, минут или часов, вы можете перевести её в число с помощью функции toUInt32, затем округлить число с помощью функции intDiv и умножения, а затем перевести обратно, с помощью функции toDateTime.
+Rounds down the date with time to the start of the fifteen-minute interval.
+
+Note: If you need to round a date with time to any other number of seconds, minutes, or hours, you can convert it into a number by using the toUInt32 function, then round the number using intDiv and multiplication, and convert it back using the toDateTime function.
 
 ## toStartOfHour
-Округляет дату-с-временем вниз до начала часа.
+
+Rounds down a date with time to the start of the hour.
 
 ## toStartOfDay
-Округляет дату-с-временем вниз до начала дня.
+
+Rounds down a date with time to the start of the day.
 
 ## toTime
-Переводит дату-с-временем на некоторую фиксированную дату, сохраняя при этом время.
+
+Converts a date with time to a certain fixed date, while preserving the time.
 
 ## toRelativeYearNum
-Переводит дату-с-временем или дату в номер года, начиная с некоторого фиксированного момента в прошлом.
+
+Converts a date with time or date to the number of the year, starting from a certain fixed point in the past.
 
 ## toRelativeMonthNum
-Переводит дату-с-временем или дату в номер месяца, начиная с некоторого фиксированного момента в прошлом.
+
+Converts a date with time or date to the number of the month, starting from a certain fixed point in the past.
 
 ## toRelativeWeekNum
-Переводит дату-с-временем или дату в номер недели, начиная с некоторого фиксированного момента в прошлом.
+
+Converts a date with time or date to the number of the week, starting from a certain fixed point in the past.
 
 ## toRelativeDayNum
-Переводит дату-с-временем или дату в номер дня, начиная с некоторого фиксированного момента в прошлом.
+
+Converts a date with time or date to the number of the day, starting from a certain fixed point in the past.
 
 ## toRelativeHourNum
-Переводит дату-с-временем в номер часа, начиная с некоторого фиксированного момента в прошлом.
+
+Converts a date with time or date to the number of the hour, starting from a certain fixed point in the past.
 
 ## toRelativeMinuteNum
-Переводит дату-с-временем в номер минуты, начиная с некоторого фиксированного момента в прошлом.
+
+Converts a date with time or date to the number of the minute, starting from a certain fixed point in the past.
 
 ## toRelativeSecondNum
-Переводит дату-с-временем в номер секунды, начиная с некоторого фиксированного момента в прошлом.
+
+Converts a date with time or date to the number of the second, starting from a certain fixed point in the past.
 
 ## now
 
-Принимает ноль аргументов и возвращает текущее время на один из моментов выполнения запроса.
-Функция возвращает константу, даже если запрос выполнялся долго.
+Accepts zero arguments and returns the current time at one of the moments of request execution. This function returns a constant, even if the request took a long time to complete.
 
 ## today
-Принимает ноль аргументов и возвращает текущую дату на один из моментов выполнения запроса.
-То же самое, что toDate(now())
+
+Accepts zero arguments and returns the current date at one of the moments of request execution. The same as 'toDate(now())'.
 
 ## yesterday
-Принимает ноль аргументов и возвращает вчерашнюю дату на один из моментов выполнения запроса.
-Делает то же самое, что today() - 1.
+
+Accepts zero arguments and returns yesterday's date at one of the moments of request execution. The same as 'today() - 1'.
 
 ## timeSlot
-Округляет время до получаса.
-Эта функция является специфичной для Яндекс.Метрики, так как пол часа - минимальное время, для которого, если соседние по времени хиты одного посетителя на одном счётчике отстоят друг от друга строго более, чем на это время, визит может быть разбит на два визита. То есть, кортежи (номер счётчика, идентификатор посетителя, тайм-слот) могут использоваться для поиска хитов, входящий в соответствующий визит.
+
+Rounds the time to the half hour. This function is specific to Yandex.Metrica, since half an hour is the minimum amount of time for breaking a session into two sessions if a tracking tag shows a single user's consecutive pageviews that differ in time by strictly more than this amount. This means that tuples (the tag ID, user ID, and time slot) can be used to search for pageviews that are included in the corresponding session.
 
 ## timeSlots(StartTime, Duration)
-Для интервала времени, начинающегося в StartTime и продолжающегося Duration секунд, возвращает массив моментов времени, состоящий из округлений вниз до получаса точек из этого интервала.
-Например, `timeSlots(toDateTime('2012-01-01 12:20:00'), toUInt32(600)) = [toDateTime('2012-01-01 12:00:00'), toDateTime('2012-01-01 12:30:00')]`.
-Это нужно для поиска хитов, входящих в соответствующий визит.
+
+For a time interval starting at 'StartTime' and continuing for 'Duration' seconds, it returns an array of moments in time, consisting of points from this interval rounded down to the half hour. For example, `timeSlots(toDateTime('2012-01-01 12:20:00'), 600) = [toDateTime('2012-01-01 12:00:00'), toDateTime('2012-01-01 12:30:00')]`. This is necessary for searching for pageviews in the corresponding session.
 
 ## formatDateTime(Time, Format\[, Timezone\])
-Функция преобразования даты-с-временем в String согласно заданному шаблону. Важно - шаблон является константным выражением, т.е. невозможно использование разных шаблонов в одной колонке.
 
-Поддерживаемые модификаторы в шаблоне Format:
-(колонка "Пример" показана для времени `2018-01-02 22:33:44`)
+Function formats a Time according given Format string. N.B.: Format is a constant expression, e.g. you can not have multiple formats for single result column.
 
-| Модификатор | Описание | Пример |
-| ----------- | -------- | --------------- |
-|%C|номер года, поделённый на 100 (00-99)|20
-|%d|день месяца, с ведущим нулём (01-31)|02
-|%D|короткая запись %m/%d/%y|01/02/2018|
-|%e|день месяца, с ведущим пробелом ( 1-31)|  2|
-|%F|короткая запись %Y-%m-%d|2018-01-02
-|%H|час в 24-часовом формате (00-23)|22|
-|%I|час в 12-часовом формате (01-12)|10|
-|%j|номер дня в году, с ведущими нулями (001-366)|002|
-|%m|месяц, с ведущим нулём (01-12)|01|
-|%M|минуты, с ведущим нулём (00-59)|33|
-|%n|символ переноса строки ('\n')||
-|%p|обозначения AM или PM|PM|
-|%R|короткая запись %H:%M|22:33|
-|%S|секунды, с ведущими нулями (00-59)|44|
-|%t|символ табуляции ('\t')||
-|%T|формат времени ISO 8601, одинаковый с %H:%M:%S|22:33:44|
-|%u|номер дня недели согласно ISO 8601, понедельник - 1, воскресенье - 7|2|
-|%V|номер недели согласно ISO 8601 (01-53)|01|
-|%w|номер дня недели, начиная с воскресенья (0-6)|2|
-|%y|год, последние 2 цифры (00-99)|18|
-|%Y|год, 4 цифры|2018|
-|%%|символ %|%|
+Supported modifiers for Format: ("Example" column shows formatting result for time `2018-01-02 22:33:44`)
+
+| Modifier | Description                                             | Example    |
+| -------- | ------------------------------------------------------- | ---------- |
+| %C       | year divided by 100 and truncated to integer (00-99)    | 20         |
+| %d       | day of the month, zero-padded (01-31)                   | 02         |
+| %D       | Short MM/DD/YY date, equivalent to %m/%d/%y             | 01/02/2018 |
+| %e       | day of the month, space-padded ( 1-31)                  | 2          |
+| %F       | short YYYY-MM-DD date, equivalent to %Y-%m-%d           | 2018-01-02 |
+| %H       | hour in 24h format (00-23)                              | 22         |
+| %I       | hour in 12h format (01-12)                              | 10         |
+| %j       | day of the year (001-366)                               | 002        |
+| %m       | month as a decimal number (01-12)                       | 01         |
+| %M       | minute (00-59)                                          | 33         |
+| %n       | new-line character ('\n')                              |            |
+| %p       | AM or PM designation                                    | PM         |
+| %R       | 24-hour HH:MM time, equivalent to %H:%M                 | 22:33      |
+| %S       | second (00-59)                                          | 44         |
+| %t       | horizontal-tab character ('\t')                        |            |
+| %T       | ISO 8601 time format (HH:MM:SS), equivalent to %H:%M:%S | 22:33:44   |
+| %u       | ISO 8601 weekday as number with Monday as 1 (1-7)       | 2          |
+| %V       | ISO 8601 week number (01-53)                            | 01         |
+| %w       | weekday as a decimal number with Sunday as 0 (0-6)      | 2          |
+| %y       | Year, last two digits (00-99)                           | 18         |
+| %Y       | Year                                                    | 2018       |
+| %%       | a % sign                                                | %          |
