@@ -1,47 +1,45 @@
 # Kafka
 
-Движок работает с [Apache Kafka](http://kafka.apache.org/).
+This engine works with [Apache Kafka](http://kafka.apache.org/).
 
-Kafka позволяет:
+Kafka lets you:
 
-- Публиковать/подписываться на потоки данных.
-- Организовать отказо-устойчивое хранилище.
-- Обрабатывать потоки по мере их появления.
+- Publish or subscribe to data flows.
+- Organize fault-tolerant storage.
+- Process streams as they become available.
 
-Старый формат:
+Old format:
 
-```
-Kafka(kafka_broker_list, kafka_topic_list, kafka_group_name, kafka_format
-      [, kafka_row_delimiter, kafka_schema, kafka_num_consumers])
-```
+    Kafka(kafka_broker_list, kafka_topic_list, kafka_group_name, kafka_format
+          [, kafka_row_delimiter, kafka_schema, kafka_num_consumers])
+    
 
-Новый формат:
+New format:
 
-```
-Kafka SETTINGS
-  kafka_broker_list = 'localhost:9092',
-  kafka_topic_list = 'topic1,topic2',
-  kafka_group_name = 'group1',
-  kafka_format = 'JSONEachRow',
-  kafka_row_delimiter = '\n'
-  kafka_schema = '',
-  kafka_num_consumers = 2
-```
+    Kafka SETTINGS
+      kafka_broker_list = 'localhost:9092',
+      kafka_topic_list = 'topic1,topic2',
+      kafka_group_name = 'group1',
+      kafka_format = 'JSONEachRow',
+      kafka_row_delimiter = '\n'
+      kafka_schema = '',
+      kafka_num_consumers = 2
+    
 
-Обязательные параметры:
+Required parameters:
 
-- `kafka_broker_list` - Перечень брокеров, разделенный запятыми (`localhost:9092`).
-- `kafka_topic_list` - Перечень необходимых топиков Kafka (`my_topic`).
-- `kafka_group_name` - Группа потребителя Kafka (`group1`). Отступы для чтения отслеживаются для каждой группы отдельно. Если необходимо, чтобы сообщения не повторялись на кластере, используйте везде одно имя группы.
-- `kafka_format` - Формат сообщений. Имеет те же обозначения, что выдает SQL-выражение `FORMAT`, например, `JSONEachRow`. Подробнее смотрите в разделе "Форматы".
+- `kafka_broker_list` – A comma-separated list of brokers (`localhost:9092`).
+- `kafka_topic_list` – A list of Kafka topics (`my_topic`).
+- `kafka_group_name` – A group of Kafka consumers (`group1`). Reading margins are tracked for each group separately. If you don't want messages to be duplicated in the cluster, use the same group name everywhere.
+- `kafka_format` – Message format. Uses the same notation as the SQL `FORMAT` function, such as `JSONEachRow`. For more information, see the "Formats" section.
 
-Опциональные параметры:
+Optional parameters:
 
-- `kafka_row_delimiter` - Символ-разделитель записей (строк), которым завершается сообщение.
-- `kafka_schema` - Опциональный параметр, необходимый, если используется формат, требующий определения схемы. Например, [Cap'n Proto](https://capnproto.org/) требует путь к файлу со схемой и название корневого объекта `schema.capnp:Message`.
-- `kafka_num_consumers` - Количество потребителей (consumer) на таблицу. По умолчанию `1`. Укажите больше потребителей, если пропускная способность одного потребителя недостаточна. Общее число потребителей не должно превышать количество партиций в топике, так как на одну партицию может быть назначено не более одного потребителя.
+- `kafka_row_delimiter` - Character-delimiter of records (rows), which ends the message.
+- `kafka_schema` – An optional parameter that must be used if the format requires a schema definition. For example, [Cap'n Proto](https://capnproto.org/) requires the path to the schema file and the name of the root `schema.capnp:Message` object.
+- `kafka_num_consumers` – The number of consumers per table. Default: `1`. Specify more consumers if the throughput of one consumer is insufficient. The total number of consumers should not exceed the number of partitions in the topic, since only one consumer can be assigned per partition.
 
-Примеры:
+Examples:
 
 ```sql
   CREATE TABLE queue (
@@ -71,19 +69,19 @@ Kafka SETTINGS
                        kafka_num_consumers = 4;
 ```
 
-Полученные сообщения отслеживаются автоматически, поэтому из одной группы каждое сообщение считывается только один раз. Если необходимо получить данные дважды, то создайте копию таблицы с другим именем группы.
+The delivered messages are tracked automatically, so each message in a group is only counted once. If you want to get the data twice, then create a copy of the table with another group name.
 
-Группы пластичны и синхронизированы на кластере. Например, если есть 10 топиков и 5 копий таблицы в кластере, то в каждую копию попадет по 2 топика. Если количество копий изменится, то распределение топиков по копиям изменится автоматически. Подробно читайте об этом на [http://kafka.apache.org/intro](http://kafka.apache.org/intro).
+Groups are flexible and synced on the cluster. For instance, if you have 10 topics and 5 copies of a table in a cluster, then each copy gets 2 topics. If the number of copies changes, the topics are redistributed across the copies automatically. Read more about this at <http://kafka.apache.org/intro>.
 
-Чтение сообщения с помощью `SELECT` не слишком полезно (разве что для отладки), поскольку каждое сообщения может быть прочитано только один раз. Практичнее создавать потоки реального времени с помощью материализованных преставлений. Для этого:
+`SELECT` is not particularly useful for reading messages (except for debugging), because each message can be read only once. It is more practical to create real-time threads using materialized views. To do this:
 
-1. Создайте потребителя Kafka с помощью движка и рассматривайте его как поток данных.
-2. Создайте таблицу с необходимой структурой.
-3. Создайте материализованное представление, которое преобразует данные от движка и помещает их в ранее созданную таблицу.
+1. Use the engine to create a Kafka consumer and consider it a data stream.
+2. Create a table with the desired structure.
+3. Create a materialized view that converts data from the engine and puts it into a previously created table.
 
-Когда к движку присоединяется материализованное представление (`MATERIALIZED VIEW`), оно начинает в фоновом режиме собирать данные. Это позволяет непрерывно получать сообщения от Kafka и преобразовывать их в необходимый формат с помощью `SELECT`.
+When the `MATERIALIZED VIEW` joins the engine, it starts collecting data in the background. This allows you to continually receive messages from Kafka and convert them to the required format using `SELECT`
 
-Пример:
+Example:
 
 ```sql
   CREATE TABLE queue (
@@ -105,21 +103,19 @@ Kafka SETTINGS
   SELECT level, sum(total) FROM daily GROUP BY level;
 ```
 
-Для улучшения производительности полученные сообщения группируются в блоки размера [max_insert_block_size](../settings/settings.md#settings-settings-max_insert_block_size). Если блок не удалось сформировать за [stream_flush_interval_ms](../settings/settings.md#settings-settings_stream_flush_interval_ms) миллисекунд, то данные будут сброшены в таблицу независимо от полноты блока.
+To improve performance, received messages are grouped into blocks the size of [max_insert_block_size](../settings/settings.md#settings-settings-max_insert_block_size). If the block wasn't formed within [stream_flush_interval_ms](../settings/settings.md#settings-settings_stream_flush_interval_ms) milliseconds, the data will be flushed to the table regardless of the completeness of the block.
 
-Чтобы остановить получение данных топика или изменить логику преобразования, отсоедините материализованное представление:
+To stop receiving topic data or to change the conversion logic, detach the materialized view:
 
-```
-  DETACH TABLE consumer;
-  ATTACH MATERIALIZED VIEW consumer;
-```
+      DETACH TABLE consumer;
+      ATTACH MATERIALIZED VIEW consumer;
+    
 
-Если необходимо изменить целевую таблицу с помощью `ALTER`, то материализованное представление рекомендуется отключить, чтобы избежать несостыковки между целевой таблицей и данными от представления.
+If you want to change the target table by using `ALTER`, we recommend disabling the material view to avoid discrepancies between the target table and the data from the view.
 
+## Configuration
 
-## Конфигурация
-
-Аналогично GraphiteMergeTree, движок Kafka поддерживает расширенную конфигурацию с помощью конфигурационного файла ClickHouse. Существует два конфигурационных ключа, которые можно использовать - глобальный (`kafka`) и по топикам (`kafka_*`). Сначала применяется глобальная конфигурация, затем конфигурация по топикам (если она существует).
+Similar to GraphiteMergeTree, the Kafka engine supports extended configuration using the ClickHouse config file. There are two configuration keys that you can use: global (`kafka`) and topic-level (`kafka_*`). The global configuration is applied first, and then the topic-level configuration is applied (if it exists).
 
 ```xml
   <!--  Global configuration options for all tables of Kafka engine type -->
@@ -135,4 +131,4 @@ Kafka SETTINGS
   </kafka_logs>
 ```
 
-В документе [librdkafka configuration reference](https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md) можно увидеть список возможных опций конфигурации. Используйте подчёркивания (`_`) вместо точек в конфигурации ClickHouse, например, `check.crcs=true` будет соответствовать `<check_crcs>true</check_crcs>`.
+For a list of possible configuration options, see the [librdkafka configuration reference](https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md). Use the underscore (`_`) instead of a dot in the ClickHouse configuration. For example, `check.crcs=true` will be `<check_crcs>true</check_crcs>`.
