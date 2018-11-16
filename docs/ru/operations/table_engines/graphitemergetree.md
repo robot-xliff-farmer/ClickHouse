@@ -2,30 +2,30 @@
 
 # GraphiteMergeTree
 
-Движок предназначен для rollup (прореживания и агрегирования/усреднения) данных [Graphite](http://graphite.readthedocs.io/en/latest/index.html). Он может быть интересен разработчикам, которые хотят использовать ClickHouse как хранилище данных для Graphite.
+This engine is designed for rollup (thinning and aggregating/averaging) [Graphite](http://graphite.readthedocs.io/en/latest/index.html) data. It may be helpful to developers who want to use ClickHouse as a data store for Graphite.
 
-Graphite хранит в ClickHouse полные данные, а получать их может следующими способами:
+Graphite stores full data in ClickHouse, and data can be retrieved in the following ways:
 
--   Без прореживания.
+- Without thinning.
+    
+    Uses the [MergeTree](mergetree.md#table_engines-mergetree) engine.
 
-    Используется движок [MergeTree](mergetree.md#table_engines-mergetree).
+- With thinning.
+    
+    Using the `GraphiteMergeTree` engine.
 
--   С прореживанием.
+The engine inherits properties from MergeTree. The settings for thinning data are defined by the [graphite_rollup](../server_settings/settings.md#server_settings-graphite_rollup) parameter in the server configuration.
 
-    Используется движок `GraphiteMergeTree`.
+## Using The Engine
 
-Движок наследует свойства MergeTree. Настройки прореживания данных задаются параметром [graphite_rollup](../server_settings/settings.md#server_settings-graphite_rollup) в конфигурации сервера .
+The Graphite data table must contain the following fields at minimum:
 
-## Использование движка
+- `Path` – The metric name (Graphite sensor).
+- `Time` – The time for measuring the metric.
+- `Value` – The value of the metric at the time set in Time.
+- `Version` – Determines which value of the metric with the same Path and Time will remain in the database.
 
-Таблица с данными Graphite должна содержать как минимум следующие поля:
-
--   `Path` - имя метрики (сенсора Graphite).
--   `Time` - время измерения.
--   `Value` - значение метрики в момент времени Time.
--   `Version` - настройка, которая определяет какое значение метрики с одинаковыми Path и Time останется в базе.
-
-Шаблон правил rollup:
+Rollup pattern:
 
 ```text
 pattern
@@ -41,16 +41,16 @@ default
     ...
 ```
 
-При обработке записи ClickHouse проверит правила в секции `pattern`. Если имя метрики соответствует шаблону `regexp`, то  применяются правила из `pattern`, в противном случае из `default`.
+When processing a record, ClickHouse will check the rules in the `pattern`clause. If the metric name matches the `regexp`, the rules from `pattern` are applied; otherwise, the rules from `default` are used.
 
-Поля шаблона правил.
+Fields in the pattern.
 
-- `age` - Минимальный возраст данных в секундах.
-- `function` - Имя агрегирующей функции, которую следует применить к данным, чей возраст оказался в интервале `[age, age + precision]`.
-- `precision` - Точность определения возраста данных в секундах.
-- `regexp` - Шаблон имени метрики.
+- `age` – The minimum age of the data in seconds.
+- `function` – The name of the aggregating function to apply to data whose age falls within the range `[age, age + precision]`.
+- `precision`– How precisely to define the age of the data in seconds.
+- `regexp`– A pattern for the metric name.
 
-Пример настройки:
+Example of settings:
 
 ```xml
 <graphite_rollup>
