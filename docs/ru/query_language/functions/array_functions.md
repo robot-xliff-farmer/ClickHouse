@@ -1,20 +1,16 @@
-# Функции по работе с массивами
-
+# Functions for working with arrays
 
 ## empty
-Возвращает 1 для пустого массива, и 0 для непустого массива.
-Тип результата - UInt8.
-Функция также работает для строк.
+
+Returns 1 for an empty array, or 0 for a non-empty array. The result type is UInt8. The function also works for strings.
 
 ## notEmpty
-Возвращает 0 для пустого массива, и 1 для непустого массива.
-Тип результата - UInt8.
-Функция также работает для строк.
+
+Returns 0 for an empty array, or 1 for a non-empty array. The result type is UInt8. The function also works for strings.
 
 ## length
-Возвращает количество элементов в массиве.
-Тип результата - UInt64.
-Функция также работает для строк.
+
+Returns the number of items in the array. The result type is UInt64. The function also works for strings.
 
 ## emptyArrayUInt8, emptyArrayUInt16, emptyArrayUInt32, emptyArrayUInt64
 
@@ -25,103 +21,99 @@
 ## emptyArrayDate, emptyArrayDateTime
 
 ## emptyArrayString
-Принимает ноль аргументов и возвращает пустой массив соответствующего типа.
+
+Accepts zero arguments and returns an empty array of the appropriate type.
 
 ## emptyArrayToSingle
-Принимает пустой массив и возвращает массив из одного элемента, равного значению по умолчанию.
+
+Accepts an empty array and returns a one-element array that is equal to the default value.
 
 ## range(N)
-Возвращает массив чисел от 0 до N-1.
-На всякий случай, если на блок данных, создаются массивы суммарной длины больше 100 000 000 элементов, то кидается исключение.
 
-## array(x1, ...), оператор \[x1, ...\]
-Создаёт массив из аргументов функции.
-Аргументы должны быть константами и иметь типы, для которых есть наименьший общий тип. Должен быть передан хотя бы один аргумент, так как иначе непонятно, какого типа создавать массив. То есть, с помощью этой функции невозможно создать пустой массив (для этого используйте функции emptyArray\*, описанные выше).
-Возвращает результат типа Array(T), где T - наименьший общий тип от переданных аргументов.
+Returns an array of numbers from 0 to N-1. Just in case, an exception is thrown if arrays with a total length of more than 100,000,000 elements are created in a data block.
+
+## array(x1, ...), operator \[x1, ...\]
+
+Creates an array from the function arguments. The arguments must be constants and have types that have the smallest common type. At least one argument must be passed, because otherwise it isn't clear which type of array to create. That is, you can't use this function to create an empty array (to do that, use the 'emptyArray\*' function described above). Returns an 'Array(T)' type result, where 'T' is the smallest common type out of the passed arguments.
 
 ## arrayConcat
 
-Объединяет массивы, переданные в качестве аргументов.
+Combines arrays passed as arguments.
 
-```
-arrayConcat(arrays)
-```
+    arrayConcat(arrays)
+    
 
-**Аргументы**
+**Arguments**
 
-- `arrays` - Перечисленные через запятую массивы `[values]`.
+- `arrays` – Arrays of comma-separated `[values]`.
 
-**Пример**
+**Example**
 
 ```sql
 SELECT arrayConcat([1, 2], [3, 4], [5, 6]) AS res
 ```
-```
-┌─res───────────┐
-│ [1,2,3,4,5,6] │
-└───────────────┘
-```
 
+    ┌─res───────────┐
+    │ [1,2,3,4,5,6] │
+    └───────────────┘
+    
 
-## arrayElement(arr, n), оператор arr\[n\]
-Достаёт элемент с индексом n из массива arr.
-n должен быть любым целочисленным типом.
-Индексы в массиве начинаются с единицы.
-Поддерживаются отрицательные индексы - в этом случае, будет выбран соответствующий по номеру элемент с конца. Например, arr\[-1\] - последний элемент массива.
+## arrayElement(arr, n), operator arr[n]
 
-Если индекс выходит за границы массива, то возвращается некоторое значение по умолчанию (0 для чисел, пустая строка для строк и т. п.).
+Get the element with the index 'n' from the array 'arr'.'n' must be any integer type. Indexes in an array begin from one. Negative indexes are supported. In this case, it selects the corresponding element numbered from the end. For example, 'arr\[-1\]' is the last item in the array.
+
+If the index falls outside of the bounds of an array, it returns some default value (0 for numbers, an empty string for strings, etc.).
 
 ## has(arr, elem)
-Проверяет наличие элемента elem в массиве arr.
-Возвращает 0, если элемента в массиве нет, или 1, если есть.
 
-`NULL` обрабатывается как значение.
+Checks whether the 'arr' array has the 'elem' element. Returns 0 if the the element is not in the array, or 1 if it is.
 
-```
-SELECT has([1, 2, NULL], NULL)
+`NULL` is processed as a value.
 
-┌─has([1, 2, NULL], NULL)─┐
-│                       1 │
-└─────────────────────────┘
-```
+    SELECT has([1, 2, NULL], NULL)
+    
+    ┌─has([1, 2, NULL], NULL)─┐
+    │                       1 │
+    └─────────────────────────┘
+    
 
 ## indexOf(arr, x)
-Возвращает индекс первого элемента x (начиная с 1), если он есть в массиве, или 0, если его нет.
 
-Пример:
+Returns the index of the first 'x' element (starting from 1) if it is in the array, or 0 if it is not.
 
-```
-:) select indexOf([1,3,NULL,NULL],NULL)
+Example:
 
-SELECT indexOf([1, 3, NULL, NULL], NULL)
+    :) select indexOf([1,3,NULL,NULL],NULL)
+    
+    SELECT indexOf([1, 3, NULL, NULL], NULL)
+    
+    ┌─indexOf([1, 3, NULL, NULL], NULL)─┐
+    │                                 3 │
+    └───────────────────────────────────┘
+    
 
-┌─indexOf([1, 3, NULL, NULL], NULL)─┐
-│                                 3 │
-└───────────────────────────────────┘
-```
-
-Элементы, равные `NULL`, обрабатываются как обычные значения.
+Elements set to `NULL` are handled as normal values.
 
 ## countEqual(arr, x)
-Возвращает количество элементов массива, равных x. Эквивалентно arrayCount(elem -> elem = x, arr).
 
-Элементы `NULL` обрабатываются как отдельные значения.
+Returns the number of elements in the array equal to x. Equivalent to arrayCount (elem -> elem = x, arr).
 
-Пример:
+`NULL` elements are handled as separate values.
 
-```
-SELECT countEqual([1, 2, NULL, NULL], NULL)
+Example:
 
-┌─countEqual([1, 2, NULL, NULL], NULL)─┐
-│                                    2 │
-└──────────────────────────────────────┘
-```
-
+    SELECT countEqual([1, 2, NULL, NULL], NULL)
+    
+    ┌─countEqual([1, 2, NULL, NULL], NULL)─┐
+    │                                    2 │
+    └──────────────────────────────────────┘
+    
 
 ## arrayEnumerate(arr)
-Возвращает массив \[1, 2, 3, ..., length(arr)\]
 
-Эта функция обычно используется совместно с ARRAY JOIN. Она позволяет, после применения ARRAY JOIN, посчитать что-либо только один раз для каждого массива. Пример:
+Returns the array \[1, 2, 3, ..., length (arr) \]
+
+This function is normally used with ARRAY JOIN. It allows counting something just once for each array after applying ARRAY JOIN. Example:
 
 ```sql
 SELECT
@@ -141,7 +133,7 @@ LIMIT 10
 └─────────┴───────┘
 ```
 
-В этом примере, Reaches - число достижений целей (строк, получившихся после применения ARRAY JOIN), а Hits - число хитов (строк, которые были до ARRAY JOIN). В данном случае, тот же результат можно получить проще:
+In this example, Reaches is the number of conversions (the strings received after applying ARRAY JOIN), and Hits is the number of pageviews (strings before ARRAY JOIN). In this particular case, you can get the same result in an easier way:
 
 ```sql
 SELECT
@@ -157,14 +149,13 @@ WHERE (CounterID = 160656) AND notEmpty(GoalsReached)
 └─────────┴───────┘
 ```
 
-Также эта функция может быть использована в функциях высшего порядка. Например, с её помощью можно достать индексы массива для элементов, удовлетворяющих некоторому условию.
+This function can also be used in higher-order functions. For example, you can use it to get array indexes for elements that match a condition.
 
 ## arrayEnumerateUniq(arr, ...)
-Возвращает массив, такого же размера, как исходный, где для каждого элемента указано, какой он по счету среди элементов с таким же значением.
-Например: arrayEnumerateUniq(\[10, 20, 10, 30\]) = \[1, 1, 2, 1\].
 
-Эта функция полезна при использовании ARRAY JOIN и агрегации по элементам массива.
-Пример:
+Returns an array the same size as the source array, indicating for each element what its position is among elements with the same value. For example: arrayEnumerateUniq(\[10, 20, 10, 30\]) = \[1, 1, 2, 1\].
+
+This function is useful when using ARRAY JOIN and aggregation of array elements. Example:
 
 ```sql
 SELECT
@@ -196,9 +187,9 @@ LIMIT 10
 └─────────┴─────────┴────────┘
 ```
 
-В этом примере, для каждого идентификатора цели, посчитано количество достижений целей (каждый элемент вложенной структуры данных Goals является достижением целей) и количество визитов. Если бы не было ARRAY JOIN, мы бы считали количество визитов как sum(Sign). Но в данном случае, строчки были размножены по вложенной структуре Goals, и чтобы после этого учесть каждый визит один раз, мы поставили условие на значение функции arrayEnumerateUniq(Goals.ID).
+In this example, each goal ID has a calculation of the number of conversions (each element in the Goals nested data structure is a goal that was reached, which we refer to as a conversion) and the number of sessions. Without ARRAY JOIN, we would have counted the number of sessions as sum(Sign). But in this particular case, the rows were multiplied by the nested Goals structure, so in order to count each session one time after this, we apply a condition to the value of the arrayEnumerateUniq(Goals.ID) function.
 
-Функция arrayEnumerateUniq может принимать несколько аргументов - массивов одинаковых размеров. В этом случае, уникальность считается для кортежей элементов на одинаковых позициях всех массивов.
+The arrayEnumerateUniq function can take multiple arrays of the same size as arguments. In this case, uniqueness is considered for tuples of elements in the same positions in all the arrays.
 
 ```sql
 SELECT arrayEnumerateUniq([1, 1, 1, 2, 2, 2], [1, 1, 2, 1, 1, 2]) AS res
@@ -210,171 +201,165 @@ SELECT arrayEnumerateUniq([1, 1, 1, 2, 2, 2], [1, 1, 2, 1, 1, 2]) AS res
 └───────────────┘
 ```
 
-Это нужно при использовании ARRAY JOIN с вложенной структурой данных и затем агрегации по нескольким элементам этой структуры.
+This is necessary when using ARRAY JOIN with a nested data structure and further aggregation across multiple elements in this structure.
 
 ## arrayPopBack
 
-Удаляет последний элемент из массива.
+Removes the last item from the array.
 
-```
-arrayPopBack(array)
-```
+    arrayPopBack(array)
+    
 
-**Аргументы**
+**Arguments**
 
-- `array` - Массив.
+- `array` – Array.
 
-**Пример**
+**Example**
 
 ```sql
 SELECT arrayPopBack([1, 2, 3]) AS res
 ```
-```
-┌─res───┐
-│ [1,2] │
-└───────┘
-```
+
+    ┌─res───┐
+    │ [1,2] │
+    └───────┘
+    
 
 ## arrayPopFront
 
-Удаляет первый элемент из массива.
+Removes the first item from the array.
 
-```
-arrayPopFront(array)
-```
+    arrayPopFront(array)
+    
 
-**Аргументы**
+**Arguments**
 
-- `array` - Массив.
+- `array` – Array.
 
-**Пример**
+**Example**
 
 ```sql
 SELECT arrayPopFront([1, 2, 3]) AS res
 ```
-```
-┌─res───┐
-│ [2,3] │
-└───────┘
-```
+
+    ┌─res───┐
+    │ [2,3] │
+    └───────┘
+    
 
 ## arrayPushBack
 
-Добавляет один элемент в конец массива.
+Adds one item to the end of the array.
 
-```
-arrayPushBack(array, single_value)
-```
+    arrayPushBack(array, single_value)
+    
 
-**Аргументы**
+**Arguments**
 
-- `array` - Массив.
-- `single_value` - Одиночное значение. В массив с числам можно добавить только числа, в массив со строками только строки. При добавлении чисел ClickHouse автоматически приводит тип `single_value` к типу данных массива. Подробнее о типах данных в ClickHouse читайте в разделе "[Типы данных](../../data_types/index.md#data_types)". Может быть равно `NULL`. Функция добавит элемент `NULL` в массив, а тип элементов массива преобразует в `Nullable`.
+- `array` – Array.
+- `single_value` – A single value. Only numbers can be added to an array with numbers, and only strings can be added to an array of strings. When adding numbers, ClickHouse automatically sets the `single_value` type for the data type of the array. For more information about the types of data in ClickHouse, see "[Data types](../../data_types/index.md#data_types)". Can be `NULL`. The function adds a `NULL` element to an array, and the type of array elements converts to `Nullable`.
 
-**Пример**
+**Example**
 
 ```sql
 SELECT arrayPushBack(['a'], 'b') AS res
 ```
-```
-┌─res───────┐
-│ ['a','b'] │
-└───────────┘
-```
+
+    ┌─res───────┐
+    │ ['a','b'] │
+    └───────────┘
+    
 
 ## arrayPushFront
 
-Добавляет один элемент в начало массива.
+Adds one element to the beginning of the array.
 
-```
-arrayPushFront(array, single_value)
-```
+    arrayPushFront(array, single_value)
+    
 
-**Аргументы**
+**Arguments**
 
-- `array` - Массив.
-- `single_value` - Одиночное значение.  В массив с числам можно добавить только числа, в массив со строками только строки. При добавлении чисел ClickHouse автоматически приводит тип `single_value` к типу данных массива.  Подробнее о типах данных в ClickHouse читайте в разделе "[Типы данных](../../data_types/index.md#data_types)".  Может быть равно `NULL`. Функция добавит элемент `NULL` в массив, а тип элементов массива преобразует в `Nullable`.
+- `array` – Array.
+- `single_value` – A single value. Only numbers can be added to an array with numbers, and only strings can be added to an array of strings. When adding numbers, ClickHouse automatically sets the `single_value` type for the data type of the array. For more information about the types of data in ClickHouse, see "[Data types](../../data_types/index.md#data_types)". Can be `NULL`. The function adds a `NULL` element to an array, and the type of array elements converts to `Nullable`.
 
-**Пример**
+**Example**
 
 ```sql
 SELECT arrayPushBack(['b'], 'a') AS res
 ```
-```
-┌─res───────┐
-│ ['a','b'] │
-└───────────┘
-```
+
+    ┌─res───────┐
+    │ ['a','b'] │
+    └───────────┘
+    
 
 ## arrayResize
 
-Изменяет длину массива.
+Changes the length of the array.
 
-```
-arrayResize(array, size[, extender])
-```
+    arrayResize(array, size[, extender])
+    
 
-**Параметры:**
+**Parameters:**
 
-- `array` — массив.
-- `size` — необходимая длина массива.
-    - Если `size` меньше изначального размера массива, то массив обрезается справа.
-	- Если `size` больше изначального размера массива, массив дополняется справа значениями `extender` или значениями по умолчанию для типа данных элементов массива.
-- `extender` — значение для дополнения массива. Может быть `NULL`.
+- `array` — Array.
+- `size` — Required length of the array. 
+    - If `size` is less than the original size of the array, the array is truncated from the right.
+- If `size` is larger than the initial size of the array, the array is extended to the right with `extender` values or default values for the data type of the array items.
+- `extender` — Value for extending an array. Can be `NULL`.
 
-**Возвращаемое значение:**
+**Returned value:**
 
-Массив длины `size`.
+An array of length `size`.
 
-**Примеры вызовов**
+**Examples of calls**
 
-```
-SELECT arrayResize([1], 3)
+    SELECT arrayResize([1], 3)
+    
+    ┌─arrayResize([1], 3)─┐
+    │ [1,0,0]             │
+    └─────────────────────┘
+    
 
-┌─arrayResize([1], 3)─┐
-│ [1,0,0]             │
-└─────────────────────┘
-```
-```
-SELECT arrayResize([1], 3, NULL)
-
-┌─arrayResize([1], 3, NULL)─┐
-│ [1,NULL,NULL]             │
-└───────────────────────────┘
-```
+    SELECT arrayResize([1], 3, NULL)
+    
+    ┌─arrayResize([1], 3, NULL)─┐
+    │ [1,NULL,NULL]             │
+    └───────────────────────────┘
+    
 
 ## arraySlice
 
-Возвращает срез массива.
+Returns a slice of the array.
 
-```
-arraySlice(array, offset[, length])
-```
+    arraySlice(array, offset[, length])
+    
 
-**Аргументы**
+**Arguments**
 
-- `array` - Массив данных.
-- `offset` - Отступ от края массива. Положительное значение - отступ слева, отрицательное значение - отступ справа. Отсчет элементов массива начинается с 1.
-- `length` - Длина необходимого среза. Если указать отрицательное значение, то функция вернёт открытый срез `[offset, array_length - length)`. Если не указать значение, то функция вернёт срез  `[offset, the_end_of_array]`.
+- `array` – Array of data.
+- `offset` – Indent from the edge of the array. A positive value indicates an offset on the left, and a negative value is an indent on the right. Numbering of the array items begins with 1.
+- `length` - The length of the required slice. If you specify a negative value, the function returns an open slice `[offset, array_length - length)`. If you omit the value, the function returns the slice `[offset, the_end_of_array]`.
 
-**Пример**
+**Example**
 
 ```sql
 SELECT arraySlice([1, 2, NULL, 4, 5], 2, 3) AS res
 ```
-```
-┌─res────────┐
-│ [2,NULL,4] │
-└────────────┘
-```
 
-Элементы массива равные `NULL` обрабатываются как обычные значения.
+    ┌─res────────┐
+    │ [2,NULL,4] │
+    └────────────┘
+    
+
+Array elements set to `NULL` are handled as normal values.
 
 ## arrayUniq(arr, ...)
-Если передан один аргумент, считает количество разных элементов в массиве.
-Если передано несколько аргументов, считает количество разных кортежей из элементов на соответствующих позициях в нескольких массивах.
 
-Если необходимо получить список уникальных элементов массива, можно воспользоваться arrayReduce('groupUniqArray', arr).
+If one argument is passed, it counts the number of different elements in the array. If multiple arguments are passed, it counts the number of different tuples of elements at corresponding positions in multiple arrays.
+
+If you want to get a list of unique items in an array, you can use arrayReduce('groupUniqArray', arr).
 
 ## arrayJoin(arr)
-Особенная функция. Смотрите раздел ["Функция arrayJoin"](array_join.md#functions_arrayjoin).
+
+A special function. See the section ["ArrayJoin function"](array_join.md#functions_arrayjoin).
