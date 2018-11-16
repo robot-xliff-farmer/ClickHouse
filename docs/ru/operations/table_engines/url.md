@@ -2,34 +2,26 @@
 
 # URL(URL, Format)
 
-Управляет данными на удаленном HTTP/HTTPS сервере. Данный движок похож
-на движок [`File`](./file.md#).
+Manages data on a remote HTTP/HTTPS server. This engine is similar to the [`File`](./file.md#) engine.
 
-## Использование движка в сервере ClickHouse
+## Using the engine in the ClickHouse server
 
-`Format` должен быть таким, который ClickHouse может использовать в запросах
-`SELECT` и, если есть необходимость, `INSERT`. Полный список поддерживаемых форматов смотрите в
-разделе [Форматы](../../interfaces/formats.md#formats).
+`The format` must be one that ClickHouse can use in `SELECT` queries and, if necessary, in `INSERTs`. For the full list of supported formats, see [Formats](../../interfaces/formats.md#formats).
 
-`URL` должен соответствовать структуре Uniform Resource Locator. По указанному URL должен находится сервер
-работающий по протоколу HTTP или HTTPS. При этом не должно требоваться никаких
-дополнительных заголовков для получения ответа от сервера.
+`The URL` must conform to the structure of a Uniform Resource Locator. The specified URL must point to a server that uses HTTP or HTTPS. This does not require any additional headers for getting a response from the server.
 
-Запросы `INSERT` и `SELECT` транслируются в `POST` и `GET` запросы
-соответственно. Для обработки `POST`-запросов удаленный сервер должен поддерживать
-[Chunked transfer encoding](https://ru.wikipedia.org/wiki/Chunked_transfer_encoding).
+`INSERT` and `SELECT` queries are transformed to `POST` and `GET` requests, respectively. For processing `POST` requests, the remote server must support [Chunked transfer encoding](https://en.wikipedia.org/wiki/Chunked_transfer_encoding).
 
-**Пример:**
+**Example:**
 
-**1.** Создадим на сервере таблицу `url_engine_table`:
+**1.** Create a `url_engine_table` table on the server :
 
 ```sql
 CREATE TABLE url_engine_table (word String, value UInt64)
 ENGINE=URL('http://127.0.0.1:12345/', CSV)
 ```
 
-**2.** Создадим простейший http-сервер стандартными средствами языка python3 и
-запустим его:
+**2.** Create a basic HTTP server using the standard Python 3 tools and start it:
 
 ```python3
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -51,7 +43,7 @@ if __name__ == "__main__":
 python3 server.py
 ```
 
-**3.** Запросим данные:
+**3.** Request data:
 
 ```sql
 SELECT * FROM url_engine_table
@@ -64,11 +56,10 @@ SELECT * FROM url_engine_table
 └───────┴───────┘
 ```
 
-## Особенности использования
+## Details of Implementation
 
-- Поддерживается многопоточное чтение и запись.
-- Не поддерживается:
-    - использование операций `ALTER` и `SELECT...SAMPLE`;
-    - индексы;
-    - репликация.
-
+- Reads and writes can be parallel
+- Not supported: 
+    - `ALTER` and `SELECT...SAMPLE` operations.
+    - Indexes.
+    - Replication.
