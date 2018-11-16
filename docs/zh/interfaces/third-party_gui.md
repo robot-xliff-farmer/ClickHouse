@@ -1,39 +1,37 @@
-# 第三方开发的可视化界面
+# Visual Interfaces from Third-party Developers
 
 ## Tabix
 
-ClickHouse Web 界面 [Tabix](https://github.com/tabixio/tabix).
+Web interface for ClickHouse in the [Tabix](https://github.com/tabixio/tabix) project.
 
-主要功能：
+Main features:
 
-- 浏览器直接连接 ClickHouse，不需要安装其他软件。
-- 高亮语法的编辑器。
-- 自动命令补全。
-- 查询命令执行的图形分析工具。
-- 配色方案选项。
+- Works with ClickHouse directly from the browser, without the need to install additional software.
+- Query editor with syntax highlighting.
+- Auto-completion of commands.
+- Tools for graphical analysis of query execution.
+- Color scheme options.
 
-[Tabix 文档](https://tabix.io/doc/).
-
+[Tabix documentation](https://tabix.io/doc/).
 
 ## HouseOps
 
-[HouseOps](https://github.com/HouseOps/HouseOps) 是一个交互式 UI/IDE 工具，可以运行在 OSX, Linux and Windows 平台中。
+[HouseOps](https://github.com/HouseOps/HouseOps) is a UI/IDE for OSX, Linux and Windows.
 
-主要功能：
+Main features:
 
-- 查询高亮语法提示，可以以表格或 JSON 格式查看数据。
-- 支持导出 CSV 或 JSON 格式数据。
-- 支持查看查询执行的详情，支持 KILL 查询。
-- 图形化显示，支持显示数据库中所有的表和列的详细信息。
-- 快速查看列占用的空间。
-- 服务配置。
+- Query builder with syntax highlighting. View the response in a table or JSON view.
+- Export query results as CSV or JSON.
+- List of processes with descriptions. Write mode. Ability to stop (`KILL`) a process.
+- Database graph. Shows all tables and their columns with additional information.
+- Quick view of the column size.
+- Server configuration.
 
 The following features are planned for development:
-以下功能正在计划开发：
-- 数据库管理
-- 用户管理
-- 实时数据分析
-- 集群监控
-- 集群管理
-- 监控副本情况以及 Kafka 引擎表
 
+- Database management.
+- User management.
+- Real-time data analysis.
+- Cluster monitoring.
+- Cluster management.
+- Monitoring replicated and Kafka tables.
