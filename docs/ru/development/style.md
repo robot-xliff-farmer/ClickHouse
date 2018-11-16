@@ -1,22 +1,22 @@
-# Как писать код на C++
+# How to Write C++ Code
 
-## Общее
+## General Recommendations
 
-**1.** Этот текст носит рекомендательный характер.
+**1.** The following are recommendations, not requirements.
 
-**2.** Если вы редактируете код, то имеет смысл писать так, как уже написано.
+**2.** If you are editing code, it makes sense to follow the formatting of the existing code.
 
-**3.** Стиль нужен для единообразия. Единообразие нужно, чтобы было проще (удобнее) читать код. А также, чтобы было легче осуществлять поиск по коду.
+**3.** Code style is needed for consistency. Consistency makes it easier to read the code, and it also makes it easier to search the code.
 
-**4.** Многие правила продиктованы не какими либо разумными соображениями, а сложившейся практикой.
+**4.** Many of the rules do not have logical reasons; they are dictated by established practices.
 
-## Форматирование
+## Formatting
 
-**1.** Большую часть форматирования сделает автоматически `clang-format`.
+**1.** Most of the formatting will be done automatically by `clang-format`.
 
-**2.** Отступы — 4 пробела. Настройте среду разработки так, чтобы таб добавлял четыре пробела.
+**2.** Indents are 4 spaces. Configure your development environment so that a tab adds four spaces.
 
-**3.** Открывающая и закрывающие фигурные скобки на отдельной строке.
+**3.** Opening and closing curly brackets must be on a separate line.
 
 ```cpp
 inline void readBoolText(bool & x, ReadBuffer & buf)
@@ -27,14 +27,14 @@ inline void readBoolText(bool & x, ReadBuffer & buf)
 }
 ```
 
-**4.** Если всё тело функции — один `statement`, то его можно разместить на одной строке. При этом, вокруг фигурных скобок ставятся пробелы (кроме пробела на конце строки).
+**4.** If the entire function body is a single `statement`, it can be placed on a single line. Place spaces around curly braces (besides the space at the end of the line).
 
 ```cpp
 inline size_t mask() const                { return buf_size() - 1; }
 inline size_t place(HashValue x) const    { return x & mask(); }
 ```
 
-**5.** Для функций. Пробелы вокруг скобок не ставятся.
+**5.** For functions. Don't put spaces around brackets.
 
 ```cpp
 void reinsert(const Value & x)
@@ -44,13 +44,13 @@ void reinsert(const Value & x)
 memcpy(&buf[place_value], &x, sizeof(x));
 ```
 
-**6.**  В выражениях `if`, `for`, `while` и т.д. перед открывающей скобкой ставится пробел (в отличие от вызовов функций).
+**6.** In `if`, `for`, `while` and other expressions, a space is inserted in front of the opening bracket (as opposed to function calls).
 
 ```cpp
 for (size_t i = 0; i < rows; i += storage.index_granularity)
 ```
 
-**7.**  Вокруг бинарных операторов (`+`, `-`, `*`, `/`, `%`, ...), а также тернарного оператора `?:` ставятся пробелы.
+**7.** Add spaces around binary operators (`+`, `-`, `*`, `/`, `%`, ...) and the ternary operator `?:`.
 
 ```cpp
 UInt16 year = (s[0] - '0') * 1000 + (s[1] - '0') * 100 + (s[2] - '0') * 10 + (s[3] - '0');
@@ -58,7 +58,7 @@ UInt8 month = (s[5] - '0') * 10 + (s[6] - '0');
 UInt8 day = (s[8] - '0') * 10 + (s[9] - '0');
 ```
 
-**8.**  Если ставится перенос строки, то оператор пишется на новой строке, и перед ним увеличивается отступ.
+**8.** If a line feed is entered, put the operator on a new line and increase the indent before it.
 
 ```cpp
 if (elapsed_ns)
@@ -67,7 +67,7 @@ if (elapsed_ns)
         << bytes_read_on_server * 1000.0 / elapsed_ns << " MB/s.) ";
 ```
 
-**9.**  Внутри строки можно, выполнять выравнивание с помощью пробелов.
+**9.** You can use spaces for alignment within a line, if desired.
 
 ```cpp
 dst.ClickLogID         = click.LogID;
@@ -75,17 +75,17 @@ dst.ClickEventID       = click.EventID;
 dst.ClickGoodEvent     = click.GoodEvent;
 ```
 
-**10.** Вокруг операторов `.`, `->` не ставятся пробелы.
+**10.** Don't use spaces around the operators `.`, `->`.
 
-При необходимости, оператор может быть перенесён на новую строку. В этом случае, перед ним увеличивается отступ.
+If necessary, the operator can be wrapped to the next line. In this case, the offset in front of it is increased.
 
-**11.** Унарные операторы `--`, `++`, `*`, `&`, ... не отделяются от аргумента пробелом.
+**11.** Do not use a space to separate unary operators (`--`, `++`, `*`, `&`, ...) from the argument.
 
-**12.** После запятой ставится пробел, а перед — нет. Аналогично для точки с запятой внутри выражения `for`.
+**12.** Put a space after a comma, but not before it. The same rule goes for a semicolon inside a `for` expression.
 
-**13.** Оператор `[]` не отделяется пробелами.
+**13.** Do not use spaces to separate the `[]` operator.
 
-**14.** В выражении `template <...>`, между `template` и `<` ставится пробел, а после `<` и до `>`  не ставится.
+**14.** In a `template <...>` expression, use a space between `template` and `<`; no spaces after `<` or before `>`.
 
 ```cpp
 template <typename TKey, typename TValue>
@@ -93,7 +93,7 @@ struct AggregatedStatElement
 {}
 ```
 
-**15.** В классах и структурах, `public`, `private`, `protected` пишется на том же уровне, что и `class/struct`, а остальной код с отступом.
+**15.** In classes and structures, write `public`, `private`, and `protected` on the same level as `class/struct`, and indent the rest of the code.
 
 ```cpp
 template <typename T>
@@ -106,11 +106,11 @@ public:
 }
 ```
 
-**16.** Если на весь файл один `namespace` и кроме него ничего существенного нет, то отступ внутри `namespace` не нужен.
+**16.** If the same `namespace` is used for the entire file, and there isn't anything else significant, an offset is not necessary inside `namespace`.
 
-**17.** Если блок для выражения `if`, `for`, `while`, ... состоит из одного `statement`, то фигурные скобки не обязательны. Вместо этого поместите `statement` на отдельную строку. Это правило справедливо и для вложенных `if`, `for`, `while`, ...
+**17.** If the block for an `if`, `for`, `while`, or other expression consists of a single `statement`, the curly brackets are optional. Place the `statement` on a separate line, instead. This rule is also valid for nested `if`, `for`, `while`, ...
 
-Если внутренний `statement` содержит фигурные скобки или `else`, то внешний блок следует писать в фигурных скобках.
+But if the inner `statement` contains curly brackets or `else`, the external block should be written in curly brackets.
 
 ```cpp
 /// Finish write.
@@ -118,23 +118,23 @@ for (auto & stream : streams)
     stream.second->finalize();
 ```
 
-**18.** Не должно быть пробелов на концах строк.
+**18.** There shouldn't be any spaces at the ends of lines.
 
-**19.** Исходники в кодировке UTF-8.
+**19.** Source files are UTF-8 encoded.
 
-**20.** В строковых литералах можно использовать не-ASCII.
+**20.** Non-ASCII characters can be used in string literals.
 
 ```cpp
 << ", " << (timer.elapsed() / chunks_stats.hits) << " μsec/hit.";
 ```
 
-**21.** Не пишите несколько выражений в одной строке.
+**21** Do not write multiple expressions in a single line.
 
-**22.** Внутри функций группируйте блоки кода, отделяя их не более, чем одной пустой строкой.
+**22.** Group sections of code inside functions and separate them with no more than one empty line.
 
-**23.** Функции, классы, и т. п. отделяются друг от друга одной или двумя пустыми строками.
+**23.** Separate functions, classes, and so on with one or two empty lines.
 
-**24.** `const` (относящийся к значению) пишется до имени типа.
+**24.** `A const` (related to a value) must be written before the type name.
 
 ```cpp
 //correct
@@ -144,7 +144,7 @@ const std::string & s
 char const * pos
 ```
 
-**25.** При объявлении указателя или ссылки, символы `*` и `&` отделяются пробелами с обеих сторон.
+**25.** When declaring a pointer or reference, the `*` and `&` symbols should be separated by spaces on both sides.
 
 ```cpp
 //correct
@@ -154,11 +154,11 @@ const char* pos
 const char *pos
 ```
 
-**26.** При использовании шаблонных типов, пишите `using` (кроме, возможно, простейших случаев).
+**26.** When using template types, alias them with the `using` keyword (except in the simplest cases).
 
-То есть, параметры шаблона указываются только в `using` и затем не повторяются в коде.
+In other words, the template parameters are specified only in `using` and aren't repeated in the code.
 
-`using` может быть объявлен локально, например, внутри функции.
+`using` can be declared locally, such as inside a function.
 
 ```cpp
 //correct
@@ -168,14 +168,14 @@ FileStreams streams;
 std::map<std::string, std::shared_ptr<Stream>> streams;
 ```
 
-**27.** Нельзя объявлять несколько переменных разных типов в одном выражении.
+**27.** Do not declare several variables of different types in one statement.
 
 ```cpp
 //incorrect
 int x, *y;
 ```
 
-**28.** C-style cast не используется.
+**28.** Do not use C-style casts.
 
 ```cpp
 //incorrect
@@ -184,27 +184,27 @@ std::cerr << (int)c <<; std::endl;
 std::cerr << static_cast<int>(c) << std::endl;
 ```
 
-**29.** В классах и структурах, группируйте отдельно методы и отдельно члены, внутри каждой области видимости.
+**29.** In classes and structs, group members and functions separately inside each visibility scope.
 
-**30.** Для не очень большого класса/структуры, можно не отделять объявления методов от реализации.
+**30.** For small classes and structs, it is not necessary to separate the method declaration from the implementation.
 
-Аналогично для маленьких методов в любых классах/структурах.
+The same is true for small methods in any classes or structs.
 
-Для шаблонных классов/структур, лучше не отделять объявления методов от реализации (так как иначе они всё равно должны быть определены в той же единице трансляции).
+For templated classes and structs, don't separate the method declarations from the implementation (because otherwise they must be defined in the same translation unit).
 
-**31.** Не обязательно умещать код по ширине в 80 символов. Можно в 140.
+**31.** You can wrap lines at 140 characters, instead of 80.
 
-**32.** Всегда используйте префиксный инкремент/декремент, если постфиксный не нужен.
+**32.** Always use the prefix increment/decrement operators if postfix is not required.
 
 ```cpp
 for (Names::const_iterator it = column_names.begin(); it != column_names.end(); ++it)
 ```
 
-## Комментарии
+## Comments
 
-**1.** Необходимо обязательно писать комментарии во всех нетривиальных местах.
+**1.** Be sure to add comments for all non-trivial parts of code.
 
-Это очень важно. При написании комментария, можно успеть понять, что код не нужен вообще, или что всё сделано неверно.
+This is very important. Writing the comment might help you realize that the code isn't necessary, or that it is designed wrong.
 
 ```cpp
 /** Part of piece of memory, that can be used.
@@ -214,9 +214,9 @@ for (Names::const_iterator it = column_names.begin(); it != column_names.end(); 
   */
 ```
 
-**2.** Комментарии могут быть сколь угодно подробными.
+**2.** Comments can be as detailed as necessary.
 
-**3.** Комментарии пишутся до соответствующего кода. В редких случаях после, на той же строке.
+**3.** Place comments before the code they describe. In rare cases, comments can come after the code, on the same line.
 
 ```cpp
 /** Parses and executes the query.
@@ -230,11 +230,11 @@ void executeQuery(
     )
 ```
 
-**4.** Комментарии следует писать только на английском языке.
+**4.** Comments should be written in English only.
 
-**5.** При написании библиотеки, разместите подробный комментарий о том, что это такое, в самом главном заголовочном файле.
+**5.** If you are writing a library, include detailed comments explaining it in the main header file.
 
-**6.** Нельзя писать комментарии, которые не дают дополнительной информации. В частности, нельзя писать пустые комментарии вроде этого:
+**6.** Do not add comments that do not provide additional information. In particular, do not leave empty comments like this:
 
 ```cpp
 /*
@@ -257,115 +257,118 @@ void executeQuery(
 */
 ```
 
-Пример взят с ресурса  [http://home.tamk.fi/~jaalto/course/coding-style/doc/unmaintainable-code/](http://home.tamk.fi/~jaalto/course/coding-style/doc/unmaintainable-code/).
+The example is borrowed from the resource <http://home.tamk.fi/~jaalto/course/coding-style/doc/unmaintainable-code/>.
 
-**7.** Нельзя писать мусорные комментарии (автор, дата создания...) в начале каждого файла.
+**7.** Do not write garbage comments (author, creation date ..) at the beginning of each file.
 
-**8.** Однострочные комментарии начинаются с трёх слешей: `///` , многострочные с `/**`. Такие комментарии считаются «документирующими».
+**8.** Single-line comments begin with three slashes: `///` and multi-line comments begin with `/**`. These comments are considered "documentation".
 
-Замечание: такие комментарии могут использоваться для генерации документации с помощью Doxygen. Но, фактически, Doxygen не используется, так как для навигации по коду гораздо удобне использовать возможности IDE.
+Note: You can use Doxygen to generate documentation from these comments. But Doxygen is not generally used because it is more convenient to navigate the code in the IDE.
 
-**9.** В начале и конце многострочного комментария, не должно быть пустых строк (кроме строки, на которой закрывается многострочный комментарий).
+**9.** Multi-line comments must not have empty lines at the beginning and end (except the line that closes a multi-line comment).
 
-**10.** Для закомментированных кусков кода, используются обычные, не "документирующие" комментарии.
+**10.** For commenting out code, use basic comments, not “documenting” comments.
 
-**11.** Удаляйте закомментированные куски кода перед коммитом.
+**11.** Delete the commented out parts of the code before committing.
 
-**12.** Не нужно писать нецензурную брань в комментариях или коде.
+**12.** Do not use profanity in comments or code.
 
-**13.** Не пишите прописными буквами. Не используйте излишнее количество знаков препинания.
+**13.** Do not use uppercase letters. Do not use excessive punctuation.
 
 ```cpp
 /// WHAT THE FAIL???
 ```
 
-**14.** Не составляйте из комментариев строки-разделители.
+**14.** Do not use comments to make delimeters.
 
 ```cpp
 ///******************************************************
 ```
 
-**15.** Не нужно писать в комментарии диалог (лучше сказать устно).
+**15.** Do not start discussions in comments.
 
 ```cpp
 /// Why did you do this stuff?
 ```
 
-**16.** Не нужно писать комментарий в конце блока о том, что представлял собой этот блок.
+**16.** There's no need to write a comment at the end of a block describing what it was about.
 
 ```cpp
 /// for
 ```
 
-## Имена
+## Names
 
-**1.** В именах переменных и членов класса используйте маленькие буквами с подчёркиванием.
+**1.** Use lowercase letters with underscores in the names of variables and class members.
 
 ```cpp
 size_t max_block_size;
 ```
 
-**2.** Имена функций (методов)  camelCase с маленькой буквы.
+**2.** For the names of functions (methods), use camelCase beginning with a lowercase letter.
 
     ```cpp
     std::string getName() const override { return "Memory"; }
     ```
-**3.** Имена классов (структур) - CamelCase с большой буквы. Префиксы кроме I для интерфейсов - не используются.
+    
+
+**3.** For the names of classes (structs), use CamelCase beginning with an uppercase letter. Prefixes other than I are not used for interfaces.
 
     ```cpp
     class StorageMemory : public IStorage
     ```
+    
 
-**4.** `using` называются также, как классы, либо с `_t` на конце.
+**4.** `using` are named the same way as classes, or with `_t` on the end.
 
-**5.** Имена типов — параметров шаблонов: в простых случаях - `T`; `T`, `U`; `T1`, `T2`.
+**5.** Names of template type arguments: in simple cases, use `T`; `T`, `U`; `T1`, `T2`.
 
-В более сложных случаях - либо также, как имена классов, либо можно добавить в начало букву `T`.
+For more complex cases, either follow the rules for class names, or add the prefix `T`.
 
 ```cpp
 template <typename TKey, typename TValue>
 struct AggregatedStatElement
 ```
 
-**6.** Имена констант — параметров шаблонов: либо также, как имена переменных, либо `N` в простом случае.
+**6.** Names of template constant arguments: either follow the rules for variable names, or use `N` in simple cases.
 
 ```cpp
 template <bool without_www>
 struct ExtractDomain
 ```
 
-**7.** Для абстрактных классов (интерфейсов) можно добавить в начало имени букву `I`.
+**7.** For abstract classes (interfaces) you can add the `I` prefix.
 
 ```cpp
 class IBlockInputStream
 ```
 
-**8.** Если переменная используется достаточно локально, то можно использовать короткое имя.
+**8.** If you use a variable locally, you can use the short name.
 
-В остальных случаях используйте имя, описывающее смысл.
+In all other cases, use a name that describes the meaning.
 
 ```cpp
 bool info_successfully_loaded = false;
 ```
 
-**9.**  В именах `define` и глобальных констант используется ALL_CAPS с подчёркиванием.
+**9.** Names of `define`s and global constants use ALL_CAPS with underscores.
 
 ```cpp
 #define MAX_SRC_TABLE_NAMES_TO_STORE 1000
 ```
 
-**10.** Имена файлов с кодом называйте по стилю соответственно тому, что в них находится.
+**10.** File names should use the same style as their contents.
 
-Если в файле находится один класс, назовите файл, как класс (CamelCase).
+If a file contains a single class, name the file the same way as the class (CamelCase).
 
-Если в файле находится одна функция, назовите файл, как функцию (camelCase).
+If the file contains a single function, name the file the same way as the function (camelCase).
 
-**11.** Если имя содержит сокращение, то:
+**11.** If the name contains an abbreviation, then:
 
-- для имён переменных, всё сокращение пишется маленькими буквами `mysql_connection` (не `mySQL_connection`).
-- для имён классов и функций, сохраняются большие буквы в сокращении `MySQLConnection` (не `MySqlConnection`).
+- For variable names, the abbreviation should use lowercase letters `mysql_connection` (not `mySQL_connection`).
+- For names of classes and functions, keep the uppercase letters in the abbreviation`MySQLConnection` (not `MySqlConnection`).
 
-**12.** Параметры конструктора, использующиеся сразу же для инициализации соответствующих членов класса, следует назвать также, как и члены класса, добавив подчёркивание в конец.
+**12.** Constructor arguments that are used just to initialize the class members should be named the same way as the class members, but with an underscore at the end.
 
 ```cpp
 FileQueueProcessor(
@@ -380,15 +383,15 @@ FileQueueProcessor(
 }
 ```
 
-Также можно называть параметры конструктора так же, как и члены класса (не добавлять подчёркивание), но только если этот параметр не используется в теле конструктора.
+The underscore suffix can be omitted if the argument is not used in the constructor body.
 
-**13.** Именование локальных переменных и членов класса никак не отличается (никакие префиксы не нужны).
+**13.** There is no difference in the names of local variables and class members (no prefixes required).
 
 ```cpp
 timer (not m_timer)
 ```
 
-**14.** Константы в `enum` — CamelCase с большой буквы. Также допустим ALL_CAPS. Если `enum` не локален, то используйте `enum class`.
+**14.** For the constants in an `enum`, use CamelCase with a capital letter. ALL_CAPS is also acceptable. If the `enum` is non-local, use an `enum class`.
 
 ```cpp
 enum class CompressionMethod
@@ -398,79 +401,76 @@ enum class CompressionMethod
 };
 ```
 
-**15.** Все имена - по английски. Транслит с русского использовать нельзя.
+**15.** All names must be in English. Transliteration of Russian words is not allowed.
 
-```
-не Stroka
-```
+    not Stroka
+    
 
-**16.** Сокращения (из нескольких букв разных слов) в именах можно использовать только если они являются общепринятыми (если для сокращения можно найти расшифровку в английской википедии или сделав поисковый запрос).
+**16.** Abbreviations are acceptable if they are well known (when you can easily find the meaning of the abbreviation in Wikipedia or in a search engine).
 
-```
-`AST`, `SQL`.
+    `AST`, `SQL`.
+    
+    Not `NVDH` (some random letters)
+    
 
-Не `NVDH` (что-то неведомое)
-```
+Incomplete words are acceptable if the shortened version is common use.
 
-Сокращения в виде обрезанного слова можно использовать, только если такое сокращение является широко используемым.
+You can also use an abbreviation if the full name is included next to it in the comments.
 
-Впрочем, сокращения также можно использовать, если расшифровка находится рядом в комментарии.
+**17.** File names with C++ source code must have the `.cpp` extension. Header files must have the `.h` extension.
 
-**17.** Имена файлов с исходниками на C++ должны иметь расширение только `.cpp`. Заголовочные файлы - только `.h`.
+## How to Write Code
 
+**1.** Memory management.
 
-## Как писать код
+Manual memory deallocation (`delete`) can only be used in library code.
 
-**1.** Управление памятью.
+In library code, the `delete` operator can only be used in destructors.
 
-Ручное освобождение памяти (`delete`) можно использовать только в библиотечном коде.
+In application code, memory must be freed by the object that owns it.
 
-В свою очередь, в библиотечном коде, оператор `delete` можно использовать только в деструкторах.
+Examples:
 
-В прикладном коде следует делать так, что память освобождается каким-либо объектом, который владеет ей.
+- The easiest way is to place an object on the stack, or make it a member of another class.
+- For a large number of small objects, use containers.
+- For automatic deallocation of a small number of objects that reside in the heap, use `shared_ptr/unique_ptr`.
 
-Примеры:
+**2.** Resource management.
 
--   проще всего разместить объект на стеке, или сделать его членом другого класса.
--   для большого количества маленьких объектов используйте контейнеры.
--   для автоматического освобождения маленького количества объектов, выделенных на куче, используйте `shared_ptr/unique_ptr`.
+Use `RAII` and see above.
 
-**2.** Управление ресурсами.
+**3.** Error handling.
 
-Используйте `RAII` и см. пункт выше.
+Use exceptions. In most cases, you only need to throw an exception, and don't need to catch it (because of `RAII`).
 
-**3.** Обработка ошибок.
+In offline data processing applications, it's often acceptable to not catch exceptions.
 
-Используйте исключения. В большинстве случаев, нужно только кидать исключения, а ловить - не нужно (потому что `RAII`).
+In servers that handle user requests, it's usually enough to catch exceptions at the top level of the connection handler.
 
-В программах офлайн обработки данных, зачастую, можно не ловить исключения.
-
-В серверах, обрабатывающих пользовательские запросы, как правило, достаточно ловить исключения на самом верху обработчика соединения.
-
-В функциях потока, следует ловить и запоминать все исключения, чтобы выкинуть их в основном потоке после `join`.
+In thread functions, you should catch and keep all exceptions to rethrow them in the main thread after `join`.
 
 ```cpp
-/// Если вычислений ещё не было - вычислим первый блок синхронно
+/// If there weren't any calculations yet, calculate the first block synchronously
 if (!started)
 {
     calculate();
     started = true;
 }
-else    /// Если вычисления уже идут - подождём результата
+else /// If calculations are already in progress, wait for the result
     pool.wait();
 
 if (exception)
     exception->rethrow();
 ```
 
-Ни в коем случае не «проглатывайте» исключения без разбора. Ни в коем случае, не превращайте все исключения без разбора в сообщения в логе.
+Never hide exceptions without handling. Never just blindly put all exceptions to log.
 
 ```cpp
 //Not correct
 catch (...) {}
 ```
 
-Если вам нужно проигнорировать какие-то исключения, то игнорируйте только конкретные, а остальные кидайте обратно.
+If you need to ignore some exceptions, do so only for specific ones and rethrow the rest.
 
 ```cpp
 catch (const DB::Exception & e)
@@ -482,33 +482,33 @@ catch (const DB::Exception & e)
 }
 ```
 
-При использовании функций, использующих коды возврата или `errno`, проверяйте результат и кидайте исключение.
+When using functions with response codes or `errno`, always check the result and throw an exception in case of error.
 
 ```cpp
 if (0 != close(fd))
     throwFromErrno("Cannot close file " + file_name, ErrorCodes::CANNOT_CLOSE_FILE);
 ```
 
-`assert` не используются.
+`Do not use assert`.
 
-**4.** Типы исключений.
+**4.** Exception types.
 
-В прикладном коде не требуется использовать сложную иерархию исключений. Желательно, чтобы текст исключения был понятен системному администратору.
+There is no need to use complex exception hierarchy in application code. The exception text should be understandable to a system administrator.
 
-**5.** Исключения, вылетающие из деструкторов.
+**5.** Throwing exceptions from destructors.
 
-Использовать не рекомендуется, но допустимо.
+This is not recommended, but it is allowed.
 
-Используйте следующие варианты:
+Use the following options:
 
-- Сделайте функцию (`done()` или `finalize()`), которая позволяет заранее выполнить всю работу, в процессе которой может возникнуть исключение. Если эта функция была вызвана, то затем в деструкторе не должно возникать исключений.
-- Слишком сложную работу (например, отправку данных по сети) можно вообще не делать в деструкторе, рассчитывая, что пользователь заранее позовёт метод для завершения работы.
-- Если в деструкторе возникло исключение, желательно не "проглатывать" его, а вывести информацию в лог (если в этом месте доступен логгер).
-- В простых программах, если соответствующие исключения не ловятся, и приводят к завершению работы с записью информации в лог, можно не беспокоиться об исключениях, вылетающих из деструкторов, так как вызов `std::terminate` (в случае `noexcept` по умолчанию в C++11), является приемлимым способом обработки исключения.
+- Create a function (`done()` or `finalize()`) that will do all the work in advance that might lead to an exception. If that function was called, there should be no exceptions in the destructor later.
+- Tasks that are too complex (such as sending messages over the network) can be put in separate method that the class user will have to call before destruction.
+- If there is an exception in the destructor, it’s better to log it than to hide it (if the logger is available).
+- In simple applications, it is acceptable to rely on `std::terminate` (for cases of `noexcept` by default in C++11) to handle exceptions.
 
-**6.** Отдельные блоки кода.
+**6.** Anonymous code blocks.
 
-Внутри одной функции, можно создать отдельный блок кода, для того, чтобы сделать некоторые переменные локальными в нём, и для того, чтобы соответствующие деструкторы были вызваны при выходе из блока.
+You can create a separate code block inside a single function in order to make certain variables local, so that the destructors are called when exiting the block.
 
 ```cpp
 Block block = data.in->read();
@@ -522,70 +522,70 @@ Block block = data.in->read();
 ready_any.set();
 ```
 
-**7.** Многопоточность.
+**7.** Multithreading.
 
-В программах офлайн обработки данных:
+In offline data processing programs:
 
-- cначала добейтесь более-менее максимальной производительности на одном процессорном ядре, потом можно распараллеливать код, но только если есть необходимость.
+- Try to get the best possible performance on a single CPU core. You can then parallelize your code if necessary.
 
-В программах - серверах:
+In server applications:
 
-- используйте пул потоков для обработки запросов. На данный момент, у нас не было задач, в которых была бы необходимость использовать userspace context switching.
+- Use the thread pool to process requests. At this point, we haven't had any tasks that required userspace context switching.
 
-Fork для распараллеливания не используется.
+Fork is not used for parallelization.
 
-**8.** Синхронизация потоков.
+**8.** Syncing threads.
 
-Часто можно сделать так, чтобы отдельные потоки писали данные в разные ячейки памяти (лучше в разные кэш-линии), и не использовать синхронизацию потоков (кроме `joinAll`).
+Often it is possible to make different threads use different memory cells (even better: different cache lines,) and to not use any thread synchronization (except `joinAll`).
 
-Если синхронизация нужна, то в большинстве случаев, достаточно использовать mutex под `lock_guard`.
+If synchronization is required, in most cases, it is sufficient to use mutex under `lock_guard`.
 
-В остальных случаях, используйте системные примитивы синхронизации. Не используйте busy wait.
+In other cases use system synchronization primitives. Do not use busy wait.
 
-Атомарные операции можно использовать только в простейших случаях.
+Atomic operations should be used only in the simplest cases.
 
-Не нужно писать самостоятельно lock-free структуры данных, если вы не являетесь экспертом.
+Do not try to implement lock-free data structures unless it is your primary area of expertise.
 
-**9.** Ссылки и указатели.
+**9.** Pointers vs references.
 
-В большинстве случаев, предпочитайте ссылки.
+In most cases, prefer references.
 
 **10.** const.
 
-Используйте константные ссылки, указатели на константу, `const_iterator`, константные методы.
+Use constant references, pointers to constants, `const_iterator`, and const methods.
 
-Считайте, что `const` — вариант написания «по умолчанию», а отсутствие `const` только при необходимости.
+Consider `const` to be default and use non-`const` only when necessary.
 
-Для переменных, передающихся по значению, использовать `const` обычно не имеет смысла.
+When passing variables by value, using `const` usually does not make sense.
 
 **11.** unsigned.
 
-Используйте `unsigned`, если нужно.
+Use `unsigned` if necessary.
 
-**12.** Числовые типы.
+**12.** Numeric types.
 
-Используйте типы `UInt8`, `UInt16`, `UInt32`, `UInt64`, `Int8`, `Int16`, `Int32`, `Int64`, а также `size_t`, `ssize_t`, `ptrdiff_t`.
+Use the types `UInt8`, `UInt16`, `UInt32`, `UInt64`, `Int8`, `Int16`, `Int32`, and `Int64`, as well as `size_t`, `ssize_t`, and `ptrdiff_t`.
 
-Не используйте для чисел типы `signed/unsigned long`, `long long`, `short`, `signed/unsigned char`, `char`.
+Don't use these types for numbers: `signed/unsigned long`, `long long`, `short`, `signed/unsigned char`, `char`.
 
-**13.** Передача аргументов.
+**13.** Passing arguments.
 
-Сложные значения передавайте по ссылке (включая `std::string`).
+Pass complex values by reference (including `std::string`).
 
-Если функция захватывает владение объектом, созданным на куче, то сделайте типом аргумента `shared_ptr` или `unique_ptr`.
+If a function captures ownership of an object created in the heap, make the argument type `shared_ptr` or `unique_ptr`.
 
-**14.** Возврат значений.
+**14.** Return values.
 
-В большинстве случаев, просто возвращайте значение с помощью `return`. Не пишите `[return std::move(res)]{.strike}`.
+In most cases, just use `return`. Do not write `[return std::move(res)]{.strike}`.
 
-Если внутри функции создаётся объект на куче и отдаётся наружу, то возвращайте `shared_ptr` или `unique_ptr`.
+If the function allocates an object on heap and returns it, use `shared_ptr` or `unique_ptr`.
 
-В некоторых редких случаях, может потребоваться возвращать значение через аргумент функции. В этом случае, аргументом будет ссылка.
+In rare cases you might need to return the value via an argument. In this case, the argument should be a reference.
 
 ```cpp
 using AggregateFunctionPtr = std::shared_ptr<IAggregateFunction>;
 
-/** Позволяет создать агрегатную функцию по её имени.
+/** Allows creating an aggregate function by its name.
   */
 class AggregateFunctionFactory
 {
@@ -596,84 +596,84 @@ public:
 
 **15.** namespace.
 
-Для прикладного кода отдельный `namespace` использовать не нужно.
+There is no need to use a separate `namespace` for application code.
 
-Для маленьких библиотек - не требуется.
+Small libraries don't need this, either.
 
-Для не совсем маленьких библиотек - поместите всё в `namespace`.
+For medium to large libraries, put everything in a `namespace`.
 
-Внутри библиотеки в `.h` файле можно использовать `namespace detail` для деталей реализации, не нужных прикладному коду.
+In the library's `.h` file, you can use `namespace detail` to hide implementation details not needed for the application code.
 
-В `.cpp` файле можно использовать `static` или анонимный namespace для скрытия символов.
+In a `.cpp` file, you can use a `static` or anonymous namespace to hide symbols.
 
-Также, `namespace` можно использовать для `enum`, чтобы соответствующие имена не попали во внешний `namespace` (но лучше использовать `enum class`).
+Also, a `namespace` can be used for an `enum` to prevent the corresponding names from falling into an external `namespace` (but it's better to use an `enum class`).
 
-**16.** Отложенная инициализация.
+**16.** Deferred initialization.
 
-Обычно, если для инициализации требуются аргументы, то не пишите конструктор по умолчанию.
+If arguments are required for initialization, then you normally shouldn't write a default constructor.
 
-Если потом вам потребовалась отложенная инициализация, то вы можете дописать конструктор по умолчанию (который создаст объект с некорректным состоянием). Или, для небольшого количества объектов, можно использовать `shared_ptr/unique_ptr`.
+If later you’ll need to delay initialization, you can add a default constructor that will create an invalid object. Or, for a small number of objects, you can use `shared_ptr/unique_ptr`.
 
 ```cpp
 Loader(DB::Connection * connection_, const std::string & query, size_t max_block_size_);
 
-/// Для отложенной инициализации
+/// For deferred initialization
 Loader() {}
 ```
 
-**17.** Виртуальные функции.
+**17.** Virtual functions.
 
-Если класс не предназначен для полиморфного использования, то не нужно делать функции виртуальными зря. Это относится и к деструктору.
+If the class is not intended for polymorphic use, you do not need to make functions virtual. This also applies to the destructor.
 
-**18.** Кодировки.
+**18.** Encodings.
 
-Везде используется UTF-8. Используется `std::string`, `char *`. Не используется `std::wstring`, `wchar_t`.
+Use UTF-8 everywhere. Use `std::string`and`char *`. Do not use `std::wstring`and`wchar_t`.
 
-**19.** Логгирование.
+**19.** Logging.
 
-См. примеры везде в коде.
+See the examples everywhere in the code.
 
-Перед коммитом, удалите всё бессмысленное и отладочное логгирование, и другие виды отладочного вывода.
+Before committing, delete all meaningless and debug logging, and any other types of debug output.
 
-Не должно быть логгирования на каждую итерацию внутреннего цикла, даже уровня Trace.
+Logging in cycles should be avoided, even on the Trace level.
 
-При любом уровне логгирования, логи должно быть возможно читать.
+Logs must be readable at any logging level.
 
-Логгирование следует использовать, в основном, только в прикладном коде.
+Logging should only be used in application code, for the most part.
 
-Сообщения в логе должны быть написаны на английском языке.
+Log messages must be written in English.
 
-Желательно, чтобы лог был понятен системному администратору.
+The log should preferably be understandable for the system administrator.
 
-Не нужно писать ругательства в лог.
+Do not use profanity in the log.
 
-В логе используется кодировка UTF-8. Изредка можно использовать в логе не-ASCII символы.
+Use UTF-8 encoding in the log. In rare cases you can use non-ASCII characters in the log.
 
-**20.** Ввод-вывод.
+**20.** Input-output.
 
-Во внутренних циклах (в критичных по производительности участках программы) нельзя использовать `iostreams` (в том числе, ни в коем случае не используйте `stringstream`).
+Don't use `iostreams` in internal cycles that are critical for application performance (and never use `stringstream`).
 
-Вместо этого используйте библиотеку `DB/IO`.
+Use the `DB/IO` library instead.
 
-**21.** Дата и время.
+**21.** Date and time.
 
-См. библиотеку `DateLUT`.
+See the `DateLUT` library.
 
 **22.** include.
 
-В заголовочном файле используется только `#pragma once`, а include guards писать не нужно.
+Always use `#pragma once` instead of include guards.
 
 **23.** using.
 
-`using namespace` не используется. Можно использовать `using` что-то конкретное. Лучше локально, внутри класса или функции.
+`using namespace` is not used. You can use `using` with something specific. But make it local inside a class or function.
 
-**24.** Не нужно использовать `trailing return type` для функций, если в этом нет необходимости.
+**24.** Do not use `trailing return type` for functions unless necessary.
 
 ```cpp
 [auto f() -&gt; void;]{.strike}
 ```
 
-**25.** Объявление и инициализация переменных.
+**25.** Declaration and initialization of variables.
 
 ```cpp
 //right way
@@ -684,125 +684,123 @@ std::string s{"Hello"};
 auto s = std::string{"Hello"};
 ```
 
-**26.** Для виртуальных функций, пишите `virtual` в базовом классе, а в классах-наследниках, пишите `override` и не пишите `virtual`.
+**26.** For virtual functions, write `virtual` in the base class, but write `override` instead of `virtual` in descendent classes.
 
+## Unused Features of C++
 
-## Неиспользуемые возможности языка C++
+**1.** Virtual inheritance is not used.
 
-**1.** Виртуальное наследование не используется.
+**2.** Exception specifiers from C++03 are not used.
 
-**2.** Спецификаторы исключений из C++03 не используются.
+## Platform
 
-## Платформа
+**1.** We write code for a specific platform.
 
-**1.** Мы пишем код под конкретную платформу.
+But other things being equal, cross-platform or portable code is preferred.
 
-Хотя, при прочих равных условиях, предпочитается более-менее кроссплатформенный или легко портируемый код.
+**2.** Language: C++17.
 
-**2.** Язык - C++17.
+**3.** Compiler: `gcc`. At this time (December 2017), the code is compiled using version 7.2. (It can also be compiled using `clang 4`.)
 
-**3.** Компилятор - `gcc`. На данный момент (декабрь 2017), код собирается версией 7.2. (Также код может быть собран `clang 5`)
+The standard library is used (`libstdc++` or `libc++`).
 
-Используется стандартная библиотека (реализация `libstdc++` или `libc++`).
+**4.**OS: Linux Ubuntu, not older than Precise.
 
-**4.** ОС - Linux Ubuntu, не более старая, чем Precise.
+**5.**Code is written for x86_64 CPU architecture.
 
-**5.** Код пишется под процессор с архитектурой x86_64.
+The CPU instruction set is the minimum supported set among our servers. Currently, it is SSE 4.2.
 
-Набор инструкций минимальный из поддержаных нашими серверами. Сейчас это - SSE4.2.
+**6.** Use `-Wall -Wextra -Werror` compilation flags.
 
-**6.** Используются флаги компиляции `-Wall -Wextra -Werror`.
+**7.** Use static linking with all libraries except those that are difficult to connect to statically (see the output of the `ldd` command).
 
-**7.** Используется статическая линковка со всеми библиотеками кроме тех, которые трудно подключить статически (см. вывод команды `ldd`).
+**8.** Code is developed and debugged with release settings.
 
-**8.** Код разрабатывается и отлаживается с релизными параметрами сборки.
+## Tools
 
-## Инструментарий
+**1.** KDevelop is a good IDE.
 
-**1.** Хорошая среда разработки - KDevelop.
+**2.** For debugging, use `gdb`, `valgrind` (`memcheck`), `strace`, `-fsanitize=...`, or `tcmalloc_minimal_debug`.
 
-**2.** Для отладки используется `gdb`, `valgrind` (`memcheck`), `strace`, `-fsanitize=...`, `tcmalloc_minimal_debug`.
+**3.** For profiling, use `Linux Perf`, `valgrind` (`callgrind`), or `strace -cf`.
 
-**3.** Для профилирования используется `Linux Perf`, `valgrind` (`callgrind`), `strace -cf`.
+**4.** Sources are in Git.
 
-**4.** Исходники в Git.
+**5.** Assembly uses `CMake`.
 
-**5.** Сборка с помощью `CMake`.
+**6.** Programs are released using `deb` packages.
 
-**6.** Программы выкладываются с помощью `deb` пакетов.
+**7.** Commits to master must not break the build.
 
-**7.** Коммиты в master не должны ломать сборку проекта.
+Though only selected revisions are considered workable.
 
-А работоспособность собранных программ гарантируется только для отдельных ревизий.
+**8.** Make commits as often as possible, even if the code is only partially ready.
 
-**8.** Коммитьте как можно чаще, в том числе и нерабочий код.
+Use branches for this purpose.
 
-Для этого следует использовать бранчи.
+If your code in the `master` branch is not buildable yet, exclude it from the build before the `push`. You'll need to finish it or remove it within a few days.
 
-Если ваш код в ветке `master` ещё не собирается, исключите его из сборки перед `push`, также вы будете должны его доработать или удалить в течение нескольких дней.
+**9.** For non-trivial changes, use branches and publish them on the server.
 
-**9.** Для нетривиальных изменений, используются бранчи. Следует загружать бранчи на сервер.
+**10.** Unused code is removed from the repository.
 
-**10.** Ненужный код удаляется из исходников.
+## Libraries
 
+**1.** The C++14 standard library is used (experimental extensions are allowed), as well as `boost` and `Poco` frameworks.
 
-## Библиотеки
+**2.** If necessary, you can use any well-known libraries available in the OS package.
 
-**1.** Используются стандартная библиотека C++14 (допустимо использовать экспериментальные расширения) а также фреймворки `boost`, `Poco`.
+If there is a good solution already available, then use it, even if it means you have to install another library.
 
-**2.** При необходимости, можно использовать любые известные библиотеки, доступные в ОС из пакетов.
+(But be prepared to remove bad libraries from code.)
 
-Если есть хорошее готовое решение, то оно используется, даже если для этого придётся установить ещё одну библиотеку.
+**3.** You can install a library that isn't in the packages, if the packages don't have what you need or have an outdated version or the wrong type of compilation.
 
-(Но будьте готовы к тому, что иногда вам придётся выкидывать плохие библиотеки из кода.)
+**4.** If the library is small and doesn't have its own complex build system, put the source files in the `contrib` folder.
 
-**3.** Если в пакетах нет нужной библиотеки, или её версия достаточно старая, или если она собрана не так, как нужно, то можно использовать библиотеку, устанавливаемую не из пакетов.
+**5.** Preference is always given to libraries that are already in use.
 
-**4.** Если библиотека достаточно маленькая и у неё нет своей системы сборки, то следует включить её файлы в проект, в директорию `contrib`.
+## General Recommendations
 
-**5.** Предпочтение всегда отдаётся уже использующимся библиотекам.
+**1.** Write as little code as possible.
 
-## Общее
+**2.** Try the simplest solution.
 
-**1.** Пишите как можно меньше кода.
+**3.** Don't write code until you know how it's going to work and how the inner loop will function.
 
-**2.** Пробуйте самое простое решение.
+**4.** In the simplest cases, use `using` instead of classes or structs.
 
-**3.** Не нужно писать код, если вы ещё не знаете, что будет делать ваша программа, и как будет работать её внутренний цикл.
+**5.** If possible, do not write copy constructors, assignment operators, destructors (other than a virtual one, if the class contains at least one virtual function), move constructors or move assignment operators. In other words, the compiler-generated functions must work correctly. You can use `default`.
 
-**4.** В простейших случаях, используйте `using` вместо классов/структур.
+**6.** Code simplification is encouraged. Reduce the size of your code where possible.
 
-**5.** Если есть возможность - не пишите конструкторы копирования, операторы присваивания, деструктор (кроме виртуального, если класс содержит хотя бы одну виртуальную функцию), move-конструкторы и move-присваивания. То есть, чтобы соответствущие функции, генерируемые компилятором, работали правильно. Можно использовать `default`.
+## Additional Recommendations
 
-**6.** Приветствуется упрощение и уменьшение объёма кода.
+**1.** Explicitly specifying `std::` for types from `stddef.h`
 
-## Дополнительно
+is not recommended. In other words, we recommend writing `size_t` instead `std::size_t`, because it's shorter.
 
-**1.** Явное указание `std::` для типов из `stddef.h`.
+It is acceptable to add `std::`.
 
-Рекомендуется не указывать. То есть, рекомендуется писать `size_t` вместо `std::size_t`, это короче.
+**2.** Explicitly specifying `std::` for functions from the standard C library
 
-При желании, можно дописать `std::`, этот вариант допустим.
+is not recommended. In other words, write `memcpy` instead of `std::memcpy`.
 
-**2.** Явное указание `std::` для функций из стандартной библиотеки C.
+The reason is that there are similar non-standard functions, such as `memmem`. We do use these functions on occasion. These functions do not exist in `namespace std`.
 
-Не рекомендуется. То есть, пишите `memcpy` вместо `std::memcpy`.
+If you write `std::memcpy` instead of `memcpy` everywhere, then `memmem` without `std::` will look strange.
 
-Причина - существуют похожие нестандартные функции, например, `memmem`. Мы можем использовать и изредка используем эти функции. Эти функции отсутствуют в `namespace std`.
+Nevertheless, you can still use `std::` if you prefer it.
 
-Если вы везде напишете `std::memcpy` вместо `memcpy`, то будет неудобно смотреться `memmem` без `std::`.
+**3.** Using functions from C when the same ones are available in the standard C++ library.
 
-Тем не менее, указывать `std::` тоже допустимо, если так больше нравится.
+This is acceptable if it is more efficient.
 
-**3.** Использование функций из C при наличии аналогов в стандартной библиотеке C++.
+For example, use `memcpy` instead of `std::copy` for copying large chunks of memory.
 
-Допустимо, если это использование эффективнее.
+**4.** Multiline function arguments.
 
-Для примера, для копирования длинных кусков памяти, используйте `memcpy` вместо `std::copy`.
-
-**4.** Перенос длинных аргументов функций.
-
-Допустимо использовать любой стиль переноса, похожий на приведённые ниже:
+Any of the following wrapping styles are allowed:
 
 ```cpp
 function(
