@@ -1,12 +1,12 @@
-# Словари
+# Dictionaries
 
-Словарь — это отображение (`ключ -> атрибуты`), которое удобно использовать для различного вида справочников.
+A dictionary is a mapping (`key -> attributes`) that is convenient for various types of reference lists.
 
-ClickHouse поддерживает специальные функции для работы со словарями, которые можно использовать в запросах. Проще и эффективнее использовать словари с помощью функций, чем `JOIN` с таблицами-справочниками.
+ClickHouse supports special functions for working with dictionaries that can be used in queries. It is easier and more efficient to use dictionaries with functions than a `JOIN` with reference tables.
 
-В словаре нельзя хранить значения [NULL](../syntax.md#null-literal).
+[NULL](../syntax.md#null-literal) values can't be stored in a dictionary.
 
-ClickHouse поддерживает:
+ClickHouse supports:
 
-- [Встроенные словари](internal_dicts.md#internal_dicts) со специфическим [набором функций](../functions/ym_dict_functions.md#ym_dict_functions).
-- [Подключаемые (внешние) словари](external_dicts.md#dicts-external_dicts) с [набором функций](../functions/ext_dict_functions.md#ext_dict_functions).
+- [Built-in dictionaries](internal_dicts.md#internal_dicts) with a specific [set of functions](../functions/ym_dict_functions.md#ym_dict_functions).
+- [Plug-in (external) dictionaries](external_dicts.md#dicts-external_dicts) with a [set of functions](../functions/ext_dict_functions.md#ext_dict_functions).
