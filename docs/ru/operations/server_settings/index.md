@@ -1,11 +1,11 @@
 <a name="server_settings"></a>
 
-# Конфигурационные параметры сервера
+# Server configuration parameters
 
-Раздел содержит описания настроек сервера, которые не могут изменяться на уровне сессии или запроса.
+This section contains descriptions of server settings that cannot be changed at the session or query level.
 
-Рассмотренные настройки хранятся в файле `config.xml` сервера ClickHouse.
+These settings are stored in the `config.xml` file on the ClickHouse server.
 
-Прочие настройки описаны в разделе "[Настройки](../settings/index.md#settings)".
+Other settings are described in the "[Settings](../settings/index.md#settings)" section.
 
-Перед изучением настроек ознакомьтесь с разделом [Конфигурационные файлы](../configuration_files.md#configuration_files), обратите внимание на использование подстановок (атрибуты `incl` и `optional`).
+Before studying the settings, read the [Configuration files](../configuration_files.md#configuration_files) section and note the use of substitutions (the `incl` and `optional` attributes).
