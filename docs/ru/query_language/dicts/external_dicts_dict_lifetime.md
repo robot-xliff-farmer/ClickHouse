@@ -1,12 +1,12 @@
 <a name="dicts-external_dicts_dict_lifetime"></a>
 
-# Обновление словарей
+# Dictionary Updates
 
-ClickHouse периодически обновляет словари. Интервал обновления для полностью загружаемых словарей и интервал инвалидации для кэшируемых словарей определяется в теге `<lifetime>` в секундах.
+ClickHouse periodically updates the dictionaries. The update interval for fully downloaded dictionaries and the invalidation interval for cached dictionaries are defined in the `<lifetime>` tag in seconds.
 
-Обновление словарей (кроме загрузки при первом использовании) не блокирует запросы - во время обновления используется старая версия словаря. Если при обновлении возникнет ошибка, то ошибка пишется в лог сервера, а запросы продолжат использовать старую версию словарей.
+Dictionary updates (other than loading for first use) do not block queries. During updates, the old version of a dictionary is used. If an error occurs during an update, the error is written to the server log, and queries continue using the old version of dictionaries.
 
-Пример настройки:
+Example of settings:
 
 ```xml
 <dictionary>
@@ -16,11 +16,11 @@ ClickHouse периодически обновляет словари. Инте�
 </dictionary>
 ```
 
-Настройка `<lifetime>0</lifetime>` запрещает обновление словарей.
+Setting `<lifetime> 0</lifetime>` prevents updating dictionaries.
 
-Можно задать интервал, внутри которого ClickHouse равномерно-случайно выберет время для обновления. Это необходимо для распределения нагрузки на источник словаря при обновлении на большом количестве серверов.
+You can set a time interval for upgrades, and ClickHouse will choose a uniformly random time within this range. This is necessary in order to distribute the load on the dictionary source when upgrading on a large number of servers.
 
-Пример настройки:
+Example of settings:
 
 ```xml
 <dictionary>
@@ -33,18 +33,20 @@ ClickHouse периодически обновляет словари. Инте�
 </dictionary>
 ```
 
-При обновлении словарей сервер ClickHouse применяет различную логику в зависимости от типа [источника](external_dicts_dict_sources.md#dicts-external_dicts_dict_sources):
+When upgrading the dictionaries, the ClickHouse server applies different logic depending on the type of [ source](external_dicts_dict_sources.md#dicts-external_dicts_dict_sources):
 
-> -   У текстового файла проверяется время модификации. Если время изменилось по отношению к запомненному ранее, то словарь обновляется.
-> -   Для таблиц типа MyISAM, время модификации проверяется запросом `SHOW TABLE STATUS`.
-> -   Словари из других источников по умолчанию обновляются каждый раз.
+> - For a text file, it checks the time of modification. If the time differs from the previously recorded time, the dictionary is updated.
 
-Для источников MySQL (InnoDB), ODBC и ClickHouse можно настроить запрос, который позволит обновлять словари только в случае их фактического изменения, а не каждый раз. Чтобы это сделать необходимо выполнить следующие условия/действия:
+- For MyISAM tables, the time of modification is checked using a `SHOW TABLE STATUS` query.
+- Dictionaries from other sources are updated every time by default.
 
-> -   В таблице словаря должно быть поле, которое гарантированно изменяется при обновлении данных в источнике.
-> -   В настройках источника указывается запрос, который получает изменяющееся поле. Результат запроса сервер ClickHouse интерпретирует как строку и если эта строка изменилась по отношению к предыдущему состоянию, то словарь обновляется. Запрос следует указывать в поле `<invalidate_query>` настроек [источника](external_dicts_dict_sources.md#dicts-external_dicts_dict_sources).
+For MySQL (InnoDB) and ODBC sources, you can set up a query that will update the dictionaries only if they really changed, rather than each time. To do this, follow these steps:
 
-Пример настройки:
+> - The dictionary table must have a field that always changes when the source data is updated.
+
+- The settings of the source must specify a query that retrieves the changing field. The ClickHouse server interprets the query result as a row, and if this row has changed relative to its previous state, the dictionary is updated. Specify the query in the `<invalidate_query>` field in the settings for the [source](external_dicts_dict_sources.md#dicts-external_dicts_dict_sources).
+
+Example of settings:
 
 ```xml
 <dictionary>
