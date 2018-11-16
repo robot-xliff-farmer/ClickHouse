@@ -2,9 +2,9 @@
 
 # Dictionary
 
-Движок `Dictionary` отображает данные [словаря](../../query_language/dicts/external_dicts.md) как таблицу ClickHouse.
+The `Dictionary` engine displays the dictionary data as a ClickHouse table.
 
-Рассмотрим для примера словарь `products` со следующей конфигурацией:
+As an example, consider a dictionary of `products` with the following configuration:
 
 ```xml
 <dictionaries>
@@ -37,7 +37,7 @@
 </dictionaries>
 ```
 
-Запрос данных словаря:
+Query the dictionary data:
 
 ```sql
 select name, type, key, attribute.names, attribute.types, bytes_allocated, element_count,source from system.dictionaries where name = 'products';                     
@@ -54,24 +54,22 @@ SELECT
 FROM system.dictionaries
 WHERE name = 'products'
 ```
-```
-┌─name─────┬─type─┬─key────┬─attribute.names─┬─attribute.types─┬─bytes_allocated─┬─element_count─┬─source──────────┐
-│ products │ Flat │ UInt64 │ ['title']       │ ['String']      │        23065376 │        175032 │ ODBC: .products │
-└──────────┴──────┴────────┴─────────────────┴─────────────────┴─────────────────┴───────────────┴─────────────────┘
-```
 
-В таком виде данные из словаря можно получить при помощи функций [dictGet*](../../query_language/functions/ext_dict_functions.md#ext_dict_functions).
+    ┌─name─────┬─type─┬─key────┬─attribute.names─┬─attribute.types─┬─bytes_allocated─┬─element_count─┬─source──────────┐
+    │ products │ Flat │ UInt64 │ ['title']       │ ['String']      │        23065376 │        175032 │ ODBC: .products │
+    └──────────┴──────┴────────┴─────────────────┴─────────────────┴─────────────────┴───────────────┴─────────────────┘
+    
 
-Такое представление неудобно, когда нам необходимо получить данные в чистом виде, а также при выполнении операции `JOIN`. Для этих случаев можно использовать движок `Dictionary`, который отобразит данные словаря в таблицу.
+You can use the [dictGet*](../../query_language/functions/ext_dict_functions.md#ext_dict_functions) function to get the dictionary data in this format.
 
-Синтаксис:
+This view isn't helpful when you need to get raw data, or when performing a `JOIN` operation. For these cases, you can use the `Dictionary` engine, which displays the dictionary data in a table.
 
-```
-CREATE TABLE %table_name% (%fields%) engine = Dictionary(%dictionary_name%)`
-```
+Syntax:
 
+    CREATE TABLE %table_name% (%fields%) engine = Dictionary(%dictionary_name%)`
+    
 
-Пример использования:
+Usage example:
 
 ```sql
 create table products (product_id UInt64, title String) Engine = Dictionary(products);
@@ -83,13 +81,13 @@ CREATE TABLE products
 )
 ENGINE = Dictionary(products)
 ```
-```
-Ok.
 
-0 rows in set. Elapsed: 0.004 sec.
-```
+    Ok.
+    
+    0 rows in set. Elapsed: 0.004 sec.
+    
 
-Проверим что у нас в таблице?
+Take a look at what's in the table.
 
 ```sql
 select * from products limit 1;
@@ -99,10 +97,8 @@ FROM products
 LIMIT 1
 ```
 
-```
-┌────product_id─┬─title───────────┐
-│        152689 │ Some item       │
-└───────────────┴─────────────────┘
-
-1 rows in set. Elapsed: 0.006 sec.
-```
+    ┌────product_id─┬─title───────────┐
+    │        152689 │ Some item       │
+    └───────────────┴─────────────────┘
+    
+    1 rows in set. Elapsed: 0.006 sec.

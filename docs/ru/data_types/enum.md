@@ -2,111 +2,102 @@
 
 # Enum8, Enum16
 
-Включает в себя типы `Enum8` и `Enum16`. `Enum` сохраняет конечный набор пар `'строка' = целое число`. Все операции с данными типа `Enum` ClickHouse выполняет как с числами, однако пользователь при этом работает со строковыми константами. Это более эффективно с точки зрения производительности, чем работа с типом данных `String`.
+Includes the `Enum8` and `Enum16` types. `Enum` saves the finite set of pairs of `'string' = integer`. In ClickHouse, all operations with the `Enum` data type are performed as if value contains integers, although the user is working with string constants. This is more effective in terms of performance than working with the `String` data type.
 
-- `Enum8` описывается парами `'String' = Int8`.
-- `Enum16` описывается парами `'String' = Int16`.
+- `Enum8` is described by pairs of `'String' = Int8`.
+- `Enum16` is described by pairs of `'String' = Int16`.
 
-## Примеры применения
+## Usage examples
 
-Создадим таблицу со столбцом типа `Enum8('hello' = 1, 'world' = 2)`.
+Here we create a table with an `Enum8('hello' = 1, 'world' = 2)` type column:
 
-```
-CREATE TABLE t_enum
-(
-    x Enum8('hello' = 1, 'world' = 2)
-)
-ENGINE = TinyLog
-```
+    CREATE TABLE t_enum
+    (
+        x Enum8('hello' = 1, 'world' = 2)
+    )
+    ENGINE = TinyLog
+    
 
-В столбец `x` можно сохранять только значения, перечисленные при определении типа, т.е. `'hello'` или `'world'`. Если попытаться сохранить другое значение, ClickHouse сгенерирует исключение.
+This column `x` can only store the values that are listed in the type definition: `'hello'` or `'world'`. If you try to save any other value, ClickHouse will generate an exception.
 
-```
-:) INSERT INTO t_enum Values('hello'),('world'),('hello')
+    :) INSERT INTO t_enum VALUES ('hello'), ('world'), ('hello')
+    
+    INSERT INTO t_enum VALUES
+    
+    Ok.
+    
+    3 rows in set. Elapsed: 0.002 sec.
+    
+    :) insert into t_enum values('a')
+    
+    INSERT INTO t_enum VALUES
+    
+    
+    Exception on client:
+    Code: 49. DB::Exception: Unknown element 'a' for type Enum8('hello' = 1, 'world' = 2)
+    
 
-INSERT INTO t_enum VALUES
+When you query data from the table, ClickHouse outputs the string values from `Enum`.
 
-Ok.
+    SELECT * FROM t_enum
+    
+    ┌─x─────┐
+    │ hello │
+    │ world │
+    │ hello │
+    └───────┘
+    
 
-3 rows in set. Elapsed: 0.002 sec.
+If you need to see the numeric equivalents of the rows, you must cast the `Enum` value to integer type.
 
-:) insert into t_enum values('a')
+    SELECT CAST(x, 'Int8') FROM t_enum
+    
+    ┌─CAST(x, 'Int8')─┐
+    │               1 │
+    │               2 │
+    │               1 │
+    └─────────────────┘
+    
 
-INSERT INTO t_enum VALUES
+To create an Enum value in a query, you also need to use `CAST`.
 
+    SELECT toTypeName(CAST('a', 'Enum8(\'a\' = 1, \'b\' = 2)'))
+    
+    ┌─toTypeName(CAST('a', 'Enum8(\'a\' = 1, \'b\' = 2)'))─┐
+    │ Enum8('a' = 1, 'b' = 2)                              │
+    └──────────────────────────────────────────────────────┘
+    
 
-Exception on client:
-Code: 49. DB::Exception: Unknown element 'a' for type Enum8('hello' = 1, 'world' = 2)
-```
+## General rules and usage
 
-При запросе данных из таблицы ClickHouse выдаст строковые значения из `Enum`.
+Each of the values is assigned a number in the range `-128 ... 127` for `Enum8` or in the range `-32768 ... 32767` for `Enum16`. All the strings and numbers must be different. An empty string is allowed. If this type is specified (in a table definition), numbers can be in an arbitrary order. However, the order does not matter.
 
-```
-SELECT * FROM t_enum
+Neither the string nor the numeric value in an `Enum` can be [NULL](../query_language/syntax.md#null-literal).
 
-┌─x─────┐
-│ hello │
-│ world │
-│ hello │
-└───────┘
-```
-Если необходимо увидеть цифровые эквиваленты строкам, то необходимо привести тип.
+An `Enum` can be contained in [Nullable](nullable.md#data_type-nullable) type. So if you create a table using the query
 
-```
-SELECT CAST(x, 'Int8') FROM t_enum
+    CREATE TABLE t_enum_nullable
+    (
+        x Nullable( Enum8('hello' = 1, 'world' = 2) )
+    )
+    ENGINE = TinyLog
+    
 
-┌─CAST(x, 'Int8')─┐
-│               1 │
-│               2 │
-│               1 │
-└─────────────────┘
-```
+it can store not only `'hello'` and `'world'`, but `NULL`, as well.
 
-Чтобы создать значение типа Enum в запросе, также необходима функция `CAST`.
+    INSERT INTO t_enum_null Values('hello'),('world'),(NULL)
+    
 
-```
-SELECT toTypeName(CAST('a', 'Enum8(\'a\' = 1, \'b\' = 2)'))
+In RAM, an `Enum` column is stored in the same way as `Int8` or `Int16` of the corresponding numerical values.
 
-┌─toTypeName(CAST('a', 'Enum8(\'a\' = 1, \'b\' = 2)'))─┐
-│ Enum8('a' = 1, 'b' = 2)                              │
-└──────────────────────────────────────────────────────┘
-```
+When reading in text form, ClickHouse parses the value as a string and searches for the corresponding string from the set of Enum values. If it is not found, an exception is thrown. When reading in text format, the string is read and the corresponding numeric value is looked up. An exception will be thrown if it is not found. When writing in text form, it writes the value as the corresponding string. If column data contains garbage (numbers that are not from the valid set), an exception is thrown. When reading and writing in binary form, it works the same way as for Int8 and Int16 data types. The implicit default value is the value with the lowest number.
 
-## Общие правила и особенности использования
+During `ORDER BY`, `GROUP BY`, `IN`, `DISTINCT` and so on, Enums behave the same way as the corresponding numbers. For example, ORDER BY sorts them numerically. Equality and comparison operators work the same way on Enums as they do on the underlying numeric values.
 
-Для каждого из значений прописывается число в диапазоне `-128 .. 127` для `Enum8` или в диапазоне `-32768 .. 32767` для `Enum16`. Все строки должны быть разными, числа - тоже. Разрешена пустая строка. При указании такого типа (в определении таблицы), числа могут идти не подряд и в произвольном порядке. При этом, порядок не имеет значения.
+Enum values cannot be compared with numbers. Enums can be compared to a constant string. If the string compared to is not a valid value for the Enum, an exception will be thrown. The IN operator is supported with the Enum on the left hand side and a set of strings on the right hand side. The strings are the values of the corresponding Enum.
 
-Ни строка, ни цифровое значение в `Enum` не могут быть [NULL](../query_language/syntax.md#null-literal).
+Most numeric and string operations are not defined for Enum values, e.g. adding a number to an Enum or concatenating a string to an Enum. However, the Enum has a natural `toString` function that returns its string value.
 
-`Enum` может быть передан в тип [Nullable](nullable.md#data_type-nullable). Таким образом, если создать таблицу запросом
+Enum values are also convertible to numeric types using the `toT` function, where T is a numeric type. When T corresponds to the enum’s underlying numeric type, this conversion is zero-cost. The Enum type can be changed without cost using ALTER, if only the set of values is changed. It is possible to both add and remove members of the Enum using ALTER (removing is safe only if the removed value has never been used in the table). As a safeguard, changing the numeric value of a previously defined Enum member will throw an exception.
 
-```
-CREATE TABLE t_enum_nullable
-(
-    x Nullable( Enum8('hello' = 1, 'world' = 2) )
-)
-ENGINE = TinyLog
-```
-
-, то в ней можно будет хранить не только `'hello'` и `'world'`, но и `NULL`.
-
-```
-INSERT INTO t_enum_null Values('hello'),('world'),(NULL)
-```
-
-В оперативке столбец типа `Enum` представлен так же, как `Int8` или `Int16` соответствующими числовыми значениями.
-При чтении в текстовом виде, парсит значение как строку и ищет соответствующую строку из множества значений Enum-а. Если не находит - кидается исключение.
-При записи в текстовом виде, записывает значение как соответствующую строку. Если в данных столбца есть мусор - числа не из допустимого множества, то кидается исключение. При чтении и записи в бинарном виде, оно осуществляется так же, как для типов данных Int8, Int16.
-Неявное значение по умолчанию - это значение с минимальным номером.
-
-При `ORDER BY`, `GROUP BY`, `IN`, `DISTINCT` и т. п., Enum-ы ведут себя так же, как соответствующие числа. Например, при ORDER BY они сортируются по числовым значениям. Функции сравнения на равенство и сравнения на отношение порядка двух Enum-ов работают с Enum-ами так же, как с числами.
-
-Сравнивать Enum с числом нельзя. Можно сравнивать Enum с константной строкой - при этом, для строки ищется соответствующее значение Enum-а; если не находится - кидается исключение. Поддерживается оператор IN, где слева стоит Enum, а справа - множество строк. В этом случае, строки рассматриваются как значения соответствующего Enum-а.
-
-Большинство операций с числами и со строками не имеет смысла и не работают для Enum-ов: например, к Enum-у нельзя прибавить число.
-Для Enum-а естественным образом определяется функция `toString`, которая возвращает его строковое значение.
-
-Также для Enum-а определяются функции `toT`, где T - числовой тип. При совпадении T с типом столбца Enum-а, преобразование работает бесплатно.
-При ALTER, есть возможность бесплатно изменить тип Enum-а, если меняется только множество значений. При этом, можно добавлять новые значения; можно удалять старые значения (это безопасно только если они ни разу не использовались, так как это не проверяется). В качестве "защиты от дурака", нельзя менять числовые значения у имеющихся строк - в этом случае, кидается исключение.
-
-При ALTER, есть возможность поменять Enum8 на Enum16 и обратно - так же, как можно поменять Int8 на Int16.
+Using ALTER, it is possible to change an Enum8 to an Enum16 or vice versa, just like changing an Int8 to Int16.

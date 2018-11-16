@@ -1,8 +1,5 @@
-<a name="data_type-date"></a>
-
 # Date
 
-Дата. Хранится в двух байтах в виде (беззнакового) числа дней, прошедших от 1970-01-01. Позволяет хранить значения от чуть больше, чем начала unix-эпохи до верхнего порога, определяющегося константой на этапе компиляции (сейчас - до 2106 года, последний полностью поддерживаемый год - 2105).
-Минимальное значение выводится как 0000-00-00.
+A date. Stored in two bytes as the number of days since 1970-01-01 (unsigned). Allows storing values from just after the beginning of the Unix Epoch to the upper threshold defined by a constant at the compilation stage (currently, this is until the year 2106, but the final fully-supported year is 2105). The minimum value is output as 0000-00-00.
 
-Дата хранится без учёта часового пояса.
+The date is stored without the time zone.

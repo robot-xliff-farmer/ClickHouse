@@ -1,7 +1,7 @@
 <a name="data_types"></a>
 
-# Типы данных
+# Data Types
 
-ClickHouse может сохранять в ячейках таблиц данные различных типов. 
+ClickHouse can store various types of data in table cells.
 
-Раздел содержит описания поддерживаемых типов данных и специфику их использования и/или реализации, если таковые имеются.
+This section describes the supported data types and special considerations when using and/or implementing them, if any.

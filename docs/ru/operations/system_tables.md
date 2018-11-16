@@ -1,189 +1,194 @@
-# Системные таблицы
+# System tables
 
-Системные таблицы используются для реализации части функциональности системы, а также предоставляют доступ к информации о работе системы.
-Вы не можете удалить системную таблицу (хотя можете сделать DETACH).
-Для системных таблиц нет файлов с данными на диске и файлов с метаданными. Сервер создаёт все системные таблицы при старте.
-В системные таблицы нельзя записывать данные - можно только читать.
-Системные таблицы расположены в базе данных system.
+System tables are used for implementing part of the system's functionality, and for providing access to information about how the system is working. You can't delete a system table (but you can perform DETACH). System tables don't have files with data on the disk or files with metadata. The server creates all the system tables when it starts. System tables are read-only. They are located in the 'system' database.
 <a name="system_tables-system.asynchronous_metrics"></a>
 
 ## system.asynchronous_metrics
 
-Содержат метрики, используемые для профилирования и мониторинга.
-Обычно отражают количество событий, происходящих в данный момент в системе, или ресурсов, суммарно потребляемых системой.
-Пример: количество запросов типа SELECT, исполняемых в текущий момент; количество потребляемой памяти.
-`system.asynchronous_metrics` и `system.metrics` отличаются набором и способом вычисления метрик.
+Contain metrics used for profiling and monitoring. They usually reflect the number of events currently in the system, or the total resources consumed by the system. Example: The number of SELECT queries currently running; the amount of memory in use.`system.asynchronous_metrics`and`system.metrics` differ in their sets of metrics and how they are calculated.
 
 ## system.clusters
 
-Содержит информацию о доступных в конфигурационном файле кластерах и серверах, которые в них входят.
-Столбцы:
+Contains information about clusters available in the config file and the servers in them. Columns:
 
 ```text
-cluster String      - имя кластера
-shard_num UInt32    - номер шарда в кластере, начиная с 1
-shard_weight UInt32 - относительный вес шарда при записи данных
-replica_num UInt32  - номер реплики в шарде, начиная с 1
-host_name String    - имя хоста, как прописано в конфиге
-host_address String - IP-адрес хоста, полученный из DNS
-port UInt16         - порт, на который обращаться для соединения с сервером
-user String         - имя пользователя, которого использовать для соединения с сервером
+cluster String      — The cluster name.
+shard_num UInt32 — The shard number in the cluster, starting from 1.
+shard_weight UInt32 — The relative weight of the shard when writing data.
+replica_num UInt32 — The replica number in the shard, starting from 1.
+host_name String — The host name, as specified in the config.
+String host_address — The host IP address obtained from DNS.
+port UInt16 — The port to use for connecting to the server.
+user String — The name of the user for connecting to the server.
 ```
+
 ## system.columns
 
-Содержит информацию о столбцах всех таблиц.
-С помощью этой таблицы можно получить информацию аналогично запросу `DESCRIBE TABLE`, но для многих таблиц сразу.
+Contains information about the columns in all tables. You can use this table to get information similar to `DESCRIBE TABLE`, but for multiple tables at once.
 
 ```text
-database String           - имя базы данных, в которой находится таблица
-table String              - имя таблицы
-name String               - имя столбца
-type String               - тип столбца
-default_type String       - тип (DEFAULT, MATERIALIZED, ALIAS) выражения для значения по умолчанию, или пустая строка, если оно не описано
-default_expression String - выражение для значения по умолчанию, или пустая строка, если оно не описано
+database String — The name of the database the table is in.
+table String – Table name.
+name String — Column name.
+type String — Column type.
+default_type String — Expression type (DEFAULT, MATERIALIZED, ALIAS) for the default value, or an empty string if it is not defined.
+default_expression String — Expression for the default value, or an empty string if it is not defined.
 ```
+
 ## system.databases
 
-Таблица содержит один столбец name типа String - имя базы данных.
-Для каждой базы данных, о которой знает сервер, будет присутствовать соответствующая запись в таблице.
-Эта системная таблица используется для реализации запроса `SHOW DATABASES`.
+This table contains a single String column called 'name' – the name of a database. Each database that the server knows about has a corresponding entry in the table. This system table is used for implementing the `SHOW DATABASES` query.
+
 ## system.dictionaries
 
-Содержит информацию о внешних словарях.
+Contains information about external dictionaries.
 
-Столбцы:
+Columns:
 
-- `name String` — Имя словаря.
-- `type String` — Тип словаря: Flat, Hashed, Cache.
-- `origin String` — Путь к конфигурационному файлу, в котором описан словарь.
-- `attribute.names Array(String)` — Массив имён атрибутов, предоставляемых словарём.
-- `attribute.types Array(String)` — Соответствующий массив типов атрибутов, предоставляемых словарём.
-- `has_hierarchy UInt8` — Является ли словарь иерархическим.
-- `bytes_allocated UInt64` — Количество оперативной памяти, которое использует словарь.
-- `hit_rate Float64` — Для cache-словарей - доля использований, для которых значение было в кэше.
-- `element_count UInt64` — Количество хранящихся в словаре элементов.
-- `load_factor Float64` — Доля заполненности словаря (для hashed словаря - доля заполнения хэш-таблицы).
-- `creation_time DateTime` — Время создания или последней успешной перезагрузки словаря.
-- `last_exception String` — Текст ошибки, возникшей при создании или перезагрузке словаря, если словарь не удалось создать.
-- `source String` - Текст, описывающий источник данных для словаря.
+- `name String` — Dictionary name.
+- `type String` — Dictionary type: Flat, Hashed, Cache.
+- `origin String` — Path to the configuration file that describes the dictionary.
+- `attribute.names Array(String)` — Array of attribute names provided by the dictionary.
+- `attribute.types Array(String)` — Corresponding array of attribute types that are provided by the dictionary.
+- `has_hierarchy UInt8` — Whether the dictionary is hierarchical.
+- `bytes_allocated UInt64` — The amount of RAM the dictionary uses.
+- `hit_rate Float64` — For cache dictionaries, the percentage of uses for which the value was in the cache.
+- `element_count UInt64` — The number of items stored in the dictionary.
+- `load_factor Float64` — The percentage full of the dictionary (for a hashed dictionary, the percentage filled in the hash table).
+- `creation_time DateTime` — The time when the dictionary was created or last successfully reloaded.
+- `last_exception String` — Text of the error that occurs when creating or reloading the dictionary if the dictionary couldn't be created.
+- `source String` — Text describing the data source for the dictionary.
 
-
-Заметим, что количество оперативной памяти, которое использует словарь, не является пропорциональным количеству элементов, хранящихся в словаре. Так, для flat и cached словарей, все ячейки памяти выделяются заранее, независимо от реальной заполненности словаря.
+Note that the amount of memory used by the dictionary is not proportional to the number of items stored in it. So for flat and cached dictionaries, all the memory cells are pre-assigned, regardless of how full the dictionary actually is.
 <a name="system_tables-system.events"></a>
 
 ## system.events
 
-Содержит информацию о количестве произошедших в системе событий, для профилирования и мониторинга.
-Пример: количество обработанных запросов типа SELECT.
-Столбцы: event String - имя события, value UInt64 - количество.
+Contains information about the number of events that have occurred in the system. This is used for profiling and monitoring purposes. Example: The number of processed SELECT queries. Columns: 'event String' – the event name, and 'value UInt64' – the quantity.
+
 ## system.functions
 
-Содержит информацию об обычных и агрегатных функциях.
+Contains information about normal and aggregate functions.
 
-Столбцы:
+Columns:
 
-- `name` (`String`) – Имя функции.
-- `is_aggregate` (`UInt8`) – Признак, является ли функция агрегатной.
+- `name`(`String`) – The name of the function.
+- `is_aggregate`(`UInt8`) — Whether the function is aggregate.
+
 ## system.merges
 
-Содержит информацию о производящихся прямо сейчас слияниях для таблиц семейства MergeTree.
+Contains information about merges currently in process for tables in the MergeTree family.
 
-Столбцы:
+Columns:
 
-- `database String` — Имя базы данных, в которой находится таблица.
-- `table String` — Имя таблицы.
-- `elapsed Float64` — Время в секундах, прошедшее от начала выполнения слияния.
-- `progress Float64` — Доля выполненной работы от 0 до 1.
-- `num_parts UInt64` — Количество сливаемых кусков.
-- `result_part_name String` — Имя куска, который будет образован в результате слияния.
-- `total_size_bytes_compressed UInt64` — Суммарный размер сжатых данных сливаемых кусков.
-- `total_size_marks UInt64` — Суммарное количество засечек в сливаемых кусках.
-- `bytes_read_uncompressed UInt64` — Количество прочитанных байт, разжатых.
-- `rows_read UInt64` — Количество прочитанных строк.
-- `bytes_written_uncompressed UInt64` — Количество записанных байт, несжатых.
-- `rows_written UInt64` — Количество записанных строк.
-<a name="system_tables-system.metrics"></a>
+- `database String` — The name of the database the table is in.
+- `table String` — Table name.
+- `elapsed Float64` — The time elapsed (in seconds) since the merge started.
+- `progress Float64` — The percentage of completed work from 0 to 1.
+- `num_parts UInt64` — The number of pieces to be merged.
+- `result_part_name String` — The name of the part that will be formed as the result of merging.
+- `total_size_bytes_compressed UInt64` — The total size of the compressed data in the merged chunks.
+- `total_size_marks UInt64` — The total number of marks in the merged partss.
+- `bytes_read_uncompressed UInt64` — Number of bytes read, uncompressed.
+- `rows_read UInt64` — Number of rows read.
+- `bytes_written_uncompressed UInt64` — Number of bytes written, uncompressed.
+- `rows_written UInt64` — Number of lines rows written.
+<a name="system_tables-system.metrics"></a>## system.metrics
 
-## system.metrics
 ## system.numbers
 
-Таблица содержит один столбец с именем number типа UInt64, содержащим почти все натуральные числа, начиная с нуля.
-Эту таблицу можно использовать для тестов, а также если вам нужно сделать перебор.
-Чтения из этой таблицы не распараллеливаются.
+This table contains a single UInt64 column named 'number' that contains almost all the natural numbers starting from zero. You can use this table for tests, or if you need to do a brute force search. Reads from this table are not parallelized.
+
 ## system.numbers_mt
 
-То же самое, что и system.numbers, но чтение распараллеливается. Числа могут возвращаться в произвольном порядке.
-Используется для тестов.
+The same as 'system.numbers' but reads are parallelized. The numbers can be returned in any order. Used for tests.
+
 ## system.one
 
-Таблица содержит одну строку с одним столбцом dummy типа UInt8, содержащим значение 0.
-Эта таблица используется, если в SELECT запросе не указана секция FROM.
-То есть, это - аналог таблицы DUAL, которую можно найти в других СУБД.
+This table contains a single row with a single 'dummy' UInt8 column containing the value 0. This table is used if a SELECT query doesn't specify the FROM clause. This is similar to the DUAL table found in other DBMSs.
 
 ## system.parts
 
-Содержит информацию о кусках таблиц семейства [MergeTree](table_engines/mergetree.md#table_engines-mergetree).
+Contains information about parts of [MergeTree](table_engines/mergetree.md#table_engines-mergetree) tables.
 
-Каждая строка описывает один кусок данных.
+Each row describes one part of the data.
 
-Столбцы:
+Columns:
 
-- partition (String) - Имя партиции. Что такое партиция можно узнать из описания запроса [ALTER](../query_language/alter.md#query_language_queries_alter).
+- partition (String) – The partition name. To learn what a partition is, see the description of the [ALTER](../query_language/alter.md#query_language_queries_alter) query.
 
-	Форматы:
+Formats:
 
-	- `YYYYMM` для автоматической схемы партиционирования по месяцам.
-	- `any_string` при партиционировании вручную.
+- `YYYYMM` for automatic partitioning by month.
+- `any_string` when partitioning manually.
 
-- name (String) - Имя куска.
-- active (UInt8) - Признак активности. Если кусок активен, то он используется таблице, в противном случает он будет удален. Неактивные куски остаются после слияний.
-- marks (UInt64) - Количество засечек. Чтобы получить примерное количество строк в куске, умножьте ``marks`` на гранулированность индекса (обычно 8192).
-- marks_size (UInt64) - Размер файла с засечками.
-- rows (UInt64) - Количество строк.
-- bytes (UInt64) - Количество байт в сжатом виде.
-- modification_time (DateTime) - Время модификации директории с куском. Обычно соответствует времени создания куска.|
-- remove_time (DateTime) - Время, когда кусок стал неактивным.
-- refcount (UInt32) - Количество мест, в котором кусок используется. Значение больше 2 говорит о том, что кусок участвует в запросах или в слияниях.
-- min_date (Date) - Минимальное значение ключа даты в куске.
-- max_date (Date) - Максимальное значение ключа даты в куске.
-- min_block_number (UInt64) - Минимальный номер куска из которых состоит текущий после слияния.
-- max_block_number (UInt64) - Максимальный номер куска из которых состоит текущий после слияния.
-- level (UInt32) - Глубина дерева слияний. Если слияний не было, то ``level=0``.
-- primary_key_bytes_in_memory (UInt64) - Объем памяти (в байтах), занимаемой значениями первичных ключей.
-- primary_key_bytes_in_memory_allocated (UInt64) - Выделенный с резервом объем памяти (в байтах) для размещения первичных ключей.
-- database (String) - Имя базы данных.
-- table (String) - Имя таблицы.
-- engine (String) - Имя движка таблицы, без параметров.
+- name (String) – Name of the data part.
+
+- active (UInt8) – Indicates whether the part is active. If a part is active, it is used in a table; otherwise, it will be deleted. Inactive data parts remain after merging.
+
+- marks (UInt64) – The number of marks. To get the approximate number of rows in a data part, multiply `marks` by the index granularity (usually 8192).
+
+- marks_size (UInt64) – The size of the file with marks.
+
+- rows (UInt64) – The number of rows.
+
+- bytes (UInt64) – The number of bytes when compressed.
+
+- modification_time (DateTime) – The modification time of the directory with the data part. This usually corresponds to the time of data part creation.|
+
+- remove_time (DateTime) – The time when the data part became inactive.
+
+- refcount (UInt32) – The number of places where the data part is used. A value greater than 2 indicates that the data part is used in queries or merges.
+
+- min_date (Date) – The minimum value of the date key in the data part.
+
+- max_date (Date) – The maximum value of the date key in the data part.
+
+- min_block_number (UInt64) – The minimum number of data parts that make up the current part after merging.
+
+- max_block_number (UInt64) – The maximum number of data parts that make up the current part after merging.
+
+- level (UInt32) – Depth of the merge tree. If a merge was not performed, `level=0`.
+
+- primary_key_bytes_in_memory (UInt64) – The amount of memory (in bytes) used by primary key values.
+
+- primary_key_bytes_in_memory_allocated (UInt64) – The amount of memory (in bytes) reserved for primary key values.
+
+- database (String) – Name of the database.
+
+- table (String) – Name of the table.
+
+- engine (String) – Name of the table engine without parameters.
+
 ## system.processes
 
-Эта системная таблица используется для реализации запроса `SHOW PROCESSLIST`.
-Столбцы:
+This system table is used for implementing the `SHOW PROCESSLIST` query. Columns:
 
 ```text
-user String              - имя пользователя, который задал запрос. При распределённой обработке запроса, относится к пользователю, с помощью которого сервер-инициатор запроса отправил запрос на данный сервер, а не к имени пользователя, который задал распределённый запрос на сервер-инициатор запроса.
+user String              – Name of the user who made the request. For distributed query processing, this is the user who helped the requestor server send the query to this server, not the user who made the distributed request on the requestor server.
 
-address String           - IP-адрес, с которого задан запрос. При распределённой обработке запроса, аналогично.
+address String           - The IP address the request was made from. The same for distributed processing.
 
-elapsed Float64          - время в секундах, прошедшее от начала выполнения запроса.
+elapsed Float64          - The time in seconds since request execution started.
 
-rows_read UInt64         - количество прочитанных из таблиц строк. При распределённой обработке запроса, на сервере-инициаторе запроса, представляет собой сумму по всем удалённым серверам.
+rows_read UInt64         - The number of rows read from the table. For distributed processing, on the requestor server, this is the total for all remote servers.
 
-bytes_read UInt64        - количество прочитанных из таблиц байт, в несжатом виде. При распределённой обработке запроса, на сервере-инициаторе запроса, представляет собой сумму по всем удалённым серверам.
+bytes_read UInt64        - The number of uncompressed bytes read from the table. For distributed processing, on the requestor server, this is the total for all remote servers.
 
-total_rows_approx UInt64 - приблизительная оценка общего количества строк, которые должны быть прочитаны. При распределённой обработке запроса, на сервере-инициаторе запроса, представляет собой сумму по всем удалённым серверам. Может обновляться в процессе выполнения запроса, когда становятся известны новые источники для обработки.
+total_rows_approx UInt64 - The approximation of the total number of rows that should be read. For distributed processing, on the requestor server, this is the total for all remote servers. It can be updated during request processing, when new sources to process become known.
 
-memory_usage UInt64      - потребление памяти запросом. Может не учитывать некоторые виды выделенной памяти.
+memory_usage UInt64      - How much memory the request uses. It might not include some types of dedicated memory.
 
-query String             - текст запроса. В случае INSERT - без данных для INSERT-а.
+query String             - The query text. For INSERT, it doesn't include the data to insert.
 
-query_id String          - идентификатор запроса, если был задан.
+query_id String          - Query ID, if defined.
 ```
+
 ## system.replicas
 
-Содержит информацию и статус для реплицируемых таблиц, расположенных на локальном сервере.
-Эту таблицу можно использовать для мониторинга. Таблица содержит по строчке для каждой Replicated\*-таблицы.
+Contains information and status for replicated tables residing on the local server. This table can be used for monitoring. The table contains a row for every Replicated\* table.
 
-Пример:
+Example:
 
 ```sql
 SELECT *
@@ -216,60 +221,59 @@ total_replicas:     2
 active_replicas:    2
 ```
 
-Столбцы:
+Columns:
 
 ```text
-database:           имя БД
-table:              имя таблицы
-engine:             имя движка таблицы
+database:          Database name
+table:              Table name
+engine:            Table engine name
 
-is_leader:          является ли реплика лидером
+is_leader:          Whether the replica is the leader.
 
-В один момент времени, не более одной из реплик является лидером. Лидер отвечает за выбор фоновых слияний, которые следует произвести.
-Замечу, что запись можно осуществлять на любую реплику (доступную и имеющую сессию в ZK), независимо от лидерства.
+Only one replica at a time can be the leader. The leader is responsible for selecting background merges to perform.
+Note that writes can be performed to any replica that is available and has a session in ZK, regardless of whether it is a leader.
 
-is_readonly:        находится ли реплика в режиме "только для чтения"
-Этот режим включается, если в конфиге нет секции с ZK; если при переинициализации сессии в ZK произошла неизвестная ошибка; во время переинициализации сессии с ZK.
+is_readonly:        Whether the replica is in read-only mode.
+This mode is turned on if the config doesn't have sections with ZooKeeper, if an unknown error occurred when reinitializing sessions in ZooKeeper, and during session reinitialization in ZooKeeper.
 
-is_session_expired: истекла ли сессия с ZK.
-В основном, то же самое, что и is_readonly.
+is_session_expired: Whether the session with ZooKeeper has expired.
+Basically the same as 'is_readonly'.
 
-future_parts:       количество кусков с данными, которые появятся в результате INSERT-ов или слияний, которых ещё предстоит сделать
+future_parts:       The number of data parts that will appear as the result of INSERTs or merges that haven't been done yet.
 
-parts_to_check:     количество кусков с данными в очереди на проверку
-Кусок помещается в очередь на проверку, если есть подозрение, что он может быть битым.
+parts_to_check:    The number of data parts in the queue for verification.
+A part is put in the verification queue if there is suspicion that it might be damaged.
 
-zookeeper_path:     путь к данным таблицы в ZK
-replica_name:       имя реплики в ZK; разные реплики одной таблицы имеют разное имя
-replica_path:       путь к данным реплики в ZK. То же самое, что конкатенация zookeeper_path/replicas/replica_path.
+zookeeper_path:     Path to table data in ZooKeeper.
+replica_name:       Replica name in ZooKeeper. Different replicas of the same table have different names.
+replica_path:      Path to replica data in ZooKeeper. The same as concatenating 'zookeeper_path/replicas/replica_path'.
 
-columns_version:    номер версии структуры таблицы
-Обозначает, сколько раз был сделан ALTER. Если на репликах разные версии, значит некоторые реплики сделали ещё не все ALTER-ы.
+columns_version:    Version number of the table structure.
+Indicates how many times ALTER was performed. If replicas have different versions, it means some replicas haven't made all of the ALTERs yet.
 
-queue_size:         размер очереди действий, которых предстоит сделать
-К действиям относятся вставки блоков данных, слияния, и некоторые другие действия.
-Как правило, совпадает с future_parts.
+queue_size:         Size of the queue for operations waiting to be performed.
+Operations include inserting blocks of data, merges, and certain other actions.
+It usually coincides with 'future_parts'.
 
-inserts_in_queue:   количество вставок блоков данных, которых предстоит сделать
-Обычно вставки должны быстро реплицироваться. Если величина большая - значит что-то не так.
+inserts_in_queue:   Number of inserts of blocks of data that need to be made.
+Insertions are usually replicated fairly quickly. If this number is large, it means something is wrong.
 
-merges_in_queue:    количество слияний, которых предстоит сделать
-Бывают длинные слияния - то есть, это значение может быть больше нуля продолжительное время.
+merges_in_queue:    The number of merges waiting to be made.
+Sometimes merges are lengthy, so this value may be greater than zero for a long time.
 
-Следующие 4 столбца имеют ненулевое значение только если активна сессия с ZK.
+The next 4 columns have a non-zero value only where there is an active session with ZK.
 
-log_max_index:      максимальный номер записи в общем логе действий
-log_pointer:        максимальный номер записи из общего лога действий, которую реплика скопировала в свою очередь для выполнения, плюс единица
-Если log_pointer сильно меньше log_max_index, значит что-то не так.
+log_max_index:      Maximum entry number in the log of general activity.
+log_pointer:        Maximum entry number in the log of general activity that the replica copied to its execution queue, plus one.
+If log_pointer is much smaller than log_max_index, something is wrong.
 
-total_replicas:     общее число известных реплик этой таблицы
-active_replicas:    число реплик этой таблицы, имеющих сессию в ZK; то есть, число работающих реплик
+total_replicas:     The total number of known replicas of this table.
+active_replicas:    The number of replicas of this table that have a session in ZooKeeper (i.e., the number of functioning replicas).
 ```
 
-Если запрашивать все столбцы, то таблица может работать слегка медленно, так как на каждую строчку делается несколько чтений из ZK.
-Если не запрашивать последние 4 столбца (log_max_index, log_pointer, total_replicas, active_replicas), то таблица работает быстро.
+If you request all the columns, the table may work a bit slowly, since several reads from ZooKeeper are made for each row. If you don't request the last 4 columns (log_max_index, log_pointer, total_replicas, active_replicas), the table works quickly.
 
-Например, так можно проверить, что всё хорошо:
+For example, you can check that everything is working correctly like this:
 
 ```sql
 SELECT
@@ -301,21 +305,21 @@ WHERE
     OR active_replicas < total_replicas
 ```
 
-Если этот запрос ничего не возвращает - значит всё хорошо.
+If this query doesn't return anything, it means that everything is fine.
+
 ## system.settings
 
-Содержит информацию о настройках, используемых в данный момент.
-То есть, используемых для выполнения запроса, с помощью которого вы читаете из таблицы system.settings.
+Contains information about settings that are currently in use. I.e. used for executing the query you are using to read from the system.settings table.
 
-Столбцы:
+Columns:
 
 ```text
-name String   - имя настройки
-value String  - значение настройки
-changed UInt8 - была ли настройка явно задана в конфиге или изменена явным образом
+name String  — Setting name.
+value String  — Setting value.
+changed UInt8 — Whether the setting was explicitly defined in the config or explicitly changed.
 ```
 
-Пример:
+Example:
 
 ```sql
 SELECT *
@@ -331,42 +335,35 @@ WHERE changed
 │ max_memory_usage       │ 10000000000 │       1 │
 └────────────────────────┴─────────────┴─────────┘
 ```
+
 ## system.tables
 
-Таблица содержит столбцы database, name, engine типа String.
-Также таблица содержит три виртуальных столбца: metadata_modification_time типа DateTime, create_table_query и engine_full типа String.
-Для каждой таблицы, о которой знает сервер, будет присутствовать соответствующая запись в таблице system.tables.
-Эта системная таблица используется для реализации запросов SHOW TABLES.
-
+This table contains the String columns 'database', 'name', and 'engine'. The table also contains three virtual columns: metadata_modification_time (DateTime type), create_table_query, and engine_full (String type). Each table that the server knows about is entered in the 'system.tables' table. This system table is used for implementing SHOW TABLES queries.
 
 ## system.zookeeper
 
-Таблицы не существует, если ZooKeeper не сконфигурирован. Позволяет читать данные из ZooKeeper кластера, описанного в конфигурации.
-В запросе обязательно в секции WHERE должно присутствовать условие на равенство path - путь в ZooKeeper, для детей которого вы хотите получить данные.
+The table does not exist if ZooKeeper is not configured. Allows reading data from the ZooKeeper cluster defined in the config. The query must have a 'path' equality condition in the WHERE clause. This is the path in ZooKeeper for the children that you want to get data for.
 
-Запрос `SELECT * FROM system.zookeeper WHERE path = '/clickhouse'` выведет данные по всем детям узла `/clickhouse`.
-Чтобы вывести данные по всем узлам в корне, напишите path = '/'.
-Если узла, указанного в path не существует, то будет брошено исключение.
+The query `SELECT * FROM system.zookeeper WHERE path = '/clickhouse'` outputs data for all children on the `/clickhouse` node. To output data for all root nodes, write path = '/'. If the path specified in 'path' doesn't exist, an exception will be thrown.
 
-Столбцы:
+Columns:
 
-- `name String` — Имя узла.
-- `path String` — Путь к узлу.
-- `value String` — Значение узла.
-- `dataLength Int32` — Размер значения.
-- `numChildren Int32` — Количество детей.
-- `czxid Int64` — Идентификатор транзакции, в которой узел был создан.
-- `mzxid Int64` — Идентификатор транзакции, в которой узел был последний раз изменён.
-- `pzxid Int64` — Идентификатор транзакции, последний раз удаливший или добавивший детей.
-- `ctime DateTime` — Время создания узла.
-- `mtime DateTime` — Время последней модификации узла.
-- `version Int32` — Версия узла - количество раз, когда узел был изменён.
-- `cversion Int32` — Количество добавлений или удалений детей.
-- `aversion Int32` — Количество изменений ACL.
-- `ephemeralOwner Int64` — Для эфемерных узлов - идентификатор сессии, которая владеет этим узлом.
+- `name String` — The name of the node.
+- `path String` — The path to the node.
+- `value String` — Node value.
+- `dataLength Int32` — Size of the value.
+- `numChildren Int32` — Number of descendants.
+- `czxid Int64` — ID of the transaction that created the node.
+- `mzxid Int64` — ID of the transaction that last changed the node.
+- `pzxid Int64` — ID of the transaction that last deleted or added descendants.
+- `ctime DateTime` — Time of node creation.
+- `mtime DateTime` — Time of the last modification of the node.
+- `version Int32` — Node version: the number of times the node was changed.
+- `cversion Int32` — Number of added or removed descendants.
+- `aversion Int32` — Number of changes to the ACL.
+- `ephemeralOwner Int64` — For ephemeral nodes, the ID of hte session that owns this node.
 
-
-Пример:
+Example:
 
 ```sql
 SELECT *

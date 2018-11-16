@@ -1,19 +1,20 @@
 # numbers
 
-`numbers(N)` - возвращает таблицу с единственным столбцом `number` (UInt64), содержащим натуральные числа от `0` до `N-1`.
-`numbers(N, M)` - возвращает таблицу с единственным столбцом `number` (UInt64), содержащим натуральные числа от `N` to `(N + M - 1)`.
+`numbers(N)` – Returns a table with the single 'number' column (UInt64) that contains integers from 0 to N-1. `numbers(N, M)` - Returns a table with the single 'number' column (UInt64) that contains integers from N to (N + M - 1).
 
-Так же как и таблица `system.numbers` может использоваться для тестов и генерации последовательных значений. Функция `numbers(N, M)` работает более эффективно, чем выборка из `system.numbers`.
+Similar to the `system.numbers` table, it can be used for testing and generating successive values, `numbers(N, M)` more efficient than `system.numbers`.
 
-Следующие запросы эквивалентны:
+The following queries are equivalent:
 
 ```sql
 SELECT * FROM numbers(10);
-SELECT * FROM numbers(0,10);
+SELECT * FROM numbers(0, 10);
 SELECT * FROM system.numbers LIMIT 10;
 ```
-Примеры:
+
+Examples:
+
 ```sql
--- генерация последовательности всех дат от 2010-01-01 до 2010-12-31
+-- Generate a sequence of dates from 2010-01-01 to 2010-12-31
 select toDate('2010-01-01') + number as d FROM numbers(365);
 ```

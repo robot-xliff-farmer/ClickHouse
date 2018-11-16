@@ -1,124 +1,106 @@
-# Советы по эксплуатации
+# Usage Recommendations
 
-## Процессор
+## CPU
 
-Требуется поддержка набора инструкций SSE 4.2. Современные процессоры (с 2008 года) его поддерживают.
+The SSE 4.2 instruction set must be supported. Modern processors (since 2008) support it.
 
-При выборе между процессорами с большим числом ядер с немного меньшей тактовой частотой и процессором с меньшим числом ядер с высокой тактовой частотой, первый вариант более предпочтителен.
-Например, 16 ядер с 2600 MHz лучше, чем 8 ядер 3600 MHz.
+When choosing a processor, prefer a large number of cores and slightly slower clock rate over fewer cores and a higher clock rate. For example, 16 cores with 2600 MHz is better than 8 cores with 3600 MHz.
 
-## Hyper-Threading
+## Hyper-threading
 
-Hyper-threading лучше не отключать. Некоторые запросам он помогает, а некоторым — нет.
+Don't disable hyper-threading. It helps for some queries, but not for others.
 
-## Turbo-Boost
+## Turbo Boost
 
-Turbo-Boost крайне не рекомендуется отключать. При типичной нагрузке он значительно улучшает производительность.
-Можно использовать `turbostat` для просмотра реальной тактовой частоты процессора под нагрузкой.
+Turbo Boost is highly recommended. It significantly improves performance with a typical load. You can use `turbostat` to view the CPU's actual clock rate under a load.
 
-## CPU scaling governor
+## CPU Scaling Governor
 
-Нужно всегда использовать `performance` scaling governor. `ondemand` scaling governor работает намного хуже при постоянно высоком спросе.
+Always use the `performance` scaling governor. The `on-demand` scaling governor works much worse with constantly high demand.
 
 ```bash
-sudo echo 'performance' | tee /sys/devices/system/cpu/cpu\*/cpufreq/scaling_governor
+sudo echo 'performance' | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
 ```
 
-## Ограничение CPU
+## CPU Limitations
 
-Процессоры могут перегреваться. С помощью `dmesg` можно увидеть, если тактовая частота процессора была ограничена из-за перегрева.
-Также ограничение может устанавливаться снаружи на уровне датацентра. С помощью `turbostat` можно за этим наблюдать под нагрузкой.
+Processors can overheat. Use `dmesg` to see if the CPU's clock rate was limited due to overheating. The restriction can also be set externally at the datacenter level. You can use `turbostat` to monitor it under a load.
 
-## Оперативная память
+## RAM
 
-Для небольших объемов данных (до \~200 Гб в сжатом виде) лучше всего использовать столько памяти не меньше, чем объем данных.
-Для больших объемов данных, при выполнении интерактивных (онлайн) запросов, стоит использовать разумный объем оперативной памяти (128 Гб или более) для того, чтобы горячее подмножество данных поместилось в кеше страниц.
-Даже для объемов данных в \~50 Тб на сервер, использование 128 Гб оперативной памяти намного лучше для производительности выполнения запросов, чем 64 Гб.
+For small amounts of data (up to \~200 GB compressed), it is best to use as much memory as the volume of data. For large amounts of data and when processing interactive (online) queries, you should use a reasonable amount of RAM (128 GB or more) so the hot data subset will fit in the cache of pages. Even for data volumes of \~50 TB per server, using 128 GB of RAM significantly improves query performance compared to 64 GB.
 
-## Файл подкачки
+## Swap File
 
-Всегда отключайте файл подкачки. Единственной причиной этого не делать может быть только использование ClickHouse на личном ноутбуке.
+Always disable the swap file. The only reason for not doing this is if you are using ClickHouse on your personal laptop.
 
-## Huge pages
+## Huge Pages
 
-Механизм прозрачных huge pages нужно отключить. Он мешает работе аллокаторов памяти, что приводит к значительной деградации производительности.
+Always disable transparent huge pages. It interferes with memory allocators, which leads to significant performance degradation.
 
 ```bash
 echo 'never' | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
 ```
 
-С помощью `perf top` можно наблюдать за временем, проведенном в ядре операционной системы для управления памятью.
-Постоянные huge pages так же не нужно аллоцировать.
+Use `perf top` to watch the time spent in the kernel for memory management. Permanent huge pages also do not need to be allocated.
 
-## Подсистема хранения
+## Storage Subsystem
 
-Если ваш бюджет позволяет использовать SSD, используйте SSD.
-В противном случае используйте HDD. SATA HDDs 7200 RPM подойдут.
+If your budget allows you to use SSD, use SSD. If not, use HDD. SATA HDDs 7200 RPM will do.
 
-Предпочитайте много серверов с локальными жесткими дисками вместо меньшего числа серверов с подключенными дисковыми полками.
-Но для хранения архивов с редкими запросами полки всё же подходят.
+Give preference to a lot of servers with local hard drives over a smaller number of servers with attached disk shelves. But for storing archives with rare queries, shelves will work.
 
 ## RAID
 
-При использовании HDD можно объединить их RAID-10, RAID-5, RAID-6 или RAID-50.
-Лучше использовать программный RAID в Linux (`mdadm`). Лучше не использовать LVM.
-При создании RAID-10, нужно выбрать `far` расположение.
-Если бюджет позволяет, лучше выбрать RAID-10.
+When using HDD, you can combine their RAID-10, RAID-5, RAID-6 or RAID-50. For Linux, software RAID is better (with `mdadm`). We don't recommend using LVM. When creating RAID-10, select the `far` layout. If your budget allows, choose RAID-10.
 
-На более чем 4 дисках вместо RAID-5 нужно использовать RAID-6 (предпочтительнее) или RAID-50.
-При использовании RAID-5, RAID-6 или RAID-50, нужно всегда увеличивать stripe_cache_size, так как значение по умолчанию выбрано не самым удачным образом.
+If you have more than 4 disks, use RAID-6 (preferred) or RAID-50, instead of RAID-5. When using RAID-5, RAID-6 or RAID-50, always increase stripe_cache_size, since the default value is usually not the best choice.
 
 ```bash
 echo 4096 | sudo tee /sys/block/md2/md/stripe_cache_size
 ```
 
-Точное число стоит вычислять из числа устройств и размер блока по формуле: `2 * num_devices * chunk_size_in_bytes / 4096`.
+Calculate the exact number from the number of devices and the block size, using the formula: `2 * num_devices * chunk_size_in_bytes / 4096`.
 
-Размер блока в 1024 Кб подходит для всех конфигураций RAID.
-Никогда не указывайте слишком маленький или слишком большой размер блока.
+A block size of 1025 KB is sufficient for all RAID configurations. Never set the block size too small or too large.
 
-На SSD можно использовать RAID-0.
-Вне зависимости от использования RAID, всегда используйте репликацию для безопасности данных.
+You can use RAID-0 on SSD. Regardless of RAID use, always use replication for data security.
 
-Включите NCQ с длинной очередью. Для HDD стоит выбрать планировщик CFQ, а для SSD — noop. Не стоит уменьшать настройку readahead.
-На HDD стоит включать кеш записи.
+Enable NCQ with a long queue. For HDD, choose the CFQ scheduler, and for SSD, choose noop. Don't reduce the 'readahead' setting. For HDD, enable the write cache.
 
-## Файловая система
+## File System
 
-Ext4 — самый проверенный вариант, стоит указывать опции монтирования `noatime,nobarrier`.
-XFS также подходит, но не так тщательно протестирована в сочетании с ClickHouse.
-Большинство других файловых систем также должны нормально работать. Файловые системы с отложенной аллокацией работают лучше.
+Ext4 is the most reliable option. Set the mount options `noatime, nobarrier`. XFS is also suitable, but it hasn't been as thoroughly tested with ClickHouse. Most other file systems should also work fine. File systems with delayed allocation work better.
 
-## Ядро Linux
+## Linux Kernel
 
-Не используйте слишком старое ядро Linux.
+Don't use an outdated Linux kernel.
 
-## Сеть
+## Network
 
-При использовании IPv6, стоит увеличить размер кеша маршрутов.
-Ядра Linux до 3.2 имели массу проблем в реализации IPv6.
+If you are using IPv6, increase the size of the route cache. The Linux kernel prior to 3.2 had a multitude of problems with IPv6 implementation.
 
-Предпочитайте как минимум 10 Гбит сеть. 1 Гбит также будет работать, но намного хуже для починки реплик с десятками терабайт данных или для обработки распределенных запросов с большим объемом промежуточных данных.
+Use at least a 10 GB network, if possible. 1 Gb will also work, but it will be much worse for patching replicas with tens of terabytes of data, or for processing distributed queries with a large amount of intermediate data.
 
 ## ZooKeeper
 
-Вероятно вы уже используете ZooKeeper для других целей. Можно использовать ту же инсталляцию ZooKeeper, если она не сильно перегружена.
+You are probably already using ZooKeeper for other purposes. You can use the same installation of ZooKeeper, if it isn't already overloaded.
 
-Лучше использовать свежую версию ZooKeeper, как минимум 3.4.9. Версия в стабильных дистрибутивах Linux может быть устаревшей.
+It's best to use a fresh version of ZooKeeper – 3.4.9 or later. The version in stable Linux distributions may be outdated.
 
-Не следует запускать ZooKeeper на тех же серверах, что и ClickHouse. Потому что ZooKeeper чувствителен к latency, тогда как ClickHouse легко может нагрузить все ресурсы сервера.
+You should never use manually written scripts to transfer data between different ZooKeeper clusters, because the result will be incorrect for sequential nodes. Never use the "zkcopy" utility for the same reason: https://github.com/ksprojects/zkcopy/issues/15
 
-Никогда не используете написанные вручную скрипты для переноса данных между разными ZooKeeper кластерами, потому что результат будет некорректный для sequential нод. Никогда не используйте утилиту "zkcopy", по той же причине: https://github.com/ksprojects/zkcopy/issues/15
+If you want to divide an existing ZooKeeper cluster into two, the correct way is to increase the number of its replicas and then reconfigure it as two independent clusters.
 
-Если вы хотите разделить существующий ZooKeeper кластер на два, правильный способ - увеличить количество его реплик, а затем переконфигурировать его как два независимых кластера.
+Do not run ZooKeeper on the same servers as ClickHouse. Because ZooKeeper is very sensitive for latency and ClickHouse may utilize all available system resources.
 
-С настройками по умолчанию, ZooKeeper является бомбой замедленного действия:
+With the default settings, ZooKeeper is a time bomb:
 
-> Сервер ZooKeeper не будет удалять файлы со старыми снепшоты и логами при использовании конфигурации по умолчанию (см. autopurge), это является ответственностью оператора.
+> The ZooKeeper server won't delete files from old snapshots and logs when using the default configuration (see autopurge), and this is the responsibility of the operator.
 
-Эту бомбу нужно обезвредить.
+This bomb must be defused.
 
-Далее описана конфигурация ZooKeeper (3.5.1), используемая в боевом окружении Яндекс.Метрики на момент 20 мая 2017 года:
+The ZooKeeper (3.5.1) configuration below is used in the Yandex.Metrica production environment as of May 20, 2017:
 
 zoo.cfg:
 
@@ -176,14 +158,14 @@ standaloneEnabled=false
 dynamicConfigFile=/etc/zookeeper-{{ cluster['name'] }}/conf/zoo.cfg.dynamic
 ```
 
-Версия Java:
+Java version:
 
 ```text
 Java(TM) SE Runtime Environment (build 1.8.0_25-b17)
 Java HotSpot(TM) 64-Bit Server VM (build 25.25-b02, mixed mode)
 ```
 
-Параметры JVM:
+JVM parameters:
 
 ```bash
 NAME=zookeeper-{{ cluster['name'] }}

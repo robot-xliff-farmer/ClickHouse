@@ -1,42 +1,36 @@
-<div dir="rtl" markdown="1">
+# Getting Started
 
-# شروع به کار
+## System Requirements
 
-## نیازمندی های سیستم
+Installation from the official repository requires Linux with x86_64 architecture and support for the SSE 4.2 instruction set.
 
-این یک سیستم چند سکویی (Cross-Platform) نمی باشد. این ابزار نیاز به Linux Ubuntu Precise (12.04) یا جدیدتر، با معماری x86_64 و پشتیبانی از SSE 4.2 می باشد. برای چک کردن SSE 4.2 خروجی دستور زیر را بررسی کنید:
-
-</div>
+To check for SSE 4.2:
 
 ```bash
 grep -q sse4_2 /proc/cpuinfo && echo "SSE 4.2 supported" || echo "SSE 4.2 not supported"
 ```
 
-<div dir="rtl" markdown="1">
+We recommend using Ubuntu or Debian. The terminal must use UTF-8 encoding.
 
-پیشنهاد می کنیم از Ubuntu TrustyT، Ubuntu Xenial یا Ubuntu Precise استفاده کنید. ترمینال باید از UTF-8 پشتیبانی کند. (به صورت پیش فرض در Ubuntu پشتیبانی می شود).
+For rpm-based systems, you can use 3rd-party packages: https://packagecloud.io/altinity/clickhouse or install debian packages.
 
-## نصب
+ClickHouse also works on FreeBSD and Mac OS X. It can be compiled for x86_64 processors without SSE 4.2 support, and for AArch64 CPUs.
 
-برای تست و توسعه، ClickHouse می تواند در یک سرور یا در یک کامپیوتر desktop نصب شود.
+## Installation
 
-### نصب از طریق پکیج های Debian/Ubuntu
+For testing and development, the system can be installed on a single server or on a desktop computer.
 
-در فایل `/etc/apt/sources.list` (یا در یک فایل جدا `/etc/apt/sources.list.d/clickhouse.list`)، Repo زیر را اضافه کنید:
+### Installing from Packages for Debian/Ubuntu
 
-</div>
+In `/etc/apt/sources.list` (or in a separate `/etc/apt/sources.list.d/clickhouse.list` file), add the repository:
 
 ```text
 deb http://repo.yandex.ru/clickhouse/deb/stable/ main/
 ```
 
-<div dir="rtl" markdown="1">
+If you want to use the most recent test version, replace 'stable' with 'testing'.
 
-اگر شما میخوایید جدیدترین نسخه ی تست را استفاده کنید، 'stable' رو به 'testing' تغییر بدید.
-
-سپس دستورات زیر را اجرا کنید:
-
-</div>
+Then run:
 
 ```bash
 sudo apt-key adv --keyserver keyserver.ubuntu.com --recv E0C56BD4    # optional
@@ -44,103 +38,75 @@ sudo apt-get update
 sudo apt-get install clickhouse-client clickhouse-server
 ```
 
-<div dir="rtl" markdown="1">
+You can also download and install packages manually from here: <https://repo.yandex.ru/clickhouse/deb/stable/main/>.
 
-شما همچنین می توانید از طریق لینک زیر پکیج ClickHouse را به صورت دستی دانلود و نصب کنید: <https://repo.yandex.ru/clickhouse/deb/stable/main/>.
+ClickHouse contains access restriction settings. They are located in the 'users.xml' file (next to 'config.xml'). By default, access is allowed from anywhere for the 'default' user, without a password. See 'user/default/networks'. For more information, see the section "Configuration files".
 
-ClickHouse دارای تنظیمات محدودیت دسترسی می باشد. این تنظیمات در فایل 'users.xml'  (کنار 'config.xml') می باشد. به صورت پیش فرض دسترسی برای کاربر 'default' از همه جا بدون نیاز به پسورد وجود دارد. 'user/default/networks' را مشاهده کنید. برای اطلاعات بیشتر قسمت "تنظیمات فایل ها" را مشاهده کنید.
+### Installing from Sources
 
-### نصب از طریق Source
+To compile, follow the instructions: build.md
 
-برای Compile، دستورالعمل های فایل build.md را دنبال کنید:
-
-شما میتوانید پکیج را compile و نصب کنید. شما همچنین می توانید بدون نصب پکیج از برنامه ها استفاده کنید.
-
-</div>
+You can compile packages and install them. You can also use programs without installing packages.
 
 ```text
 Client: dbms/programs/clickhouse-client
 Server: dbms/programs/clickhouse-server
 ```
 
-<div dir="rtl" markdown="1">
-
-برای سرور، یک کاتالوگ با دیتا بسازید، مانند
-
-</div>
+For the server, create a catalog with data, such as:
 
 ```text
 /opt/clickhouse/data/default/
 /opt/clickhouse/metadata/default/
 ```
 
-<div dir="rtl" markdown="1">
+(Configurable in the server config.) Run 'chown' for the desired user.
 
-(قابل تنظیم در تنظیمات سرور). 'chown' را برای کاربر دلخواه اجرا کنید.
+Note the path to logs in the server config (src/dbms/programs/server/config.xml).
 
-به مسیر لاگ ها در تنظیمات سرور توجه کنید (src/dbms/programs/config.xml).
-
-### روش های دیگر نصب
+### Other Installation Methods
 
 Docker image: <https://hub.docker.com/r/yandex/clickhouse-server/>
 
-پکیج RPM برای CentOS یا RHEL: <https://github.com/Altinity/clickhouse-rpm-install>
+RPM packages for CentOS or RHEL: <https://github.com/Altinity/clickhouse-rpm-install>
 
 Gentoo: `emerge clickhouse`
 
-## راه اندازی
+## Launch
 
-برای استارت سرور (به صورت daemon)، دستور زیر را اجرا کنید:
-
-</div>
+To start the server (as a daemon), run:
 
 ```bash
 sudo service clickhouse-server start
 ```
 
-<div dir="rtl" markdown="1">
+See the logs in the `/var/log/clickhouse-server/ directory.`
 
-لاگ های دایرکتوری `/var/log/clickhouse-server/ directory.` را مشاهده کنید.
+If the server doesn't start, check the configurations in the file `/etc/clickhouse-server/config.xml.`
 
-اگر سرور استارت نشد، فایل تنظیمات را بررسی کنید `/etc/clickhouse-server/config.xml.`
-
-شما همچنین می توانید سرور را از طریق کنسول راه اندازی کنید:
-
-</div>
+You can also launch the server from the console:
 
 ```bash
 clickhouse-server --config-file=/etc/clickhouse-server/config.xml
 ```
 
-<div dir="rtl" markdown="1">
+In this case, the log will be printed to the console, which is convenient during development. If the configuration file is in the current directory, you don't need to specify the '--config-file' parameter. By default, it uses './config.xml'.
 
-در این مورد که مناسب زمان توسعه می باشد، لاگ ها در کنسول پرینت می شوند. اگر فایل تنظیمات در دایرکتوری جاری باشد، نیازی به مشخص کردن '--config-file' نمی باشد. به صورت پیش فرض از './config.xml' استفاده می شود.
-
-شما می توانید از کلاینت command-line برای اتصال به سرور استفاده کنید:
-
-</div>
+You can use the command-line client to connect to the server:
 
 ```bash
 clickhouse-client
 ```
 
-<div dir="rtl" markdown="1">
-
-پارامترهای پیش فرض، نشان از اتصال به localhost:9000 از طرف کاربر 'default' بدون پسورد را می دهد. از کلاینت میتوان برای اتصال به یک سرور remote استفاده کرد. مثال:
-
-</div>
+The default parameters indicate connecting with localhost:9000 on behalf of the user 'default' without a password. The client can be used for connecting to a remote server. Example:
 
 ```bash
 clickhouse-client --host=example.com
 ```
 
-<div dir="rtl" markdown="1">
+For more information, see the section "Command-line client".
 
-برای اطلاعات بیشتر، بخش "کلاینت Command-line" را مشاهده کنید.
-
-چک کردن سیستم:
-
-</div>
+Checking the system:
 
 ```bash
 milovidov@hostname:~/work/metrica/src/dbms/src/Client$ ./clickhouse-client
@@ -161,10 +127,6 @@ SELECT 1
 :)
 ```
 
-<div dir="rtl" markdown="1">
+**Congratulations, the system works!**
 
-**تبریک میگم، سیستم کار می کنه!**
-
-برای ادامه آزمایشات، شما میتوانید دیتاست های تستی را دریافت و امتحان کنید.
-
-</div>
+To continue experimenting, you can try to download from the test data sets.

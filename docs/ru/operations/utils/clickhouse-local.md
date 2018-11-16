@@ -2,59 +2,61 @@
 
 # clickhouse-local
 
-Принимает на вход данные, которые можно представить в табличном виде и выполняет над ними операции, заданные на [языке запросов](../../query_language/index.md#queries) ClickHouse.
+The `clickhouse-local` program enables you to perform fast processing on local files, without having to deploy and configure the ClickHouse server.
 
-`clickhouse-local` использует движок сервера ClickHouse, т.е. поддерживает все форматы данных и движки таблиц, с которыми работает ClickHouse, при этом для выполнения операций не требуется запущенный сервер.
+Accepts data that represent tables and queries them using [ClickHouse SQL dialect](../../query_language/index.md#queries).
 
-`clickhouse-local` при настройке по умолчанию не имеет доступа к данным, которыми управляет сервер ClickHouse, установленный на этом же хосте, однако можно подключить конфигурацию сервера с помощью ключа `--config-file`.
+`clickhouse-local` uses the same core as ClickHouse server, so it supports most of the features and the same set of formats and table engines.
 
-!!! warning
-    Мы не рекомендуем подключать серверную конфигурацию к `clickhouse-local`, поскольку данные можно легко повредить неосторожными действиями.
+By default `clickhouse-local` does not have access to data on the same host, but it supports loading server configuration using `--config-file` argument.
 
-## Вызов программы
+!!! warning It is not recommended to load production server configuration into `clickhouse-local` because data can be damaged in case of human error.
 
-Основной формат вызова:
+## Usage
 
-``` bash
+Basic usage:
+
+```bash
 clickhouse-local --structure "table_structure" --input-format "format_of_incoming_data" -q "query"
 ```
 
-Ключи команды:
+Arguments:
 
-- `-S`, `--structure` — структура таблицы, в которую будут помещены входящие данные.
-- `-if`, `--input-format` — формат входящих данных. По умолчанию — `TSV`.
-- `-f`, `--file` — путь к файлу с данными. По умолчанию — `stdin`.
-- `-q`, `--query` — запросы на выполнение. Разделитель запросов — `;`.
-- `-N`, `--table` — имя таблицы, в которую будут помещены входящие данные. По умолчанию - `table`.
-- `-of`, `--format`, `--output-format` — формат выходных данных. По умолчанию — `TSV`.
-- `--stacktrace` — вывод отладочной информации при исключениях.
-- `--verbose` — подробный вывод при выполнении запроса.
-- `-s` — отключает вывод системных логов в `stderr`.
-- `--config-file` — путь к файлу конфигурации. По умолчанию `clickhouse-local` запускается с пустой конфигурацией. Конфигурационный файл имеет тот же формат, что и для сервера ClickHouse и в нём можно использовать все конфигурационные параметры сервера. Обычно подключение конфигурации не требуется, если требуется установить отдельный параметр, то это можно сделать ключом с именем параметра.
-- `--help` — вывод справочной информации о `clickhouse-local`.
+- `-S`, `--structure` — table structure for input data.
+- `-if`, `--input-format` — input format, `TSV` by default.
+- `-f`, `--file` — path to data, `stdin` by default.
+- `-q` `--query` — queries to execute with `;` as delimeter.
+- `-N`, `--table` — table name where to put output data, `table` by default.
+- `-of`, `--format`, `--output-format` — output format, `TSV` by default.
+- `--stacktrace` — whether to dump debug output in case of exception.
+- `--verbose` — more details on query execution.
+- `-s` — disables `stderr` logging.
+- `--config-file` — path to configuration file in same format as for ClickHouse server, by default the configuration empty.
+- `--help` — arguments references for `clickhouse-local`.
 
+Also there are arguments for each ClickHouse configuration variable which are more commonly used instead of `--config-file`.
 
-## Примеры вызова
+## Examples
 
-``` bash
+```bash
 echo -e "1,2\n3,4" | clickhouse-local -S "a Int64, b Int64" -if "CSV" -q "SELECT * FROM table"
 Read 2 rows, 32.00 B in 0.000 sec., 5182 rows/sec., 80.97 KiB/sec.
-1	2
-3	4
+1   2
+3   4
 ```
 
-Вызов выше эквивалентен следующему:
+Previous example is the same as:
 
-``` bash
+```bash
 $ echo -e "1,2\n3,4" | clickhouse-local -q "CREATE TABLE table (a Int64, b Int64) ENGINE = File(CSV, stdin); SELECT a, b FROM table; DROP TABLE table"
 Read 2 rows, 32.00 B in 0.000 sec., 4987 rows/sec., 77.93 KiB/sec.
-1	2
-3	4
+1   2
+3   4
 ```
 
-А теперь давайте выведем на экран объем оперативной памяти, занимаемой пользователями (Unix):
+Now let's output memory user for each Unix user:
 
-``` bash
+```bash
 $ ps aux | tail -n +2 | awk '{ printf("%s\t%s\n", $1, $4) }' | clickhouse-local -S "user String, mem Float64" -q "SELECT user, round(sum(mem), 2) as memTotal FROM table GROUP BY user ORDER BY memTotal DESC FORMAT Pretty"
 Read 186 rows, 4.15 KiB in 0.035 sec., 5302 rows/sec., 118.34 KiB/sec.
 ┏━━━━━━━━━━┳━━━━━━━━━━┓

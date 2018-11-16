@@ -1,50 +1,43 @@
 <a name="dicts-external_dicts"></a>
 
-# Внешние словари
+# External Dictionaries
 
-Существует возможность подключать собственные словари из различных источников данных. Источником данных для словаря может быть локальный текстовый/исполняемый файл, HTTP(s) ресурс или другая СУБД. Подробнее смотрите в разделе "[Источники внешних словарей](external_dicts_dict_sources.md#dicts-external_dicts_dict_sources)".
+You can add your own dictionaries from various data sources. The data source for a dictionary can be a local text or executable file, an HTTP(s) resource, or another DBMS. For more information, see "[Sources for external dictionaries](external_dicts_dict_sources.md#dicts-external_dicts_dict_sources)".
 
 ClickHouse:
 
--   Полностью или частично хранит словари в оперативной памяти.
--   Периодически обновляет их и динамически подгружает отсутствующие значения. Т.е. словари можно подгружать динамически.
+> - Fully or partially stores dictionaries in RAM.
 
-Конфигурация внешних словарей находится в одном или нескольких файлах. Путь к конфигурации указывается в параметре [dictionaries_config](../../operations/server_settings/settings.md#server_settings-dictionaries_config).
+- Periodically updates dictionaries and dynamically loads missing values. In other words, dictionaries can be loaded dynamically.
 
-Словари могут загружаться при старте сервера или при первом использовании, в зависимости от настройки [dictionaries_lazy_load](../../operations/server_settings/settings.md#server_settings-dictionaries_lazy_load).
+The configuration of external dictionaries is located in one or more files. The path to the configuration is specified in the [dictionaries_config](../../operations/server_settings/settings.md#server_settings-dictionaries_config) parameter.
 
-Конфигурационный файл словарей имеет вид:
+Dictionaries can be loaded at server startup or at first use, depending on the [dictionaries_lazy_load](../../operations/server_settings/settings.md#server_settings-dictionaries_lazy_load) setting.
+
+The dictionary config file has the following format:
 
 ```xml
 <yandex>
-    <comment>Необязательный элемент с любым содержимым. Игнорируется сервером ClickHouse.</comment>
+    <comment>An optional element with any content. Ignored by the ClickHouse server.</comment>
 
-    <!--Необязательный элемент, имя файла с подстановками-->
+    <!--Optional element. File name with substitutions-->
     <include_from>/etc/metrika.xml</include_from>
 
 
     <dictionary>
-        <!-- Конфигурация словаря -->
+        <!-- Dictionary configuration -->
     </dictionary>
 
     ...
 
     <dictionary>
-        <!-- Конфигурация словаря -->
+        <!-- Dictionary configuration -->
     </dictionary>
 </yandex>
 ```
 
-В одном файле можно [сконфигурировать](external_dicts_dict.md#dicts-external_dicts_dict) произвольное количество словарей. Формат файла сохраняется даже если словарь один (т.е. `<yandex><dictionary> <!--configuration--> </dictionary></yandex>`).
+You can [configure](external_dicts_dict.md#dicts-external_dicts_dict) any number of dictionaries in the same file. The file format is preserved even if there is only one dictionary (i.e. `<yandex><dictionary> <!--configuration -> </dictionary></yandex>` ).
 
->Вы можете преобразовывать значения по небольшому словарю, описав его в запросе `SELECT` (см. функцию [transform](../functions/other_functions.md#other_functions-transform)). Эта функциональность не связана с внешними словарями.
+See also "[Functions for working with external dictionaries](../functions/ext_dict_functions.md#ext_dict_functions)".
 
-
-Смотрите также:
-
-- [Настройка внешнего словаря](external_dicts_dict.md#dicts-external_dicts_dict)
-- [Хранение словарей в памяти](external_dicts_dict_layout.md#dicts-external_dicts_dict_layout)
-- [Обновление словарей](external_dicts_dict_lifetime.md#dicts-external_dicts_dict_lifetime)
-- [Источники внешних словарей](external_dicts_dict_sources.md#dicts-external_dicts_dict_sources)
-- [Ключ и поля словаря](external_dicts_dict_structure.md#dicts-external_dicts_dict_structure)
-- [Функции для работы с внешними словарями](../functions/ext_dict_functions.md#ext_dict_functions)
+!!! attention You can convert values for a small dictionary by describing it in a `SELECT` query (see the [transform](../functions/other_functions.md#other_functions-transform) function). This functionality is not related to external dictionaries.

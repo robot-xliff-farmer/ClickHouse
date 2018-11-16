@@ -1,13 +1,13 @@
-# Права доступа
+# Access Rights
 
-Пользователи и права доступа настраиваются в конфиге пользователей. Обычно это `users.xml`.
+Users and access rights are set up in the user config. This is usually `users.xml`.
 
-Пользователи прописаны в секции `users`. Рассмотрим фрагмент файла `users.xml`:
+Users are recorded in the `users` section. Here is a fragment of the `users.xml` file:
 
 ```xml
-<!-- Пользователи и ACL. -->
+<!-- Users and ACL. -->
 <users>
-    <!-- Если имя пользователя не указано, используется пользователь default. -->
+    <!-- If the user name is not specified, the 'default' user is used. -->
     <default>
         <!-- Password could be specified in plaintext or in SHA256 (in hex format).
 
@@ -24,30 +24,30 @@
         -->
         <password></password>
 
-        <!-- Список сетей, из которых разрешён доступ.
-            Каждый элемент списка имеет одну из следующих форм:
-            <ip> IP-адрес или маска подсети. Например, 198.51.100.0/24 или 2001:DB8::/32.
-            <host> Имя хоста. Например: example01. Для проверки делается DNS-запрос, и все полученные адреса сравниваются с адресом клиента.
-            <host_regexp> Регулярное выражение для имён хостов. Например, ^example\d\d-\d\d-\d\.yandex\.ru$
-                Для проверки, для адреса клиента делается DNS PTR-запрос и к результату применяется регулярное выражение.
-                Потом для результата PTR-запроса делается снова DNS-запрос, и все полученные адреса сравниваются с адресом клиента.
-                Настоятельно рекомендуется, чтобы регулярное выражение заканчивалось на \.yandex\.ru$.
+        <!-- A list of networks that access is allowed from.
+            Each list item has one of the following forms:
+            <ip> The IP address or subnet mask. For example: 198.51.100.0/24 or 2001:DB8::/32.
+            <host> Host name. For example: example01. A DNS query is made for verification, and all addresses obtained are compared with the address of the customer.
+            <host_regexp> Regular expression for host names. For example, ^example\d\d-\d\d-\d\.yandex\.ru$
+                To check it, a DNS PTR request is made for the client's address and a regular expression is applied to the result.
+                Then another DNS query is made for the result of the PTR query, and all received address are compared to the client address.
+                We strongly recommend that the regex ends with \.yandex\.ru$.
 
-            Если вы устанавливаете ClickHouse самостоятельно, укажите здесь:
+            If you are installing ClickHouse yourself, specify here:
                 <networks>
                         <ip>::/0</ip>
                 </networks>
         -->
         <networks incl="networks" />
 
-        <!-- Профиль настроек, использующийся для пользователя. -->
+        <!-- Settings profile for the user. -->
         <profile>default</profile>
 
-        <!-- Квота, использующаяся для пользователя. -->
+        <!-- Quota for the user. -->
         <quota>default</quota>
     </default>
 
-    <!-- Для запросов из пользовательского интерфейса Метрики через API для данных по отдельным счётчикам. -->
+    <!-- For requests from the Yandex.Metrica user interface via the API for data on specific counters. -->
     <web>
         <password></password>
         <networks incl="networks" />
@@ -59,15 +59,15 @@
     </web>
 ```
 
-Здесь видно объявление двух пользователей - `default` и `web`. Пользователя `web` мы добавили самостоятельно.
+You can see a declaration from two users: `default`and`web`. We added the `web` user separately.
 
-Пользователь `default` выбирается в случаях, когда имя пользователя не передаётся. Также пользователь `default` может использоваться при распределённой обработке запроса - если в конфигурации кластера для сервера не указаны `user` и `password`. (см. раздел о движке [Distributed](../operations/table_engines/distributed.md#table_engines-distributed)).
+The `default` user is chosen in cases when the username is not passed. The `default` user is also used for distributed query processing, if the configuration of the server or cluster doesn't specify the `user` and `password` (see the section on the [Distributed](../operations/table_engines/distributed.md#table_engines-distributed) engine).
 
-Пользователь, который используется для обмена информацией между серверами, объединенными в кластер, не должен иметь существенных ограничений или квот - иначе распределённые запросы сломаются.
+The user that is used for exchanging information between servers combined in a cluster must not have substantial restrictions or quotas – otherwise, distributed queries will fail.
 
-Пароль указывается либо в открытом виде (не рекомендуется), либо в виде SHA-256. Хэш не содержит соль. В связи с этим, не следует рассматривать такие пароли, как защиту от потенциального злоумышленника. Скорее, они нужны для защиты от сотрудников.
+The password is specified in clear text (not recommended) or in SHA-256. The hash isn't salted. In this regard, you should not consider these passwords as providing security against potential malicious attacks. Rather, they are necessary for protection from employees.
 
-Указывается список сетей, из которых разрешён доступ. В этом примере, список сетей для обеих пользователей, загружается из отдельного файла (`/etc/metrika.xml`), содержащего подстановку `networks`. Вот его фрагмент:
+A list of networks is specified that access is allowed from. In this example, the list of networks for both users is loaded from a separate file (`/etc/metrika.xml`) containing the `networks` substitution. Here is a fragment of it:
 
 ```xml
 <yandex>
@@ -81,20 +81,20 @@
 </yandex>
 ```
 
-Можно было бы указать этот список сетей непосредственно в `users.xml`, или в файле в директории `users.d` (подробнее смотрите раздел "[Конфигурационные файлы](configuration_files.md#configuration_files)").
+You could define this list of networks directly in `users.xml`, or in a file in the `users.d` directory (for more information, see the section "[Configuration files](configuration_files.md#configuration_files)").
 
-В конфиге приведён комментарий, указывающий, как можно открыть доступ отовсюду.
+The config includes comments explaining how to open access from everywhere.
 
-Для продакшен использования, указывайте только элементы вида `ip` (IP-адреса и их маски), так как использование `host` и `host_regexp` может вызывать лишние задержки.
+For use in production, only specify `ip` elements (IP addresses and their masks), since using `host` and `hoost_regexp` might cause extra latency.
 
-Далее указывается используемый профиль настроек пользователя (смотрите раздел "[Профили настроек](settings/settings_profiles.md#settings_profiles)"). Вы можете указать профиль по умолчанию - `default`. Профиль может называться как угодно; один и тот же профиль может быть указан для разных пользователей. Наиболее важная вещь, которую вы можете прописать в профиле настроек `readonly=1`, что обеспечивает доступ только на чтение.
+Next the user settings profile is specified (see the section "[Settings profiles](settings/settings_profiles.md#settings_profiles)"). You can specify the default profile, `default'`. The profile can have any name. You can specify the same profile for different users. The most important thing you can write in the settings profile is `readonly=1`, which ensures read-only access.
 
-Затем указывается используемая квота (смотрите раздел "[Квоты](quotas.md#quotas)"). Вы можете указать квоту по умолчанию — `default`. Она настроена в конфиге по умолчанию так, что только считает использование ресурсов, но никак их не ограничивает. Квота может называться как угодно. Одна и та же квота может быть указана для разных пользователей, в этом случае подсчёт использования ресурсов делается для каждого пользователя по отдельности.
+Then specify the quota to be used (see the section "[Quotas](quotas.md#quotas)"). You can specify the default quota: `default`. It is set in the config by default to only count resource usage, without restricting it. The quota can have any name. You can specify the same quota for different users – in this case, resource usage is calculated for each user individually.
 
-Также, в необязательном разделе `<allow_databases>` можно указать перечень баз, к которым у пользователя будет доступ. По умолчанию пользователю доступны все базы. Можно указать базу данных `default`, в этом случае пользователь получит доступ к базе данных по умолчанию.
+In the optional `<allow_databases>` section, you can also specify a list of databases that the user can access. By default, all databases are available to the user. You can specify the `default` database. In this case, the user will receive access to the database by default.
 
-Доступ к БД `system` всегда считается разрешённым (так как эта БД используется для выполнения запросов).
+Access to the `system` database is always allowed (since this database is used for processing queries).
 
-Пользователь может получить список всех БД и таблиц в них с помощью запросов `SHOW` или системных таблиц, даже если у него нет доступа к отдельным БД.
+The user can get a list of all databases and tables in them by using `SHOW` queries or system tables, even if access to individual databases isn't allowed.
 
-Доступ к БД не связан с настройкой [readonly](settings/query_complexity.md#query_complexity_readonly). Невозможно дать полный доступ к одной БД и `readonly` к другой.
+Database access is not related to the [readonly](settings/query_complexity.md#query_complexity_readonly) setting. You can't grant full access to one database and `readonly` access to another one.

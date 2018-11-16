@@ -1,15 +1,18 @@
-# Функции для работы с IP-адресами
+# Functions for working with IP addresses
 
 ## IPv4NumToString(num)
-Принимает число типа UInt32. Интерпретирует его, как IPv4-адрес в big endian. Возвращает строку, содержащую соответствующий IPv4-адрес в формате A.B.C.D (числа в десятичной форме через точки).
+
+Takes a UInt32 number. Interprets it as an IPv4 address in big endian. Returns a string containing the corresponding IPv4 address in the format A.B.C.d (dot-separated numbers in decimal form).
 
 ## IPv4StringToNum(s)
-Функция, обратная к IPv4NumToString. Если IPv4 адрес в неправильном формате, то возвращает 0.
+
+The reverse function of IPv4NumToString. If the IPv4 address has an invalid format, it returns 0.
 
 ## IPv4NumToStringClassC(num)
-Похоже на IPv4NumToString, но вместо последнего октета используется xxx.
 
-Пример:
+Similar to IPv4NumToString, but using xxx instead of the last octet.
+
+Example:
 
 ```sql
 SELECT
@@ -36,11 +39,11 @@ LIMIT 10
 └────────────────┴───────┘
 ```
 
-В связи с тем, что использование xxx весьма необычно, это может быть изменено в дальнейшем, и вам не следует полагаться на конкретный вид этого фрагмента.
+Since using 'xxx' is highly unusual, this may be changed in the future. We recommend that you don't rely on the exact format of this fragment.
 
 ### IPv6NumToString(x)
-Принимает значение типа FixedString(16), содержащее IPv6-адрес в бинарном виде. Возвращает строку, содержащую этот адрес в текстовом виде.
-IPv6-mapped IPv4 адреса выводится в формате ::ffff:111.222.33.44. Примеры:
+
+Accepts a FixedString(16) value containing the IPv6 address in binary format. Returns a string containing this address in text format. IPv6-mapped IPv4 addresses are output in the format ::ffff:111.222.33.44. Examples:
 
 ```sql
 SELECT IPv6NumToString(toFixedString(unhex('2A0206B8000000000000000000000011'), 16)) AS addr
@@ -105,5 +108,5 @@ LIMIT 10
 ```
 
 ## IPv6StringToNum(s)
-Функция, обратная к IPv6NumToString. Если IPv6 адрес в неправильном формате, то возвращает строку из нулевых байт.
-HEX может быть в любом регистре.
+
+The reverse function of IPv6NumToString. If the IPv6 address has an invalid format, it returns a string of null bytes. HEX can be uppercase or lowercase.

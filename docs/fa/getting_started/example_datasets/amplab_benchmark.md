@@ -1,14 +1,10 @@
-<div dir="rtl" markdown="1">
+# AMPLab Big Data Benchmark
 
-#  بنچمارک AMPLab Big Data
+See <https://amplab.cs.berkeley.edu/benchmark/>
 
-ببینید <https://amplab.cs.berkeley.edu/benchmark/>
+Sign up for a free account at <https://aws.amazon.com>. You will need a credit card, email and phone number.Get a new access key at [https://console.aws.amazon.com/iam/home?nc2=h_m_sc#security_credential](https://console.aws.amazon.com/iam/home?nc2=h_m_sc#security_credential)
 
-با یک اکانت مجانی در <https://aws.amazon.com> ثبت نام کنید. شما نیاز به ایمیل، شماره تلفن و credit card دارید. یک Access key جدید از <https://console.aws.amazon.com/iam/home?nc2=h_m_sc#security_credential> دریافت کنید.
-
-در کنسول این دستورات را وارد کنید:
-
-</div>
+Run the following in the console:
 
 ```bash
 sudo apt-get install s3cmd
@@ -23,11 +19,7 @@ s3cmd sync s3://big-data-benchmark/pavlo/text-deflate/5nodes/ .
 cd ..
 ```
 
-<div dir="rtl" markdown="1">
-
-این query های ClickHouse را اجرا کنید:
-
-</div>
+Run the following ClickHouse queries:
 
 ```sql
 CREATE TABLE rankings_tiny
@@ -91,11 +83,7 @@ CREATE TABLE uservisits_5nodes_on_single
 ) ENGINE = MergeTree(visitDate, visitDate, 8192);
 ```
 
-<div dir="rtl" markdown="1">
-
-به کنسول برگردید و دستورات زیر را مجددا اجرا کنید:
-
-</div>
+Go back to the console:
 
 ```bash
 for i in tiny/rankings/*.deflate; do echo $i; zlib-flate -uncompress < $i | clickhouse-client --host=example-perftest01j --query="INSERT INTO rankings_tiny FORMAT CSV"; done
@@ -106,11 +94,7 @@ for i in 5nodes/rankings/*.deflate; do echo $i; zlib-flate -uncompress < $i | cl
 for i in 5nodes/uservisits/*.deflate; do echo $i; zlib-flate -uncompress < $i | clickhouse-client --host=example-perftest01j --query="INSERT INTO uservisits_5nodes_on_single FORMAT CSV"; done
 ```
 
-<div dir="rtl" markdown="1">
-
-query های گرفتن data sample
-
-</div>
+Queries for obtaining data samples:
 
 ```sql
 SELECT pageURL, pageRank FROM rankings_1node WHERE pageRank > 1000

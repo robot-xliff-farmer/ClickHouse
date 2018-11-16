@@ -2,94 +2,91 @@
 
 # Decimal(P, S), Decimal32(S), Decimal64(S), Decimal128(S)
 
-Знаковые дробные числа с сохранением точности операций сложения, умножения и вычитания. Для деления осуществляется отбрасывание (не округление) знаков, не попадающих в младший десятичный разряд.
+Signed fixed point numbers that keep precision during add, subtract and multiply operations. For division least significant digits are discarded (not rounded).
 
 ## Параметры
 
-- P - precision. Значение из диапазона [ 1 : 38 ]. Определяет, сколько десятичных знаков (с учетом дробной части) может содержать число.
-- S - scale. Значение из диапазона [ 0 : P ]. Определяет, сколько десятичных знаков содержится в дробной части числа.
+- P - precision. Valid range: [ 1 : 38 ]. Determines how many decimal digits number can have (including fraction).
+- S - scale. Valid range: [ 0 : P ]. Determines how many decimal digits fraction can have.
 
-В зависимости от параметра P Decimal(P, S) является синонимом:
-- P из [ 1 : 9 ] - для Decimal32(S)
-- P из [ 10 : 18 ] - для Decimal64(S)
-- P из [ 19 : 38 ] - для Decimal128(S)
+Depending on P parameter value Decimal(P, S) is a synonym for:
 
-## Диапазоны Decimal
+- P from [ 1 : 9 ] - for Decimal32(S)
+- P from [ 10 : 18 ] - for Decimal64(S)
+- P from [ 19 : 38 ] - for Decimal128(S)
+
+## Decimal value ranges
 
 - Decimal32(S) - ( -1 * 10^(9 - S), 1 * 10^(9 - S) )
 - Decimal64(S) - ( -1 * 10^(18 - S), 1 * 10^(18 - S) )
 - Decimal128(S) - ( -1 * 10^(38 - S), 1 * 10^(38 - S) )
 
-Например, Decimal32(4) содержит числа от -99999.9999 до 99999.9999 c шагом 0.0001.
+For example, Decimal32(4) can contain numbers from -99999.9999 to 99999.9999 with 0.0001 step.
 
-## Внутреннее представление
+## Internal representation
 
-Внутри данные представляются как знаковые целые числа, соответсвующей разрядности. Реальные диапазоны, хранящиеся в ячейках памяти несколько больше заявленных. Заявленные диапазоны Decimal проверяются только при вводе числа из строкового представления.
-Поскольку современные CPU не поддежривают 128-битные числа, операции над Decimal128 эмулируются программно. Decimal128 работает в разы медленней чем Decimal32/Decimal64.
+Internally data is represented as normal signed integers with respective bit width. Real value ranges that can be stored in memory are a bit larger than specified above, which are checked only on convertion from string.
 
-## Операции и типы результата
+Because modern CPU's do not support 128 bit integers natively, operations on Decimal128 are emulated. Because of this Decimal128 works signigicantly slower than Decimal32/Decimal64.
 
-Результат операции между двумя Decimal расширяется до большего типа (независимо от порядка аргументов).
+## Operations and result type
+
+Binary operations on Decimal result in wider result type (with any order of arguments).
 
 - Decimal64(S1) <op> Decimal32(S2) -> Decimal64(S)
 - Decimal128(S1) <op> Decimal32(S2) -> Decimal128(S)
 - Decimal128(S1) <op> Decimal64(S2) -> Decimal128(S)
 
-Для размера дробной части (scale) результата действуют следующие правила:
+Rules for scale:
 
-- сложение, вычитание: S = max(S1, S2).
-- умножение: S = S1 + S2.
-- деление: S = S1.
+- add, subtract: S = max(S1, S2).
+- multuply: S = S1 + S2.
+- divide: S = S1.
 
-При операциях между Decimal и целыми числами результатом является Decimal, аналогичный аргументу.
+For similar operations between Decimal and integers, the result is Decimal of the same size as argument.
 
-Операции между Decimal и Float32/64 не определены. Для осуществления таких операций нужно явно привести один из агруметнов функциями: toDecimal32, toDecimal64, toDecimal128, или toFloat32, toFloat64. Это сделано из двух соображений. Во-первых, результат операции будет с потерей точности. Во-вторых, преобразование типа - дорогая операция, из-за ее наличия пользовательский запрос может работать в несколько раз дольше.
+Operations between Decimal and Float32/Float64 are not defined. If you really need them, you can explicitly cast one of argument using toDecimal32, toDecimal64, toDecimal128 or toFloat32, toFloat64 builtins. Keep in mind that the result will lose precision and type conversion is computationally expensive operation.
 
-Часть функций над Decimal возвращают Float64 (например, var, stddev). Для некоторых из них промежуточные операции проходят в Decimal.
-Для таких функций результат над одинаковыми данными во Float64 и Decimal может отличаться, несмотря на одинаковый тип результата.
+Some functions on Decimal return result as Float64 (for example, var or stddev). Intermediate calculations might still be performed in Decimal, which might lead to different results between Float64 and Decimal inputs with same values.
 
-## Проверка переполнений
+## Overflow checks
 
-При выполнении операций над типом Decimal могут происходить целочисленные переполнения. Лишняя дробная часть отбрасывается (не округляется). Лишняя целочисленная часть приводит к исключению.
-```
-SELECT toDecimal32(2, 4) AS x, x / 3
-```
-```
-┌──────x─┬─divide(toDecimal32(2, 4), 3)─┐
-│ 2.0000 │                       0.6666 │
-└────────┴──────────────────────────────┘
-```
+During calculations on Decimal, integer overflows might happen. Excessive digits in fraction are discarded (not rounded). Excessive digits in integer part will lead to exception.
 
-```
-SELECT toDecimal32(4.2, 8) AS x, x * x
-```
-```
-DB::Exception: Scale is out of bounds.
-```
+    SELECT toDecimal32(2, 4) AS x, x / 3
+    
 
-```
-SELECT toDecimal32(4.2, 8) AS x, 6 * x
-```
-```
-DB::Exception: Decimal math overflow.
-```
+    ┌──────x─┬─divide(toDecimal32(2, 4), 3)─┐
+    │ 2.0000 │                       0.6666 │
+    └────────┴──────────────────────────────┘
+    
 
-Проверка переполнения приводит к замедлению операций. При уверенности, что типа результата хватит для его записи проверку переполнения можно отключить настройкой decimal_check_overflow. В этом случае при переполнении вернется неверное значение:
-```
-SET decimal_check_overflow = 0;
-SELECT toDecimal32(4.2, 8) AS x, 6 * x
-```
-```
-┌──────────x─┬─multiply(6, toDecimal32(4.2, 8))─┐
-│ 4.20000000 │                     -17.74967296 │
-└────────────┴──────────────────────────────────┘
-```
+    SELECT toDecimal32(4.2, 8) AS x, x * x
+    
 
-Переполнения происходят не только на арифметических операциях, но и на операциях сравнения. Отключать проверку стоит только при полной уверенности в корректности результата:
+    DB::Exception: Scale is out of bounds.
+    
 
-```
-SELECT toDecimal32(1, 8) < 100
-```
-```
-DB::Exception: Can't compare.
-```
+    SELECT toDecimal32(4.2, 8) AS x, 6 * x
+    
+
+    DB::Exception: Decimal math overflow.
+    
+
+Overflow checks lead to operations slowdown. If it is known that overflows are not possible, it makes sense to disable checks using `decimal_check_overflow` setting. When checks are disabled and overflow happens, the result will be incorrect:
+
+    SET decimal_check_overflow = 0;
+    SELECT toDecimal32(4.2, 8) AS x, 6 * x
+    
+
+    ┌──────────x─┬─multiply(6, toDecimal32(4.2, 8))─┐
+    │ 4.20000000 │                     -17.74967296 │
+    └────────────┴──────────────────────────────────┘
+    
+
+Overflow checks happen not only on arithmetic operations, but also on value comparison:
+
+    SELECT toDecimal32(1, 8) < 100
+    
+
+    DB::Exception: Can't compare.

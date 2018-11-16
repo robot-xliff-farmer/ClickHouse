@@ -2,39 +2,41 @@
 
 # clickhouse-copier
 
-Копирует данные из таблиц одного кластера в таблицы другого (или этого же) кластера.
+Copies data from the tables in one cluster to tables in another (or the same) cluster.
 
-Можно запустить несколько `clickhouse-copier` для разных серверах для выполнения одного и того же задания. Для синхронизации между процессами используется ZooKeeper.
+You can run multiple `clickhouse-copier` instances on different servers to perform the same job. ZooKeeper is used for syncing the processes.
 
-После запуска, `clickhouse-copier`:
+After starting, `clickhouse-copier`:
 
-- Соединяется с ZooKeeper и получает:
-    - Задания на копирование.
-    - Состояние заданий на копирование.
-- Выполняет задания.
+- Connects to ZooKeeper and receives:
+    
+    - Copying jobs.
+    - The state of the copying jobs.
 
-    Каждый запущенный процесс выбирает "ближайший" шард исходного кластера и копирует данные в кластер назначения, при необходимости перешардируя их.
+- It performs the jobs.
+    
+    Each running process chooses the "closest" shard of the source cluster and copies the data into the destination cluster, resharding the data if necessary.
 
-`clickhouse-copier` отслеживает изменения в ZooKeeper и применяет их "на лету".
+`clickhouse-copier` tracks the changes in ZooKeeper and applies them on the fly.
 
-Для снижения сетевого трафика рекомендуем запускать `clickhouse-copier` на том же сервере, где находятся исходные данные.
+To reduce network traffic, we recommend running `clickhouse-copier` on the same server where the source data is located.
 
-## Запуск clickhouse-copier
+## Running clickhouse-copier
 
-Утилиту следует запускать вручную следующим образом:
+The utility should be run manually:
 
 ```bash
 clickhouse-copier copier --daemon --config zookeeper.xml --task-path /task/path --base-dir /path/to/dir
 ```
 
-Параметры запуска:
+Parameters:
 
-- `daemon` - запускает `clickhouse-copier` в режиме демона.
-- `config` - путь к файлу `zookeeper.xml` с параметрами соединения с ZooKeeper.
-- `task-path` - путь к ноде ZooKeeper. Нода используется для синхронизации между процессами `clickhouse-copier` и для хранения заданий. Задания хранятся в `$task-path/description`.
-- `base-dir` - путь к логам и вспомогательным файлам. При запуске `clickhouse-copier` создает в `$base-dir` подкаталоги `clickhouse-copier_YYYYMMHHSS_<PID>`. Если параметр не указан, то каталоги будут создаваться в каталоге, где `clickhouse-copier` был запущен.
+- `daemon` — Starts `clickhouse-copier` in daemon mode.
+- `config` — The path to the `zookeeper.xml` file with the parameters for the connection to ZooKeeper.
+- `task-path` — The path to the ZooKeeper node. This node is used for syncing `clickhouse-copier` processes and storing tasks. Tasks are stored in `$task-path/description`.
+- `base-dir` — The path to logs and auxiliary files. When it starts, `clickhouse-copier` creates `clickhouse-copier_YYYYMMHHSS_<PID>` subdirectories in `$base-dir`. If this parameter is omitted, the directories are created in the directory where `clickhouse-copier` was launched.
 
-## Формат zookeeper.xml
+## Format of zookeeper.xml
 
 ```xml
 <yandex>
@@ -47,7 +49,7 @@ clickhouse-copier copier --daemon --config zookeeper.xml --task-path /task/path 
 </yandex>
 ```
 
-## Конфигурация заданий на копирование
+## Configuration of copying tasks
 
 ```xml
 <yandex>
@@ -156,4 +158,4 @@ clickhouse-copier copier --daemon --config zookeeper.xml --task-path /task/path 
 </yandex>
 ```
 
-`clickhouse-copier` отслеживает изменения `/task/path/description` и применяет их "на лету". Если вы поменяете, например, значение `max_workers`, то количество процессов, выполняющих задания, также изменится.
+`clickhouse-copier` tracks the changes in `/task/path/description` and applies them on the fly. For instance, if you change the value of `max_workers`, the number of processes running tasks will also change.

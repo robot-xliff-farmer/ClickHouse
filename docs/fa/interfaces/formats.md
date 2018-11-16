@@ -1,102 +1,88 @@
 <a name="formats"></a>
 
-<div dir="rtl" markdown="1">
+# Formats for input and output data
 
-# فرمت های Input و Output
+ClickHouse can accept (`INSERT`) and return (`SELECT`) data in various formats.
 
-فرمت تعیین می کند که چگونه داده ها پس از اجرای SELECT (چگونه نوشته شده و چگونه توسط سرور فرمت شده) به شما بر می گردد، و چگونه آن برای INSERT ها پذیرفته شده (چگونه آن توسط سرور پارس و خوانده می شود).
+The table below lists supported formats and how they can be used in `INSERT` and `SELECT` queries.
 
-جدول زیر لیست فرمت های پشتیبانی شده برای هر نوع از query ها را نمایش می دهد.
-
-Format | INSERT | SELECT
--------|--------|--------
-[TabSeparated](formats.md#tabseparated) | ✔ | ✔ |
-[TabSeparatedRaw](formats.md#tabseparatedraw)  | ✗ | ✔ |
-[TabSeparatedWithNames](formats.md#tabseparatedwithnames) | ✔ | ✔ |
-[TabSeparatedWithNamesAndTypes](formats.md#tabseparatedwithnamesandtypes) | ✔ | ✔ |
-[CSV](formats.md#csv) | ✔ | ✔ |
-[CSVWithNames](formats.md#csvwithnames) | ✔ | ✔ |
-[Values](formats.md#values) | ✔ | ✔ |
-[Vertical](formats.md#vertical) | ✗ | ✔ |
-[VerticalRaw](formats.md#verticalraw) | ✗ | ✔ |
-[JSON](formats.md#json) | ✗ | ✔ |
-[JSONCompact](formats.md#jsoncompact) | ✗ | ✔ |
-[JSONEachRow](formats.md#jsoneachrow) | ✔ | ✔ |
-[TSKV](formats.md#tskv) | ✔ | ✔ |
-[Pretty](formats.md#pretty) | ✗ | ✔ |
-[PrettyCompact](formats.md#prettycompact) | ✗ | ✔ |
-[PrettyCompactMonoBlock](formats.md#prettycompactmonoblock) | ✗ | ✔ |
-[PrettyNoEscapes](formats.md#prettynoescapes) | ✗ | ✔ |
-[PrettySpace](formats.md#prettyspace) | ✗ | ✔ |
-[RowBinary](formats.md#rowbinary) | ✔ | ✔ |
-[Native](formats.md#native) | ✔ | ✔ |
-[Null](formats.md#null) | ✗ | ✔ |
-[XML](formats.md#xml) | ✗ | ✔ |
-[CapnProto](formats.md#capnproto) | ✔ | ✔ |
+| Format                                                          | INSERT | SELECT |
+| --------------------------------------------------------------- | ------ | ------ |
+| [TabSeparated](#tabseparated)                                   | ✔      | ✔      |
+| [TabSeparatedRaw](#tabseparatedraw)                             | ✗      | ✔      |
+| [TabSeparatedWithNames](#tabseparatedwithnames)                 | ✔      | ✔      |
+| [TabSeparatedWithNamesAndTypes](#tabseparatedwithnamesandtypes) | ✔      | ✔      |
+| [CSV](#csv)                                                     | ✔      | ✔      |
+| [CSVWithNames](#csvwithnames)                                   | ✔      | ✔      |
+| [Values](#values)                                               | ✔      | ✔      |
+| [Vertical](#vertical)                                           | ✗      | ✔      |
+| [VerticalRaw](#verticalraw)                                     | ✗      | ✔      |
+| [JSON](#json)                                                   | ✗      | ✔      |
+| [JSONCompact](#jsoncompact)                                     | ✗      | ✔      |
+| [JSONEachRow](#jsoneachrow)                                     | ✔      | ✔      |
+| [TSKV](#tskv)                                                   | ✔      | ✔      |
+| [Pretty](#pretty)                                               | ✗      | ✔      |
+| [PrettyCompact](#prettycompact)                                 | ✗      | ✔      |
+| [PrettyCompactMonoBlock](#prettycompactmonoblock)               | ✗      | ✔      |
+| [PrettyNoEscapes](#prettynoescapes)                             | ✗      | ✔      |
+| [PrettySpace](#prettyspace)                                     | ✗      | ✔      |
+| [RowBinary](#rowbinary)                                         | ✔      | ✔      |
+| [Native](#native)                                               | ✔      | ✔      |
+| [Null](#null)                                                   | ✗      | ✔      |
+| [XML](#xml)                                                     | ✗      | ✔      |
+| [CapnProto](#capnproto)                                         | ✔      | ✔      |
 
 <a name="format_capnproto"></a>
 
 ## CapnProto
 
-Cap'n Proto یک فرمت پیام باینری شبیه به Protocol Buffer و Thrift می باشد، اما شبیه به JSON یا MessagePack نیست.
+Cap'n Proto is a binary message format similar to Protocol Buffers and Thrift, but not like JSON or MessagePack.
 
-پیغام های Cap'n Proto به صورت self-describing نیستند، به این معنی که آنها نیاز دارند که به صورت external، schema آنها شرح داده شود. schema به صورت on the fly اضافه می شود و برای هر query، cache می شود.
-
-</div>
+Cap'n Proto messages are strictly typed and not self-describing, meaning they need an external schema description. The schema is applied on the fly and cached for each query.
 
 ```sql
 SELECT SearchPhrase, count() AS c FROM test.hits
        GROUP BY SearchPhrase FORMAT CapnProto SETTINGS schema = 'schema:Message'
 ```
 
-<div dir="rtl" markdown="1">
+Where `schema.capnp` looks like this:
 
-جایی که `schema.capnp` شبیه این است:
+    struct Message {
+      SearchPhrase @0 :Text;
+      c @1 :Uint64;
+    }
+    
 
-</div>
+Schema files are in the file that is located in the directory specified in [ format_schema_path](../operations/server_settings/settings.md#server_settings-format_schema_path) in the server configuration.
 
-```
-struct Message {
-  SearchPhrase @0 :Text;
-  c @1 :Uint64;
-}
-```
-
-<div dir="rtl" markdown="1">
-
-فایل های Schema در فایلی قرار دارند که این فایل در دایرکتوری مشخص شده کانفیگ [ format_schema_path](../operations/server_settings/settings.md#server_settings-format_schema_path) قرار گرفته اند.
-
-عملیات Deserialization موثر است و معمولا لود سیستم را افزایش نمی دهد.
+Deserialization is effective and usually doesn't increase the system load.
+<a name="csv"></a>
 
 ## CSV
 
 Comma Separated Values format ([RFC](https://tools.ietf.org/html/rfc4180)).
 
-زمانی که از این روش برای فرمت استفاده می شود، سطر ها با دابل کوتیشن enclosed می شوند. دابل کوتیشن داخل یک رشته خروجی آن به صورت دو دابل کوتیشن در  یک سطر است. قانون دیگری برای escape کردن کاراکترها وجود ندارد. تاریخ و تاریخ-ساعت در دابل کوتیشن ها enclosed می شوند. اعداد بدون دابل کوتیشن در خروجی می آیند. مقادیر با جدا کننده * مشخص می شوند. سطر ها با استفاده از line feed (LF) جدا می شوند. آرایه ها در csv به این صورت serialize می شوند: ابتدا آرایه به یک رشته با فرمت TabSeparate سریالایز می شوند، و سپس رشته ی حاصل در دابل کوتیشن برای csv ارسال می شود. Tuple ها در فرمت CSV در ستون های جدا سریالایز می شوند (به این ترتیب، nest ها در tuble از دست میروند)
+When formatting, rows are enclosed in double quotes. A double quote inside a string is output as two double quotes in a row. There are no other rules for escaping characters. Date and date-time are enclosed in double quotes. Numbers are output without quotes. Values are separated by a delimiter character, which is `,` by default. The delimiter character is defined in the setting [format_csv_delimiter](../operations/settings/settings.md#format_csv_delimiter). Rows are separated using the Unix line feed (LF). Arrays are serialized in CSV as follows: first the array is serialized to a string as in TabSeparated format, and then the resulting string is output to CSV in double quotes. Tuples in CSV format are serialized as separate columns (that is, their nesting in the tuple is lost).
 
-</div>
+    clickhouse-client --format_csv_delimiter="|" --query="INSERT INTO test.csv FORMAT CSV" < data.csv
+    
 
-```
-clickhouse-client --format_csv_delimiter="|" --query="INSERT INTO test.csv FORMAT CSV" < data.csv
-```
+&ast;By default, the delimiter is `,`. See the [format_csv_delimiter](/operations/settings/settings/#format_csv_delimiter) setting for more information.
 
-<div dir="rtl" markdown="1">
+When parsing, all values can be parsed either with or without quotes. Both double and single quotes are supported. Rows can also be arranged without quotes. In this case, they are parsed up to the delimiter character or line feed (CR or LF). In violation of the RFC, when parsing rows without quotes, the leading and trailing spaces and tabs are ignored. For the line feed, Unix (LF), Windows (CR LF) and Mac OS Classic (CR LF) types are all supported.
 
-&ast;به صورت پیش فرض — `,`. برای اطلاعات بیشتر [format_csv_delimiter](/operations/settings/settings/#format_csv_delimiter) را ببینید.
+`NULL` is formatted as `\N`.
 
-در هنگام پارس کردن، تمامی مقادیر می توانند با کوتیشن یا بدون کوتیشن پارس شوند. تک کوتیشن و دابل کوتیشن پشتیبانی می شود. سطر ها می توانند بدون کوتیشن تنظیم شوند. در این مورد سطر ها، جدا کننده ها با (CR یا LF) پارس می شوند. در موارد نقض RFC، در هنگام پارس کردن سطر ها بدون کوتیشن، فضاها و tab های پیشین نادید گرفته می شوند. برای line feed، یونیکس از (LF)، ویدنوز از (CR LF) و Mac OS کلاسیک (CR LF) پشتیبانی می کند.
-
-فرمت CSV خروجی total و extreme را همانند `TabSeparated` پشتیبانی می کنند.
+The CSV format supports the output of totals and extremes the same way as `TabSeparated`.
 
 ## CSVWithNames
 
-همچنین header سطر را چاپ می کند، شبیه به `TabSeparatedWithNames`.
+Also prints the header row, similar to `TabSeparatedWithNames`.
+<a name="json"></a>
 
 ## JSON
 
-خروجی داده ها با فرمت JSON. در کنال داده های جداول، خروجی JSON اسم ستون ها و type آنها به همراه اطلاعات بیشتر تولید می کند: تعداد سطر های خروجی، و همچنین تعداد رکورد های کل بدون در نظر گرفتن دستور LIMIT. مثال:
-
-</div>
+Outputs data in JSON format. Besides data tables, it also outputs column names and types, along with some additional information: the total number of output rows, and the number of rows that could have been output if there weren't a LIMIT. Example:
 
 ```sql
 SELECT SearchPhrase, count() AS c FROM test.hits GROUP BY SearchPhrase WITH TOTALS ORDER BY c DESC LIMIT 5 FORMAT JSON
@@ -166,27 +152,29 @@ SELECT SearchPhrase, count() AS c FROM test.hits GROUP BY SearchPhrase WITH TOTA
 }
 ```
 
-<div dir="rtl" markdown="1">
+The JSON is compatible with JavaScript. To ensure this, some characters are additionally escaped: the slash `/` is escaped as `\/`; alternative line breaks `U+2028` and `U+2029`, which break some browsers, are escaped as `\uXXXX`. ASCII control characters are escaped: backspace, form feed, line feed, carriage return, and horizontal tab are replaced with `\b`, `\f`, `\n`, `\r`, `\t` , as well as the remaining bytes in the 00-1F range using `\uXXXX` sequences. Invalid UTF-8 sequences are changed to the replacement character � so the output text will consist of valid UTF-8 sequences. For compatibility with JavaScript, Int64 and UInt64 integers are enclosed in double quotes by default. To remove the quotes, you can set the configuration parameter output_format_json_quote_64bit_integers to 0.
 
-JSON با جاوااسکریپت سازگار است. برای اطمینان از این، بعضی از کاراکتر ها ecape های اضافه دارند: اسلش `/` به صورت `\/` escape می شود؛ line break جایگزین یعنی `U+2028` و `U+2029` که باعث break در بعضی از مروگرها می شود، به شکل `\uXXXX` escape می شوند. کاراکتر های کنترلی ASCII هم escape می شوند: backspace، form feed، line feed، carriage return، و horizontal tab به ترتیب با `\b`، `\f`، `\n`، `\r`، `\t` جایگزین می شوند. همچنین بایت های باقی مانده در محدوده 00 تا 1F با استفاده از `\uXXXX` جایگزین می شوند. کاراکتر های بی اعتبار UTF-8 با � جایگزین می شوند، پس خروجی JSON شامل موارد معتبر UTF-8 می باشد. برای سازگاری با جاوااسکریپت، اعداد Int64 و Uint64 به صورت پیش فرض، با استفاده از دابل کوتیشن enclose می شوند. برای حذف کوتیشن، شما باید پارامتر output_format_json_quote_64bit_integers v رو برابر با 0 قرار دهید.
+`rows` – The total number of output rows.
 
-`rows` – تعداد سطر های خروجی
+`rows_before_limit_at_least` The minimal number of rows there would have been without LIMIT. Output only if the query contains LIMIT. If the query contains GROUP BY, rows_before_limit_at_least is the exact number of rows there would have been without a LIMIT.
 
-`rows_before_limit_at_least` حداقل تعداد سطر ها در هنگام عدم استفاده از LIMIT. فقط در هنگامی که query دارای LIMIT است خروجی دارد. اگر query شامل GROUP BY باشد، مقدار rows_before_limit_at_least دقیقا با زمانی که از LIMIT استفاده نمی شود یکی است.
+`totals` – Total values (when using WITH TOTALS).
 
-`totals` – مقدار TOTAL (زمانی که از WITH TOTALS استفاده می شود).
+`extremes` – Extreme values (when extremes is set to 1).
 
-`extremes` – مقدار Extreme (در هنگامی که extreme برابر با 1 است).
+This format is only appropriate for outputting a query result, but not for parsing (retrieving data to insert in a table).
 
-این فرمت فقط مناسب خروجی query های می باشد، به این معنی که برای عملیات پارس کردن (دریافت داده برای insert در جدول) نیست. همچنین فرمت JSONEachRow را ببینید.
+ClickHouse supports [NULL](../query_language/syntax.md#null-literal), which is displayed as `null` in the JSON output.
+
+See also the JSONEachRow format.
+
+<a name="jsoncompact"></a>
 
 ## JSONCompact
 
-فقط در جاهایی که داده ها به جای object در array هستند خروجی آنها متفاوت است.
+Differs from JSON only in that data rows are output in arrays, not in objects.
 
-مثال:
-
-</div>
+Example:
 
 ```json
 {
@@ -207,8 +195,8 @@ JSON با جاوااسکریپت سازگار است. برای اطمینان ا
                 ["", "8267016"],
                 ["bathroom interior design", "2166"],
                 ["yandex", "1655"],
-                ["spring 2014 fashion", "1549"],
-                ["freeform photos", "1480"]
+                ["fashion trends spring 2014", "1549"],
+                ["freeform photo", "1480"]
         ],
 
         "totals": ["","8873898"],
@@ -225,52 +213,61 @@ JSON با جاوااسکریپت سازگار است. برای اطمینان ا
 }
 ```
 
-<div dir="rtl" markdown="1">
-
-این فرمت فقط مناسب خروجی query های می باشد، به این معنی که برای عملیات پارس کردن (دریافت داده برای insert در جدول) نیست. همچنین فرمت JSONEachRow را ببینید.
+This format is only appropriate for outputting a query result, but not for parsing (retrieving data to insert in a table). See also the `JSONEachRow` format.
+<a name="jsoneachrow"></a>
 
 ## JSONEachRow
 
-هر سطر برای خود JSON Object جدا دارد. (با استفاده از newline، JSON تعریف می شوند.)
-
-</div>
+Outputs data as separate JSON objects for each row (newline delimited JSON).
 
 ```json
 {"SearchPhrase":"","count()":"8267016"}
-{"SearchPhrase":"bathroom interior design","count()":"2166"}
+{"SearchPhrase": "bathroom interior design","count()": "2166"}
 {"SearchPhrase":"yandex","count()":"1655"}
-{"SearchPhrase":"spring 2014 fashion","count()":"1549"}
+{"SearchPhrase":"2014 spring fashion","count()":"1549"}
 {"SearchPhrase":"freeform photo","count()":"1480"}
 {"SearchPhrase":"angelina jolie","count()":"1245"}
 {"SearchPhrase":"omsk","count()":"1112"}
 {"SearchPhrase":"photos of dog breeds","count()":"1091"}
-{"SearchPhrase":"curtain design","count()":"1064"}
+{"SearchPhrase":"curtain designs","count()":"1064"}
 {"SearchPhrase":"baku","count()":"1000"}
 ```
 
-<div dir="rtl" markdown="1">
+Unlike the JSON format, there is no substitution of invalid UTF-8 sequences. Any set of bytes can be output in the rows. This is necessary so that data can be formatted without losing any information. Values are escaped in the same way as for JSON.
 
-بر خلاف فرمت JSON، هیچ جایگزینی برای کاراکتر های بی اعتبار UTF-8 وجود ندارد. هر مجموعه ای از بایت های می تواند داخل سطر در خروجی باشند. پس داده ها بدون از دست دادن هیچ اطلاعاتی فرمت می شوند. مقادیر شبیه به JSON، escape می شوند.
-
-برای پارس کردن، هر ترتیبی برای مقادیر ستون های مختلف پشتیبانی می شود. حذف شدن بعضی مقادیر قابل قبول است، آنها با مقادیر پیش فرض خود برابر هستند. در این مورد، صفر و سطر های خالی به عنوان مقادیر پیش فرض قرار می گیرند. مقادیر پیچیده که می توانند در جدول مشخص شوند، به عنوان مقادیر پیش فرض پشتیبانی نمی شوند. Whitespace بین element ها نادیده گرفته می شوند. اگر کاما بعد از object ها قرار گیرند، نادیده گرفته می شوند. object ها نیازی به جداسازی با استفاده از new line را ندارند.
+For parsing, any order is supported for the values of different columns. It is acceptable for some values to be omitted – they are treated as equal to their default values. In this case, zeros and blank rows are used as default values. Complex values that could be specified in the table are not supported as defaults. Whitespace between elements is ignored. If a comma is placed after the objects, it is ignored. Objects don't necessarily have to be separated by new lines.
+<a name="native"></a>
 
 ## Native
 
-کارآمدترین فرمت. داده ها توسط بلاک ها و در فرمت باینری نوشته و خوانده می شوند. برای هر بلاک، تعداد سطرها، تعداد ستون ها، نام ستون ها و type آنها، و بخش هایی از ستون ها در این بلاک یکی پس از دیگری ثبت می شوند. به عبارت دیگر، این فرمت "columnar" است - این فرمت ستون ها را به سطر تبدیل نمی کند. این فرمت در حالت native interface و بین سرور و محیط ترمینال و همچنین کلاینت C++ استفاده می شود.
+The most efficient format. Data is written and read by blocks in binary format. For each block, the number of rows, number of columns, column names and types, and parts of columns in this block are recorded one after another. In other words, this format is "columnar" – it doesn't convert columns to rows. This is the format used in the native interface for interaction between servers, for using the command-line client, and for C++ clients.
 
-شما می توانید از این فرمت برای تهیه دامپ سریع که فقط توسط مدیریت دیتابیس ClickHouse قابل خواندن است استفاده کنید. برای استفاده از این فرمت برای خودتان منطقی نیست.
+You can use this format to quickly generate dumps that can only be read by the ClickHouse DBMS. It doesn't make sense to work with this format yourself.
+<a name="null"></a>
 
 ## Null
 
-هیچی در خروجی نمایش داده نمی شود. با این حال، query پردازش می شود، و زمانی که از کلایت command-line استفاده می کنید، داده ها برای کلاینت ارسال می شوند. از این برای تست، شامل تست بهره وری استفاده می شود. به طور مشخص، این فرمت فقط برای خروجی مناسب است نه برای پارس کردن.
+Nothing is output. However, the query is processed, and when using the command-line client, data is transmitted to the client. This is used for tests, including productivity testing. Obviously, this format is only appropriate for output, not for parsing.
+<a name="pretty"></a>
 
 ## Pretty
 
-خروجی داده ها به صورت جداول Unicode-art، همچنین استفاده از ANSI-escape برای تنظیم رنگ های ترمینال. یک جدول کامل کشیده می شود، و هر سطر دو خط از ترمینال را اشغال می کند. هر بلاکِ نتیجه، به عنوان یک جدول جدا چاپ می شود.پس بلاک ها می توانند بدون بافر کردن نتایج چاپ شوند (بافرینگ برای pre-calculate تمام مقادیر قابل مشاهده  ضروری است). برای جلوگیری از دامپ زیاد داده ها در ترمینال، 10 هزار سطر اول چاپ می شوند. اگر تعداد سطر های بزرگتر مساوی 10 هزار باشد، پیغام " 10 هزار اول نمایش داده شد" چاپ می شود. این فرمت فقط مناسب خروجی نتایج query ها می باشد، نه برای پارس کردن (دریافت داده ها و درج آن در جدول).
+Outputs data as Unicode-art tables, also using ANSI-escape sequences for setting colors in the terminal. A full grid of the table is drawn, and each row occupies two lines in the terminal. Each result block is output as a separate table. This is necessary so that blocks can be output without buffering results (buffering would be necessary in order to pre-calculate the visible width of all the values).
 
-فرمت Pretty از total values (هنگام استفاده از WITH TOTALS) و extreme (هنگام که 'extremes' برابر با 1 است) برای خروجی پشتیبانی می کند. در این موارد، total values و extreme values بعد از نمایش داده های اصلی در جداول جدا، چاپ می شوند. مثال (برای فرمت PrettyCompact نمایش داده شده است):
+[NULL](../query_language/syntax.md#null-literal) is output as `ᴺᵁᴸᴸ`.
 
-</div>
+```sql
+SELECT * FROM t_null
+```
+
+    ┌─x─┬────y─┐
+    │ 1 │ ᴺᵁᴸᴸ │
+    └───┴──────┘
+    
+
+To avoid dumping too much data to the terminal, only the first 10,000 rows are printed. If the number of rows is greater than or equal to 10,000, the message "Showed first 10 000" is printed. This format is only appropriate for outputting a query result, but not for parsing (retrieving data to insert in a table).
+
+The Pretty format supports outputting total values (when using WITH TOTALS) and extremes (when 'extremes' is set to 1). In these cases, total values and extreme values are output after the main data, in separate tables. Example (shown for the PrettyCompact format):
 
 ```sql
 SELECT EventDate, count() AS c FROM test.hits GROUP BY EventDate WITH TOTALS ORDER BY EventDate FORMAT PrettyCompact
@@ -299,92 +296,65 @@ Extremes:
 └────────────┴─────────┘
 ```
 
-<div dir="rtl" markdown="1">
+<a name="prettycompact"></a>
 
 ## PrettyCompact
 
-تفاوت آن با `Pretty` در این است که grid های کشیده شده بین سطر ها و خروجی فشرده تر است. این فرمت به صورت پیش فرض در محیط کلاینت در حالت interactive مورد استفاده قرار می گیرد.
+Differs from `Pretty` in that the grid is drawn between rows and the result is more compact. This format is used by default in the command-line client in interactive mode.
+<a name="prettycompactmonoblock"></a>
 
 ## PrettyCompactMonoBlock
 
-تفاوت آن با `PrettyCompact` در این است که 10 هزار سطر خروجی بافر می شوند، و سپس در یک جدول چاپ می شوند. نه به صورت بلاک
+Differs from [PrettyCompact](#prettycompact) in that up to 10,000 rows are buffered, then output as a single table, not by blocks.
+<a name="prettynoescapes"></a>
 
 ## PrettyNoEscapes
 
-تفاوت آن با Pretty در این است که از ANSI-escape استفاده نمی کند. این برای نمایش این فرمت در مروگر ضروری است، و همچنین برای استفاده از دستور 'watch' ضروری است.
+Differs from Pretty in that ANSI-escape sequences aren't used. This is necessary for displaying this format in a browser, as well as for using the 'watch' command-line utility.
 
-مثال:
-
-</div>
+Example:
 
 ```bash
 watch -n1 "clickhouse-client --query='SELECT event, value FROM system.events FORMAT PrettyCompactNoEscapes'"
 ```
 
-<div dir="rtl" markdown="1">
-
-شما می توانید برای نمایش در مرورگر از interface HTTP استفاده کنید.
-
-
+You can use the HTTP interface for displaying in the browser.
 
 ### PrettyCompactNoEscapes
 
-همانند تنظیم قبلی می باشد.
+The same as the previous setting.
 
 ### PrettySpaceNoEscapes
 
-همانند تنظیم قبلی می باشد..
+The same as the previous setting.
+<a name="prettyspace"></a>
 
 ## PrettySpace
 
-تفاوت آن با `PrettyCompact` در این است که از whitespace (کاراکتر های space) به جای grid استفاده می کند.
+Differs from [PrettyCompact](#prettycompact) in that whitespace (space characters) is used instead of the grid.
+<a name="rowbinary"></a>
 
 ## RowBinary
 
-فرمت ها و پارس کردن داده ها، براساس سطر در فرمت باینری است.سطرها و مقادیر به صورت پیوسته و بدون جدا کننده لیست می شوند.این فرمت کم کارآمد تر از فرمت native است، از آنجایی که ردیف گرا است.
+Formats and parses data by row in binary format. Rows and values are listed consecutively, without separators. This format is less efficient than the Native format, since it is row-based.
 
-اعداد Integers از fixed-length استفاده می کنند. برای مثال Uint64 از 8 بایت استفاده می کند. DateTime از UInt32 که شامل مقدار Unix Timestamp است استفاده می کند. Date از UInt16 که شامل تعداد روز از تاریخ 1-1-1970 است استفاده می کند. String به عنوان variant length نشان داده می شود (unsigned [LEB128](https://en.wikipedia.org/wiki/LEB128))، که دنباله ای از بایت های یک رشته هستند. FixedString به سادگی به عنوان توالی از بایت ها نمایش داده می شود.
+Integers use fixed-length little endian representation. For example, UInt64 uses 8 bytes. DateTime is represented as UInt32 containing the Unix timestamp as the value. Date is represented as a UInt16 object that contains the number of days since 1970-01-01 as the value. String is represented as a varint length (unsigned [LEB128](https://en.wikipedia.org/wiki/LEB128)), followed by the bytes of the string. FixedString is represented simply as a sequence of bytes.
 
-آرایه به عنوان variant length نشان داده می شود (unsigned [LEB128](https://en.wikipedia.org/wiki/LEB128))، دنباله ای از عانصر پیوسته آرایه
+Array is represented as a varint length (unsigned [LEB128](https://en.wikipedia.org/wiki/LEB128)), followed by successive elements of the array.
+
+For [NULL](../query_language/syntax.md#null-literal) support, an additional byte containing 1 or 0 is added before each [Nullable](../data_types/nullable.md#data_type-nullable) value. If 1, then the value is `NULL` and this byte is interpreted as a separate value. If 0, the value after the byte is not `NULL`.
+
+<a name="tabseparated"></a>
 
 ## TabSeparated
 
-در فرمت TabSeparated، داده ها به صورت سطر نوشته می شوند. هر سطر شامل مقادیر جدا شده با tab می باشد. هر مقدار با یک tab دنبال می شود، به جز آخرین مقدار یک سطر، که با line feed دنبال می شود. line feed unix در همه جا مورد تسافده قرار می گیرد. آخرین سطر از خروجی هم باید شامل line feed در انتها باشد. مقادیر در فرمت متنی بدون enclose با کوتیشون، و یا escape با کاراکترهای ویژه، نوشته می شوند.
+In TabSeparated format, data is written by row. Each row contains values separated by tabs. Each value is follow by a tab, except the last value in the row, which is followed by a line feed. Strictly Unix line feeds are assumed everywhere. The last row also must contain a line feed at the end. Values are written in text format, without enclosing quotation marks, and with special characters escaped.
 
-اعداد Integer با فرم decimal نوشته می شوند. اعداد می توانند شامل کاراکتر اضافه "+" در ابتدای خود باشند. (در هنگام پارس کردن نادیده گرفته می شوند، و در هنگام فرمت کردن، ثبت نمی شوند). اعداد غیر منفی نمیتوانند شامل علامت منفی باشند. در هنگام خواندن، اجازه داده می شود که رشته خالی را به عنوان صفر، پارس کرد، یا (برای تایپ های sign) یک رشته که شامل فقط یک علامت منفی است به عنوان صفر پارس کرد. اعدادی که در data type مربوطه فیت نشوند ممکن است به عددی متفاوت تبدیل شوند و پیغام خطایی هم نمایش ندهند.
+This format is also available under the name `TSV`.
 
-اعداد Floating-point به فرم decimal نوشته می شوند. از دات به عنوان جدا کننده decimal استفاده می شود. نوشته های نمایشی مثل 'inf'، '+inf'، '-inf' و 'nan' پشتیبانی می شوند. ورودی اعداد floating-point می تواند با یه نقطه اعشار شروع یا پایان یابد. در هنگام فرمت، دقت اعداد floating-point ممکن است گم شوند. در هنگام پارس کردن، دقیقا نیازی به خواندن نزدیکترین عدد machine-representable نیست.
+The `TabSeparated` format is convenient for processing data using custom programs and scripts. It is used by default in the HTTP interface, and in the command-line client's batch mode. This format also allows transferring data between different DBMSs. For example, you can get a dump from MySQL and upload it to ClickHouse, or vice versa.
 
-Dates با فرمت YYY-MM-DD نوشته می شوند و به همین حالت پارس می شوند، اما با هر کاراکتری به عنوان جدا کننده. Dates به همراه زمان با فرمت YYYY-MM-DD hh:mm:ss نوشته می شوند و با همین فرمت پارس می شوند، اما با هر کاراکتری به عنوان جداکننده.  این در منطقه زمان سیستم در زمانی که کلاینت یا سرور شروع می شود (بسته به اینکه کدام یک از داده ها را تشکیل می دهد) رخ می دهد. برای تاریخ همراه با زمان DST مشخص نمی شود. پس اگر یک دامپ دارای زمان DST باشد، دامپ، داده ها را به طور غیرمستقیم مطابقت نمی دهد و پارسینگ، یکی از دو ساعت را انتخاب خواهد کرد. در طول عملیات خواندن، تاریخ ها و تاریخ و ساعت های نادرست می توانند به صورت null و یا natural overflow پارس شوند، بدون اینکه پیغام خطایی نمایش دهند.
-
-به عنوان یک استثنا، پارس کردن تاریخ به همراه ساعت، اگر مقدار دقیقا شامل 10 عدد decimal باشد، به عنوان فرمت unix timestamp پشتیبانی خواهد کرد. خروجی وابسته به time-zone نمی باشد.  فرمت های YYYY-MM-DD hh: mm: ss و NNNNNNNNNN به صورت خودکار تمایز می یابند.
-
-رشته های دارای کاراکتر های ویژه backslash-escaped چاپ می شوند. escape های در ادامه برای خروجی استفاده می شوند: `\b`، `\f`، `\r`، `\n`، `\t`، `\0`, `\'`، `\\`. پارسر همچنین از `\a`، `\v`، و `\xHH` (hex escape) و هر `\c`  پشتیبانی می کند. بدین ترتیب خواندن داده ها از فرمت line feed که می تواند به صورت `\n` یا `\`  نوشته شود پشتیبانی می کند. برای مثال، رشته ی `Hello world` به همراه line feed بین کلمات به جای space می تواند به هر یک از حالات زیر پارس شود::
-
-</div>
-
-```text
-Hello\nworld
-
-Hello\
-world
-```
-
-<div dir="rtl" markdown="1">
-
-نوع دوم به دلیل پشتیبانی MySQL در هنگام نوشتن دامپ به صورت tab-separate، پشتیبانی می شود.
-
-حداقل مجموعه از کاراکترهایی که در هنگام پاس دادن داده در فرمت TabSeperate نیاز به escape آن دارید: tab، line feed (LF) بک اسلش.
-
-فقط مجموعه ی کمی از نماد ها escape می شوند. شما به راحتی می توانید بر روی مقدار رشته که در ترمینال شما در خروجی نمایش داده می شود حرکت کنید.
-
-آرایه ها به صورت لیستی از مقادیر که به comma از هم جدا شده اند و در داخل براکت قرار گرفته اند نوشته می شوند. آیتم های عددی در آرای به صورت نرمال فرمت می شوند، اما تاریخ و تاریخ با ساعت و رشته ها در داخل تک کوتیشن به همراه قوانین escape که بالا اشاره شد، نوشته می شوند.
-
-فرمت TabSeparate برای پردازش داده ها با استفاده از برنامه های شخصی سازی شده و اسکریپت ها مناسب است. TabSeparate به صورت پیش فرض در HTTP interface و در حالت batch کلاینت command-line مورد استفاده قرار می گیرد. همچنین این فرمت اجازه ی انتقال داده ها بین DBMS های مختلف را می دهد. برای مثال، شما می توانید از MySQL با این روش دامپ بگیرید و آن را در ClickHouse یا vice versa آپلود کنید.
-
-فرمت TabSeparated از خروحی total values (هنگام استفاده از WITH TOTALS) و extreme values (در هنگامی که 'extreme' برابر با 1 است) پشتیبانی می کند. در این موارد، total value و extreme بعد از داده های اصلی در خروجی می آیند. نتایج اصلی، total values و extreme همگی با یک empty line از هم جدا می شوند. مثال:
-
-</div>
+The `TabSeparated` format supports outputting total values (when using WITH TOTALS) and extreme values (when 'extremes' is set to 1). In these cases, the total values and extremes are output after the main data. The main result, total values, and extremes are separated from each other by an empty line. Example:
 
 ```sql
 SELECT EventDate, count() AS c FROM test.hits GROUP BY EventDate WITH TOTALS ORDER BY EventDate FORMAT TabSeparated``
@@ -405,109 +375,153 @@ SELECT EventDate, count() AS c FROM test.hits GROUP BY EventDate WITH TOTALS ORD
 2014-03-23      1406958
 ```
 
-<div dir="rtl" markdown="1">
+## Data formatting
 
-این فرمت نیز تحت نام `TSV` موجود است.
+Integer numbers are written in decimal form. Numbers can contain an extra "+" character at the beginning (ignored when parsing, and not recorded when formatting). Non-negative numbers can't contain the negative sign. When reading, it is allowed to parse an empty string as a zero, or (for signed types) a string consisting of just a minus sign as a zero. Numbers that do not fit into the corresponding data type may be parsed as a different number, without an error message.
 
+Floating-point numbers are written in decimal form. The dot is used as the decimal separator. Exponential entries are supported, as are 'inf', '+inf', '-inf', and 'nan'. An entry of floating-point numbers may begin or end with a decimal point. During formatting, accuracy may be lost on floating-point numbers. During parsing, it is not strictly required to read the nearest machine-representable number.
 
+Dates are written in YYYY-MM-DD format and parsed in the same format, but with any characters as separators. Dates with times are written in the format YYYY-MM-DD hh:mm:ss and parsed in the same format, but with any characters as separators. This all occurs in the system time zone at the time the client or server starts (depending on which one formats data). For dates with times, daylight saving time is not specified. So if a dump has times during daylight saving time, the dump does not unequivocally match the data, and parsing will select one of the two times. During a read operation, incorrect dates and dates with times can be parsed with natural overflow or as null dates and times, without an error message.
+
+As an exception, parsing dates with times is also supported in Unix timestamp format, if it consists of exactly 10 decimal digits. The result is not time zone-dependent. The formats YYYY-MM-DD hh:mm:ss and NNNNNNNNNN are differentiated automatically.
+
+Strings are output with backslash-escaped special characters. The following escape sequences are used for output: `\b`, `\f`, `\r`, `\n`, `\t`, `\0`, `\'`, `\`. Parsing also supports the sequences `\a`, `\v`, and `\xHH` (hex escape sequences) and any `\c` sequences, where `c` is any character (these sequences are converted to `c`). Thus, reading data supports formats where a line feed can be written as `\n` or ``, or as a line feed. For example, the string `Hello world` with a line feed between the words instead of a space can be parsed in any of the following variations:
+
+```text
+Hello\nworld
+
+Hello\
+world
+```
+
+The second variant is supported because MySQL uses it when writing tab-separated dumps.
+
+The minimum set of characters that you need to escape when passing data in TabSeparated format: tab, line feed (LF) and backslash.
+
+Only a small set of symbols are escaped. You can easily stumble onto a string value that your terminal will ruin in output.
+
+Arrays are written as a list of comma-separated values in square brackets. Number items in the array are fomratted as normally, but dates, dates with times, and strings are written in single quotes with the same escaping rules as above.
+
+[NULL](../query_language/syntax.md#null-literal) is formatted as `\N`.
+
+<a name="tabseparatedraw"></a>
 
 ## TabSeparatedRaw
 
-تفاوت آن با `TabSeperated` در این است که در این فرمت سطرها بدون escape نوشته می شوند. این فرمت فقط مناسب خروجی نتایج query ها می باشد، نه برای پارس کردن (دریافت داده ها و درج آن در جدول).
+Differs from `TabSeparated` format in that the rows are written without escaping. This format is only appropriate for outputting a query result, but not for parsing (retrieving data to insert in a table).
 
-همچنین این فرمت تحت عنوان ` TSVRaw`وجود دارد.
+This format is also available under the name `TSVRaw`.
+<a name="tabseparatedwithnames"></a>
 
 ## TabSeparatedWithNames
 
-تفاوت آن با فرمت `TabSeparated` در این است که، در این فرمت نام ستون ها در سطر اول قرار می گیرد. در طول پارس کردن، سطر اول به طور کامل نادیده گرفته می شود. شما نمی توانید نام ستون ها را برای تعیین موقعیت آنها یا بررسی صحت آنها استفاده کنید. (پشتیبانی از پارس کردن سطر header ممکن است در آینده اضافه شود.)
+Differs from the `TabSeparated` format in that the column names are written in the first row. During parsing, the first row is completely ignored. You can't use column names to determine their position or to check their correctness. (Support for parsing the header row may be added in the future.)
 
-همچنین این فرمت تحت عنوان ` TSVWithNames`وجود دارد.
+This format is also available under the name `TSVWithNames`.
+<a name="tabseparatedwithnamesandtypes"></a>
 
 ## TabSeparatedWithNamesAndTypes
 
-تفاوت آن با `TabSeparated` در این است که در این فرمت نام ستون ها در سطر اول نوشته می شود، و type ستون ها در سطر دوم نوشته می شود. در طی پارسینگ، سطر اول و دوم به طور کامل نادیده گرفته می شوند.
+Differs from the `TabSeparated` format in that the column names are written to the first row, while the column types are in the second row. During parsing, the first and second rows are completely ignored.
 
-همچنین این فرمت تحت عنوان ` TSVWithNamesAndTypes`وجود دارد.
+This format is also available under the name `TSVWithNamesAndTypes`.
+<a name="tskv"></a>
 
 ## TSKV
 
-مشابه فرمت TabSeparated، اما خروجی به صورت name=value می باشد. نام ها مشابه روش TabSeparated، escape می شوند، و همچنین = symbol هم escape می شود.
-
-</div>
+Similar to TabSeparated, but outputs a value in name=value format. Names are escaped the same way as in TabSeparated format, and the = symbol is also escaped.
 
 ```text
 SearchPhrase=   count()=8267016
 SearchPhrase=bathroom interior design    count()=2166
 SearchPhrase=yandex     count()=1655
-SearchPhrase=spring 2014 fashion    count()=1549
+SearchPhrase=2014 spring fashion    count()=1549
 SearchPhrase=freeform photos       count()=1480
-SearchPhrase=angelina jolia    count()=1245
+SearchPhrase=angelina jolie    count()=1245
 SearchPhrase=omsk       count()=1112
 SearchPhrase=photos of dog breeds    count()=1091
-SearchPhrase=curtain design        count()=1064
+SearchPhrase=curtain designs        count()=1064
 SearchPhrase=baku       count()=1000
 ```
 
-<div dir="rtl" markdown="1">
+[NULL](../query_language/syntax.md#null-literal) is formatted as `\N`.
 
-وقتی تعداد زیادی از ستون ها وجود دارد، این فرمت بی فایده است، و در حالت کلی دلیلی بر استفاده از این فرمت در این مواقع وجود ندارد. این فرمت در بعضی از دپارتمان های Yandex استفاده می شد.
+```sql
+SELECT * FROM t_null FORMAT TSKV
+```
 
-خروجی داده ها و پارس کردن هر دو در این فرمت پشتیبانی می شوند. برای پارس کردن، هر ترتیبی برای مقادیر ستون های مختلف پشتیبانی می شود. حذف بعضی از مقادیر قابل قبول است. این مقادیر با مقادیر پیش فرض خود برابر هستند. در این مورد، صفر و سطر خالی، توسط مقادیر پیش فرض پر می شوند. مقادیر پیچیده ای که می تواند در جدول مشخص شود به عنوان پیش فرض در این فرمت پشتیبانی نمیشوند.
+    x=1 y=\N
+    
 
-پارس کردن، اجازه می دهد که فیلد اضافه ی `tskv` بدون علامت و مقدار وجود داشته باشد. این فیلد نادیده گرفته می شود.
+When there is a large number of small columns, this format is ineffective, and there is generally no reason to use it. It is used in some departments of Yandex.
+
+Both data output and parsing are supported in this format. For parsing, any order is supported for the values of different columns. It is acceptable for some values to be omitted – they are treated as equal to their default values. In this case, zeros and blank rows are used as default values. Complex values that could be specified in the table are not supported as defaults.
+
+Parsing allows the presence of the additional field `tskv` without the equal sign or a value. This field is ignored.
 
 ## Values
 
-هر سطر داخل براکت چاپ می شود. سطر ها توسط comma جدا می شوند. برای آخرین سطر comma وجود ندارد. مقادیر داخل براکت همچنین توسط comma جدا می شوند. اعداد با فرمت decimal و بدون کوتیشن چاپ می شوند. آرایه ها در براکت ها چاپ می شوند. رشته ها، تاریخ و تاریخ با ساعت داخل کوتیشن قرار می گیرند. قوانین escape و پارس کردن شبیه به فرمت TabSeparated انجام می شود. در طول فرمت، extra spaces درج نمی شوند، اما در هنگام پارس کردن، آنها مجاز و skip می شوند. (به جز space های داخل مقادیر آرایه، که مجاز نیستند).
+Prints every row in brackets. Rows are separated by commas. There is no comma after the last row. The values inside the brackets are also comma-separated. Numbers are output in decimal format without quotes. Arrays are output in square brackets. Strings, dates, and dates with times are output in quotes. Escaping rules and parsing are similar to the [TabSeparated](#tabseparated) format. During formatting, extra spaces aren't inserted, but during parsing, they are allowed and skipped (except for spaces inside array values, which are not allowed). [NULL](../query_language/syntax.md#null-literal) is represented as `NULL`.
 
-حداقل کاراکترهای که شما در هنگام پاس دادن داده ها برای escape نیاز دارید: تک کوتیشن و بک اسلش.
+The minimum set of characters that you need to escape when passing data in Values ​​format: single quotes and backslashes.
 
-این فرمت برای دستور `INSERT INTO t VALUES ...` مورد استفاده قرار می گیرد، اما همچنین شما می تونید برای فرمت نتایج query استفاده کنید.
+This is the format that is used in `INSERT INTO t VALUES ...`, but you can also use it for formatting query results.
+
+<a name="vertical"></a>
 
 ## Vertical
 
-مقدار هر ستون به همراه نام ستون در سطر جداگانه چاپ می شود. اگر هر سطر شامل تعداد زیادی ستون است، این فرمت جهت چاپ چند سطر مناسب است. این فرمت فقط مناسب خروجی نتایج query ها می باشد، نه برای پارس کردن (دریافت داده ها و درج آن در جدول).
+Prints each value on a separate line with the column name specified. This format is convenient for printing just one or a few rows, if each row consists of a large number of columns.
+
+[NULL](../query_language/syntax.md#null-literal) is output as `ᴺᵁᴸᴸ`.
+
+Example:
+
+```sql
+SELECT * FROM t_null FORMAT Vertical
+```
+
+    Row 1:
+    ──────
+    x: 1
+    y: ᴺᵁᴸᴸ
+    
+
+This format is only appropriate for outputting a query result, but not for parsing (retrieving data to insert in a table).
+
+<a name="verticalraw"></a>
 
 ## VerticalRaw
 
-تفاوت آن با `Vertical` در این است که سطر ها escape نمی شوند. این فرمت فقط مناسب خروجی نتایج query ها می باشد، نه برای پارس کردن (دریافت داده ها و درج آن در جدول).
+Differs from `Vertical` format in that the rows are not escaped. This format is only appropriate for outputting a query result, but not for parsing (retrieving data to insert in a table).
 
-مثال:
+Examples:
 
-</div>
+    :) SHOW CREATE TABLE geonames FORMAT VerticalRaw;
+    Row 1:
+    ──────
+    statement: CREATE TABLE default.geonames ( geonameid UInt32, date Date DEFAULT CAST('2017-12-08' AS Date)) ENGINE = MergeTree(date, geonameid, 8192)
+    
+    :) SELECT 'string with \'quotes\' and \t with some special \n characters' AS test FORMAT VerticalRaw;
+    Row 1:
+    ──────
+    test: string with 'quotes' and   with some special
+     characters
+    
 
-```
-:) SHOW CREATE TABLE geonames FORMAT VerticalRaw;
-Row 1:
-──────
-statement: CREATE TABLE default.geonames ( geonameid UInt32, date Date DEFAULT CAST('2017-12-08' AS Date)) ENGINE = MergeTree(date, geonameid, 8192)
+Compare with the Vertical format:
 
-:) SELECT 'string with \'quotes\' and \t with some special \n characters' AS test FORMAT VerticalRaw;
-Row 1:
-──────
-test: string with 'quotes' and   with some special
- characters
-```
+    :) SELECT 'string with \'quotes\' and \t with some special \n characters' AS test FORMAT Vertical;
+    Row 1:
+    ──────
+    test: string with \'quotes\' and \t with some special \n characters
+    
 
-<div dir="rtl" markdown="1">
+<a name="xml"></a>
 
-در مقایسه با فرمت Vertical:
-
-</div>
-
-```
-:) SELECT 'string with \'quotes\' and \t with some special \n characters' AS test FORMAT Vertical;
-Row 1:
-──────
-test: string with \'quotes\' and \t with some special \n characters
-```
 ## XML
 
-<div dir="rtl" markdown="1">
-
-فرمت XML فقط برای خروجی مناسب است، نه برای پارس کردن. مثال:
-
-</div>
+XML format is suitable only for output, not for parsing. Example:
 
 ```xml
 <?xml version='1.0' encoding='UTF-8' ?>
@@ -538,7 +552,7 @@ test: string with \'quotes\' and \t with some special \n characters
                         <field>1655</field>
                 </row>
                 <row>
-                        <SearchPhrase>spring 2014 fashion</SearchPhrase>
+                        <SearchPhrase>2014 spring fashion</SearchPhrase>
                         <field>1549</field>
                 </row>
                 <row>
@@ -558,7 +572,7 @@ test: string with \'quotes\' and \t with some special \n characters
                         <field>1091</field>
                 </row>
                 <row>
-                        <SearchPhrase>curtain design</SearchPhrase>
+                        <SearchPhrase>curtain designs</SearchPhrase>
                         <field>1064</field>
                 </row>
                 <row>
@@ -571,12 +585,8 @@ test: string with \'quotes\' and \t with some special \n characters
 </result>
 ```
 
-<div dir="rtl" markdown="1">
+If the column name does not have an acceptable format, just 'field' is used as the element name. In general, the XML structure follows the JSON structure. Just as for JSON, invalid UTF-8 sequences are changed to the replacement character � so the output text will consist of valid UTF-8 sequences.
 
-اگر نام فیلد، فرمت قابل قبولی نداشته باشد، اسم 'field' به عنوان نام عنصر استفاده می شود. به طور کلی، ساختار XML مشابه ساختار JSON می باشد. فقط در JSON، موارد بی اعتبار UTF-8 تبدیل به کاراکتر � می شوند که منجر به خروجی معتبر UTF-8 می شود.
+In string values, the characters `<` and `&` are escaped as `<` and `&`.
 
-در مقادیر رشته ای، کاراکتر های `>` و `&` به صورت `<` و `&` escape می شوند.
-
-آرایه ها به شکل `<array><elem>Hello</elem><elem>World</elem>...</array>` و tuple ها به صورت `<tuple><elem>Hello</elem><elem>World</elem>...</tuple>` در خروجی می آیند.
-
-</div>
+Arrays are output as `<array><elem>Hello</elem><elem>World</elem>...</array>`,and tuples as `<tuple><elem>Hello</elem><elem>World</elem>...</tuple>`.

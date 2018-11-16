@@ -1,7 +1,3 @@
-<div dir="rtl" markdown="1">
-
 # Set
 
-برای نصف سمت راست IN استفاده می شود.
-
-</div>
+Used for the right half of an IN expression.

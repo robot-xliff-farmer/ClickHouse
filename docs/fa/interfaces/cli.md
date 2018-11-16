@@ -1,10 +1,6 @@
-<div dir="rtl" markdown="1">
+# Command-line Client
 
-# کلاینت Command-line
-
-برای کار از طریق محیط ترمینال میتوانید از دستور ` clickhouse-client` استفاده کنید
-
-</div>
+To work from the command line, you can use `clickhouse-client`:
 
 ```bash
 $ clickhouse-client
@@ -15,17 +11,13 @@ Connected to ClickHouse server version 0.0.26176.
 :)
 ```
 
-<div dir="rtl" markdown="1">
+The client supports command-line options and configuration files. For more information, see "[Configuring](#interfaces_cli_configuration)".
 
-کلاینت از آپشن های command-line و فایل های کانفیگ پشتیبانی می کند. برای اطلاعات بیشتر بخش "[پیکربندی](#interfaces_cli_configuration)" را مشاهده کنید.
+## Usage
 
-## استفاده
+The client can be used in interactive and non-interactive (batch) mode. To use batch mode, specify the 'query' parameter, or send data to 'stdin' (it verifies that 'stdin' is not a terminal), or both. Similar to the HTTP interface, when using the 'query' parameter and sending data to 'stdin', the request is a concatenation of the 'query' parameter, a line feed, and the data in 'stdin'. This is convenient for large INSERT queries.
 
-کلاینت می تواند به دو صورت interactive و non-intercative (batch) مورد استفاده قرار گیرد. برای استفاده از حالت batch، پارامتر `query` را مشخص کنید، و یا داده ها ره به `stdin` ارسال کنید (کلاینت تایید می کند که `stdin` ترمینال نیست) و یا از هر 2 استفاده کنید. مشابه HTTP interface، هنگامی که از از پارامتر `query` و ارسال داده ها به `stdin` استفاده می کنید، درخواست، ترکیبی از پارامتر `query`، line feed، و داده ها در `stdin` است. این کار برای query های بزرگ INSERT مناسب است.
-
-مثالی از استفاده کلاینت برای اجرای دستور INSERT داده
-
-</div>
+Example of using the client to insert data:
 
 ```bash
 echo -ne "1, 'some text', '2016-08-14 00:00:00'\n2, 'some more text', '2016-08-14 00:00:01'" | clickhouse-client --database=test --query="INSERT INTO test FORMAT CSV";
@@ -37,81 +29,78 @@ _EOF
 
 cat file.csv | clickhouse-client --database=test --query="INSERT INTO test FORMAT CSV";
 ```
-<div dir="rtl" markdown="1">
 
-در حالت Batch، فرمت داده ها به صورت پیش فرض به صورت TabSeparated می باشد. شما میتوانید فرمت داده ها رو در هنگام اجرای query و با استفاده از شرط FORMAT مشخص کنید.
+In batch mode, the default data format is TabSeparated. You can set the format in the FORMAT clause of the query.
 
-به طور پیش فرض شما فقط می توانید یک query را در خالت batch اجرا کنید.برای ساخت چندین query از یک "اسکریپت"، از پارامتر --multiquery استفاده کنید. این روش برای تمام query ها به جز INSERT کار می کند. نتایج query ها به صورت متوالی و بدون seperator اضافه تولید می شوند. به طور مشابه برای پردازش تعداد زیادی از query ها شما می توانید از 'clickhouse-client' برای هر query استفاده کنید. دقت کنید که ممکن است حدود 10 میلی ثانیه تا زمان راه اندازی برنامه 'clickhouse-client' زمان گرفته شود.
+By default, you can only process a single query in batch mode. To make multiple queries from a "script," use the --multiquery parameter. This works for all queries except INSERT. Query results are output consecutively without additional separators. Similarly, to process a large number of queries, you can run 'clickhouse-client' for each query. Note that it may take tens of milliseconds to launch the 'clickhouse-client' program.
 
-در حالت intercative، شما یک command line برای درج query های خود دریافت می کنید.
+In interactive mode, you get a command line where you can enter queries.
 
-اگر  'multiline' مشخص نشده باشد (به صورت پیش فرض): برای اجرای یک query، دکمه Enter را بزنید. سیمی کالن  در انتهای query اجباری نیست. برای درج یک query چند خطی (multiline)، دکمه ی بک اسلش `\` را قبل از line feed فشار دهید. بعد از فشردن Enter، از شما برای درج خط بعدی query درخواست خواهد شد.
+If 'multiline' is not specified (the default):To run the query, press Enter. The semicolon is not necessary at the end of the query. To enter a multiline query, enter a backslash `` before the line feed. After you press Enter, you will be asked to enter the next line of the query.
 
-اگر چند خطی (multiline) مشخص شده باشد: برای اجرای query، در انتها سیمی کالن را وارد کنید و سپس Enter بزنید. اگر سیمی کالن از انتهای خط حذف می شد، از شما برای درج خط جدید query درخواست می شد.
+If multiline is specified:To run a query, end it with a semicolon and press Enter. If the semicolon was omitted at the end of the entered line, you will be asked to enter the next line of the query.
 
-تنها یک query اجرا می شود. پس همه چیز بعد از سیمی کالن ignore می شود.
+Only a single query is run, so everything after the semicolon is ignored.
 
-شما میتوانید از `\G` به جای سیمی کالن یا بعد از سیمی کالن استفاده کنید. این علامت، فرمت Vertical را نشان می دهد. در این فرمت، هر مقدار در یک خط جدا چاپ می شود که برای جداول عریض مناسب است. این ویژگی غیرمعمول برای سازگاری با MySQL CLI اضافه شد.
+You can specify `\G` instead of or after the semicolon. This indicates Vertical format. In this format, each value is printed on a separate line, which is convenient for wide tables. This unusual feature was added for compatibility with the MySQL CLI.
 
-command line برا پایه 'readline' (و 'history' یا 'libedit'، یه بدون کتابخانه بسته به build) می باشد. به عبارت دیگر، این محیط از shortcut های آشنا استفاده می کند و history دستورات را نگه می دار. history ها در فایل ~/.clickhouse-client-history نوشته می شوند.
+The command line is based on 'readline' (and 'history' or 'libedit', or without a library, depending on the build). In other words, it uses the familiar keyboard shortcuts and keeps a history. The history is written to `~/.clickhouse-client-history`.
 
-به صورت پیش فرض فرمت خروجی PrettyCompact می باشد. شما میتوانید از طریق دستور FORMAT در یک query، یا با مشخص کردن `\G` در انتهای query، استفاده از آرگومان های `--format` یا `--vertical`  یا از کانفیگ فایل کلاینت، فرمت خروجی را مشخص کنید.
+By default, the format used is PrettyCompact. You can change the format in the FORMAT clause of the query, or by specifying `\G` at the end of the query, using the `--format` or `--vertical` argument in the command line, or using the client configuration file.
 
-برای خروج از کلاینت، Ctrl-D (یا Ctrl+C) را فشار دهید؛ و یا یکی از دستورات زیر را به جای اجرای query اجرا کنید: "exit", "quit", "logout", "exit;", "quit;", "logout;", "q", "Q", ":q"
+To exit the client, press Ctrl+D (or Ctrl+C), or enter one of the following instead of a query: "exit", "quit", "logout", "exit;", "quit;", "logout;", "q", "Q", ":q"
 
-در هنگام اجرای یک query، کلاینت موارد زیر را نمایش می دهد:
+When processing a query, the client shows:
 
-1. Progress، که بیش از 10 بار در ثانیه بروز نخواهد شد ( به صورت پیش فرض). برای query های سریع، progress ممکن است زمانی برای نمایش پیدا نکند.
-2. فرمت کردن query بعد از عملیات پارس کردن، به منظور دیباگ کردن query.
-3. نمایش خروجی با توجه به نوع فرمت.
-4. تعداد لاین های خروجی، زمان پاس شدن query، و میانگیم سرعت پردازش query.
+1. Progress, which is updated no more than 10 times per second (by default). For quick queries, the progress might not have time to be displayed.
+2. The formatted query after parsing, for debugging.
+3. The result in the specified format.
+4. The number of lines in the result, the time passed, and the average speed of query processing.
 
-شما میتوانید query های طولانی را با فشردن Ctrl-C کنسل کنید. هر چند، بعد از این کار همچنان نیاز به انتظار چند ثانیه ای برای قطع کردن درخواست توسط سرور می باشید. امکان کنسل کردن یک query در مراحل خاص وجود ندارد. اگر شما صبر نکنید و برای بار دوم Ctrl+C را وارد کنید از client خارج می شوید.
+You can cancel a long query by pressing Ctrl+C. However, you will still need to wait a little for the server to abort the request. It is not possible to cancel a query at certain stages. If you don't wait and press Ctrl+C a second time, the client will exit.
 
-کلاینت commant-line اجازه ی پاس دادن داده های external  (جداول موقت external) را برای query ها می دهد. برای اطلاعات بیشتر به بخش "داده های External برای پردازش query" مراجعه کنید.
+The command-line client allows passing external data (external temporary tables) for querying. For more information, see the section "External data for query processing".
 
 <a name="interfaces_cli_configuration"></a>
 
-## پیکربندی
+## Configuring
 
-شما میتوانید، پارامتر ها را به `clickhouse-client` (تمام پارامترها دارای مقدار پیش فرض هستند) از دو روش زیر پاس بدید:
+You can pass parameters to `clickhouse-client` (all parameters have a default value) using:
 
-- از طریق Command Line
+- From the Command Line
+    
+    Command-line options override the default values and settings in configuration files.
 
-   گزینه های Command-line مقادیر پیش فرض در ستینگ و کانفیگ فایل را نادیده میگیرد.
+- Configuration files.
+    
+    Settings in the configuration files override the default values.
 
-- کانفیگ فایل ها.
+### Command Line Options
 
-   ستینگ های داخل کانفیگ فایل، مقادیر پیش فرض را نادیده می گیرد.
+- `--host, -h` -– The server name, 'localhost' by default. You can use either the name or the IPv4 or IPv6 address.
+- `--port` – The port to connect to. Default value: 9000. Note that the HTTP interface and the native interface use different ports.
+- `--user, -u` – The username. Default value: default.
+- `--password` – The password. Default value: empty string.
+- `--query, -q` – The query to process when using non-interactive mode.
+- `--database, -d` – Select the current default database. Default value: the current database from the server settings ('default' by default).
+- `--multiline, -m` – If specified, allow multiline queries (do not send the query on Enter).
+- `--multiquery, -n` – If specified, allow processing multiple queries separated by commas. Only works in non-interactive mode.
+- `--format, -f` – Use the specified default format to output the result.
+- `--vertical, -E` – If specified, use the Vertical format by default to output the result. This is the same as '--format=Vertical'. In this format, each value is printed on a separate line, which is helpful when displaying wide tables.
+- `--time, -t` – If specified, print the query execution time to 'stderr' in non-interactive mode.
+- `--stacktrace` – If specified, also print the stack trace if an exception occurs.
+- `-config-file` – The name of the configuration file.
 
-### گزینه های Command line
+### Configuration Files
 
-- `--host, -h` -– نام سرور، به صورت پیش فرض 'localhost' است. شما میتوانید یکی از موارد نام و یا IPv4 و یا IPv6 را در این گزینه مشخص کنید.
-- `--port` – پورت اتصال به ClickHouse. مقدار پیش فرض: 9000. دقت کنید که پرت اینترفیس HTTP و اینتفریس native متفاوت است.
-- `--user, -u` – نام کاربری جهت اتصال. پیش فرض: default.
-- `--password` – پسورد جهت اتصال. پیش فرض: خالی
-- `--query, -q` – مشخص کردن query برای پردازش در هنگام استفاده از حالت non-interactive.
-- `--database, -d` – انتخاب دیتابیس در بدو ورود به کلاینت. مقدار پیش فرض: دیتابیس مشخص شده در تنظیمات سرور (پیش فرض 'default')
-- `--multiline, -m` – اگر مشخص شود، یعنی اجازه ی نوشتن query های چند خطی را بده. (بعد از Enter، query را ارسال نکن).
-- `--multiquery, -n` – اگر مشخص شود، اجازه ی اجرای چندین query که از طریق کاما جدا شده اند را می دهد. فقط در حالت non-interactive کار می کند.
-- `--format, -f` مشخص کردن نوع فرمت خروجی
-- `--vertical, -E` اگر مشخص شود، از فرمت Vertical برای نمایش خروجی استفاده می شود. این گزینه مشابه '--format=Vertical' می باشد. در این فرمت، هر مقدار در یک خط جدید چاپ می شود، که در هنگام نمایش جداول عریض مفید است.
-- `--time, -t` اگر مشخص شود، در حالت non-interactive زمان اجرای query در 'stderr' جاپ می شود.
-- `--stacktrace` – اگر مشخص شود stack trase مربوط به اجرای query در هنگام رخ دادن یک exception چاپ می شود.
-- `-config-file` – نام فایل پیکربندی.
+`clickhouse-client` uses the first existing file of the following:
 
-### فایل های پیکربندی
-
-`clickhouse-client` به ترتیب اولویت زیر از اولین فایل موجود برای ست کردن تنظیمات استفاده می کند:
-
-- مشخص شده در پارامتر `-config-file`
+- Defined in the `-config-file` parameter.
 - `./clickhouse-client.xml`
 - `\~/.clickhouse-client/config.xml`
 - `/etc/clickhouse-client/config.xml`
 
-مثالی از یک کانفیگ فایل
-
-</div>
+Example of a config file:
 
 ```xml
 <config>
@@ -119,4 +108,3 @@ command line برا پایه 'readline' (و 'history' یا 'libedit'، یه بد
     <password>password</password>
 </config>
 ```
-

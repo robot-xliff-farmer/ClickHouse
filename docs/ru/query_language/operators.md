@@ -1,144 +1,188 @@
-# Операторы
+# Operators
 
-Все операторы преобразуются в соответствующие функции на этапе парсинга запроса, с учётом их приоритетов и ассоциативности.
-Далее будут перечислены группы операторов в порядке их приоритета (чем выше, тем раньше оператор связывается со своими аргументами).
+All operators are transformed to the corresponding functions at the query parsing stage, in accordance with their precedence and associativity. Groups of operators are listed in order of priority (the higher it is in the list, the earlier the operator is connected to its arguments).
 
-## Операторы доступа
+## Access Operators
 
-`a[N]` - доступ к элементу массива, функция `arrayElement(a, N)`.
+`a[N]` Access to an element of an array; `arrayElement(a, N) function`.
 
-`a.N` - доступ к элементу кортежа, функция `tupleElement(a, N)`.
+`a.N` – Access to a tuble element; `tupleElement(a, N)` function.
 
-## Оператор числового отрицания
+## Numeric Negation Operator
 
-`-a` - функция `negate(a)`.
+`-a` – The `negate (a)` function.
 
-## Операторы умножения и деления
+## Multiplication and Division Operators
 
-`a * b` - функция `multiply(a, b)`
+`a * b` – The `multiply (a, b) function.`
 
-`a / b` - функция `divide(a, b)`
+`a / b` – The `divide(a, b) function.`
 
-`a % b` - функция `modulo(a, b)`
+`a % b` – The `modulo(a, b) function.`
 
-## Операторы сложения и вычитания
+## Addition and Subtraction Operators
 
-`a + b` - функция `plus(a, b)`
+`a + b` – The `plus(a, b) function.`
 
-`a - b` - функция `minus(a, b)`
+`a - b` – The `minus(a, b) function.`
 
-## Операторы сравнения
+## Comparison Operators
 
-`a = b` - функция `equals(a, b)`
+`a = b` – The `equals(a, b) function.`
 
-`a == b` - функция `equals(a, b)`
+`a == b` – The `equals(a, b) function.`
 
-`a != b` - функция `notEquals(a, b)`
+`a != b` – The `notEquals(a, b) function.`
 
-`a <> b` - функция `notEquals(a, b)`
+`a <> b` – The `notEquals(a, b) function.`
 
-`a <= b` - функция `lessOrEquals(a, b)`
+`a <= b` – The `lessOrEquals(a, b) function.`
 
-`a >= b` - функция `greaterOrEquals(a, b)`
+`a >= b` – The `greaterOrEquals(a, b) function.`
 
-`a < b` - функция `less(a, b)`
+`a < b` – The `less(a, b) function.`
 
-`a > b` - функция `greater(a, b)`
+`a > b` – The `greater(a, b) function.`
 
-`a LIKE s` - функция `like(a, b)`
+`a LIKE s` – The `like(a, b) function.`
 
-`a NOT LIKE s` - функция `notLike(a, b)`
+`a NOT LIKE s` – The `notLike(a, b) function.`
 
-`a BETWEEN b AND c` - равнозначно `a >= b AND a <= c`
+`a BETWEEN b AND c` – The same as `a >= b AND a <= c.`
 
-## Операторы для работы с множествами
+## Operators for Working With Data Sets
 
-*Смотрите раздел "Операторы IN".*
+*See the section "IN operators".*
 
-`a IN ...` - функция `in(a, b)`
+`a IN ...` – The `in(a, b) function`
 
-`a NOT IN ...` - функция `notIn(a, b)`
+`a NOT IN ...` – The `notIn(a, b) function.`
 
-`a GLOBAL IN ...` - функция `globalIn(a, b)`
+`a GLOBAL IN ...` – The `globalIn(a, b) function.`
 
-`a GLOBAL NOT IN ...` - функция `globalNotIn(a, b)`
+`a GLOBAL NOT IN ...` – The `globalNotIn(a, b) function.`
 
-## Оператор логического отрицания
+## Logical Negation Operator
 
-`NOT a` - функция `not(a)`
+`NOT a` The `not(a) function.`
 
-## Оператор логического 'И'
+## Logical AND Operator
 
-`a AND b` - функция `and(a, b)`
+`a AND b` – The`and(a, b) function.`
 
-## Оператор логического 'ИЛИ'
+## Logical OR Operator
 
-`a OR b` - функция `or(a, b)`
+`a OR b` – The `or(a, b) function.`
 
-## Условный оператор
+## Conditional Operator
 
-`a ? b : c` - функция `if(a, b, c)`
+`a ? b : c` – The `if(a, b, c) function.`
 
-Примечание:
+Note:
 
-Условный оператор сначала вычисляет значения b и c, затем проверяет выполнение условия a, и только после этого возвращает соответствующее значение. Если в качестве b или с выступает функция [arrayJoin()](functions/array_join.md#functions_arrayjoin), то размножение каждой строки произойдет вне зависимости от условия а.
+The conditional operator calculates the values of b and c, then checks whether condition a is met, and then returns the corresponding value. If `b` or `C` is an [arrayJoin()](functions/array_join.md#functions_arrayjoin) function, each row will be replicated regardless of the "a" condition.
 
-<a name="operator_case"><a>
+<a name="operator_case"><a></p> 
 
-## Условное выражение
+<h2>
+  Conditional Expression
+</h2>
 
-```sql
-CASE [x]
+<pre><code class="sql">CASE [x]
     WHEN a THEN b
     [WHEN ... THEN ...]
-    [ELSE c]
+    ELSE c
 END
-```
+</code></pre>
 
-В случае указания x - функция transform(x, \[a, ...\], \[b, ...\], c). Иначе - multiIf(a, b, ..., c).
-При отсутствии секции `ELSE c`, значением по умолчанию будет NULL.
-P.S. Функция transform не умеет работать с NULL.
+<p>
+  If "x" is specified, then transform(x, \[a, ...\], \[b, ...\], c). Otherwise – multiIf(a, b, ..., c).
+</p>
 
-## Оператор склеивания строк
+<h2>
+  Concatenation Operator
+</h2>
 
-`s1 || s2` - функция `concat(s1, s2)`
+<p>
+  <code>s1 || s2</code> – The <code>concat(s1, s2) function.</code>
+</p>
 
-## Оператор создания лямбда-выражения
+<h2>
+  Lambda Creation Operator
+</h2>
 
-`x -> expr` - функция `lambda(x, expr)`
+<p>
+  <code>x -&gt; expr</code> – The <code>lambda(x, expr) function.</code>
+</p>
 
-Следующие операторы не имеют приоритета, так как представляют собой скобки:
+<p>
+  The following operators do not have a priority, since they are brackets:
+</p>
 
-## Оператор создания массива
+<h2>
+  Array Creation Operator
+</h2>
 
-`[x1, ...]` - функция `array(x1, ...)`
+<p>
+  <code>[x1, ...]</code> – The <code>array(x1, ...) function.</code>
+</p>
 
-## Оператор создания кортежа
+<h2>
+  Tuple Creation Operator
+</h2>
 
-`(x1, x2, ...)` - функция `tuple(x2, x2, ...)`
+<p>
+  <code>(x1, x2, ...)</code> – The <code>tuple(x2, x2, ...) function.</code>
+</p>
 
-## Ассоциативность
+<h2>
+  Associativity
+</h2>
 
-Все бинарные операторы имеют левую ассоциативность. Например, `1 + 2 + 3` преобразуется в `plus(plus(1, 2), 3)`.
-Иногда это работает не так, как ожидается. Например, `SELECT 4 > 3 > 2` выдаст 0.
+<p>
+  All binary operators have left associativity. For example, <code>1 + 2 + 3</code> is transformed to <code>plus(plus(1, 2), 3)</code>. Sometimes this doesn't work the way you expect. For example, <code>SELECT 4 &gt; 2 &gt; 3</code> will result in 0.
+</p>
 
-Для эффективности, реализованы функции `and` и `or`, принимающие произвольное количество аргументов. Соответствующие цепочки операторов `AND` и `OR`, преобразуются в один вызов этих функций.
+<p>
+  For efficiency, the <code>and</code> and <code>or</code> functions accept any number of arguments. The corresponding chains of <code>AND</code> and <code>OR</code> operators are transformed to a single call of these functions.
+</p>
 
-## Проверка на `NULL`
+<h2>
+  Checking for <code>NULL</code>
+</h2>
 
-ClickHouse поддерживает операторы `IS NULL` и `IS NOT NULL`.
+<p>
+  ClickHouse supports the <code>IS NULL</code> and <code>IS NOT NULL</code> operators.
+</p>
+
+<p>
+  
 
 <a name="operator-is-null"></a>
 
-### IS NULL
+</p>
 
-- Для значений типа [Nullable](../data_types/nullable.md#data_type-nullable) оператор `IS NULL` возвращает:
-    - `1`, если значение — `NULL`.
-    - `0` в обратном случае.
-- Для прочих значений оператор `IS NULL` всегда возвращает `0`.
+<h3>
+  IS NULL
+</h3>
 
-```bash
-:) SELECT x+100 FROM t_null WHERE y IS NULL
+<ul>
+  <li>
+    For <a href="../data_types/nullable.md#data_type-nullable">Nullable</a> type values, the <code>IS NULL</code> operator returns: <ul>
+      <li>
+        <code>1</code>, if the value is <code>NULL</code>.
+      </li>
+      <li>
+        <code>0</code> otherwise.
+      </li>
+    </ul>
+  </li>
+  <li>
+    For other values, the <code>IS NULL</code> operator always returns <code>0</code>.
+  </li>
+</ul>
+
+<pre><code class="bash">:) SELECT x+100 FROM t_null WHERE y IS NULL
 
 SELECT x + 100
 FROM t_null
@@ -149,19 +193,36 @@ WHERE isNull(y)
 └──────────────┘
 
 1 rows in set. Elapsed: 0.002 sec.
-```
+</code></pre>
+
+<p>
+  
 
 <a name="operator-is-not-null"></a>
 
-### IS NOT NULL
+</p>
 
-- Для значений типа [Nullable](../data_types/nullable.md#data_type-nullable) оператор `IS NOT NULL` возвращает:
-    - `0`, если значение — `NULL`.
-    - `1`, в обратном случае.
-- Для прочих значений оператор `IS NOT NULL` всегда возвращает `1`.
+<h3>
+  IS NOT NULL
+</h3>
 
-```bash
-:) SELECT * FROM t_null WHERE y IS NOT NULL
+<ul>
+  <li>
+    For <a href="../data_types/nullable.md#data_type-nullable">Nullable</a> type values, the <code>IS NOT NULL</code> operator returns: <ul>
+      <li>
+        <code>0</code>, if the value is <code>NULL</code>.
+      </li>
+      <li>
+        <code>1</code> otherwise.
+      </li>
+    </ul>
+  </li>
+  <li>
+    For other values, the <code>IS NOT NULL</code> operator always returns <code>1</code>.
+  </li>
+</ul>
+
+<pre><code class="bash">:) SELECT * FROM t_null WHERE y IS NOT NULL
 
 SELECT *
 FROM t_null
@@ -172,4 +233,4 @@ WHERE isNotNull(y)
 └───┴───┘
 
 1 rows in set. Elapsed: 0.002 sec.
-```
+</code></pre>

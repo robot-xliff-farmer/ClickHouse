@@ -1,30 +1,29 @@
 <a name="quotas"></a>
 
-# Квоты
+# Quotas
 
-Квоты позволяют ограничить использование ресурсов за некоторый интервал времени, или просто подсчитывать использование ресурсов.
-Квоты настраиваются в конфиге пользователей. Обычно это users.xml.
+Quotas allow you to limit resource usage over a period of time, or simply track the use of resources. Quotas are set up in the user config. This is usually 'users.xml'.
 
-В системе есть возможность ограничить сложность одного запроса. Для этого смотрите раздел "Ограничения на сложность запроса".
+The system also has a feature for limiting the complexity of a single query. See the section "Restrictions on query complexity").
 
-В отличие от них, квоты:
+In contrast to query complexity restrictions, quotas:
 
--   ограничивают не один запрос, а множество запросов, которые могут быть выполнены за интервал времени;
--   при распределённой обработке запроса, учитывают ресурсы, потраченные на всех удалённых серверах.
+- Place restrictions on a set of queries that can be run over a period of time, instead of limiting a single query.
+- Account for resources spent on all remote servers for distributed query processing.
 
-Рассмотрим фрагмент файла users.xml, описывающего квоты.
+Let's look at the section of the 'users.xml' file that defines quotas.
 
 ```xml
-<!-- Квоты. -->
+<!-- Quotas -->
 <quotas>
-    <!-- Имя квоты. -->
+    <!-- Quota name. -->
     <default>
-        <!-- Ограничения за интервал времени. Можно задать много интервалов с разными ограничениями. -->
+        <!-- Restrictions for a time period. You can set many intervals with different restrictions. -->
         <interval>
-            <!-- Длина интервала. -->
+            <!-- Length of the interval. -->
             <duration>3600</duration>
 
-            <!-- Без ограничений. Просто считать соответствующие данные за указанный интервал. -->
+            <!-- Unlimited. Just collect data for the specified time interval. -->
             <queries>0</queries>
             <errors>0</errors>
             <result_rows>0</result_rows>
@@ -34,14 +33,13 @@
     </default>
 ```
 
-Видно, что квота по умолчанию просто считает использование ресурсов за каждый час, но не ограничивает их.
-Подсчитанное использование ресурсов за каждый интервал, выводится в лог сервера после каждого запроса.
+By default, the quota just tracks resource consumption for each hour, without limiting usage. The resource consumption calculated for each interval is output to the server log after each request.
 
 ```xml
 <statbox>
-    <!-- Ограничения за интервал времени. Можно задать много интервалов с разными ограничениями. -->
+    <!-- Restrictions for a time period. You can set many intervals with different restrictions. -->
     <interval>
-        <!-- Длина интервала. -->
+        <!-- Length of the interval. -->
         <duration>3600</duration>
 
         <queries>1000</queries>
@@ -63,43 +61,43 @@
 </statbox>
 ```
 
-Для квоты с именем statbox заданы ограничения за каждый час и за каждые 24 часа (86 400 секунд). Интервал времени считается начиная от некоторого implementation defined фиксированного момента времени. То есть, интервал длины 24 часа начинается не обязательно в полночь.
+For the 'statbox' quota, restrictions are set for every hour and for every 24 hours (86,400 seconds). The time interval is counted starting from an implementation-defined fixed moment in time. In other words, the 24-hour interval doesn't necessarily begin at midnight.
 
-Когда интервал заканчивается, все накопленные значения сбрасываются. То есть, в следующий час, расчёт квоты за час, начинается заново.
+When the interval ends, all collected values are cleared. For the next hour, the quota calculation starts over.
 
-Рассмотрим величины, которые можно ограничить:
+Here are the amounts that can be restricted:
 
-`queries` - общее количество запросов;
+`queries` – The total number of requests.
 
-`errors` - количество запросов, при выполнении которых было выкинуто исключение;
+`errors` – The number of queries that threw an exception.
 
-`result_rows` - суммарное количество строк, отданных в виде результата;
+`result_rows` – The total number of rows given as the result.
 
-`read_rows` - суммарное количество исходных строк, прочитанных из таблиц, для выполнения запроса, на всех удалённых серверах;
+`read_rows` – The total number of source rows read from tables for running the query, on all remote servers.
 
-`execution_time` - суммарное время выполнения запросов, в секундах (wall time);
+`execution_time` – The total query execution time, in seconds (wall time).
 
-Если за хотя бы один интервал, ограничение превышено, то кидается исключение с текстом о том, какая величина превышена, за какой интервал, и когда начнётся новый интервал (когда снова можно будет задавать запросы).
+If the limit is exceeded for at least one time interval, an exception is thrown with a text about which restriction was exceeded, for which interval, and when the new interval begins (when queries can be sent again).
 
-Для квоты может быть включена возможность указывать "ключ квоты", чтобы производить учёт ресурсов для многих ключей независимо. Рассмотрим это на примере:
+Quotas can use the "quota key" feature in order to report on resources for multiple keys independently. Here is an example of this:
 
 ```xml
-<!-- Для глобального конструктора отчётов. -->
+<!-- For the global reports designer. -->
 <web_global>
-    <!-- keyed - значит в параметре запроса передаётся "ключ" quota_key,
-            и квота считается по отдельности для каждого значения ключа.
-        Например, в качестве ключа может передаваться логин пользователя в Метрике,
-            и тогда квота будет считаться для каждого логина по отдельности.
-        Имеет смысл использовать только если quota_key передаётся не пользователем, а программой.
+    <!-- keyed – The quota_key "key" is passed in the query parameter,
+            and the quota is tracked separately for each key value.
+        For example, you can pass a Yandex.Metrica username as the key,
+            so the quota will be counted separately for each username.
+        Using keys makes sense only if quota_key is transmitted by the program, not by a user.
 
-        Также можно написать <keyed_by_ip /> - тогда в качестве ключа квоты используется IP-адрес.
-        (но стоит учесть, что пользователь может достаточно легко менять IPv6-адрес)
+        You can also write <keyed_by_ip /> so the IP address is used as the quota key.
+        (But keep in mind that users can change the IPv6 address fairly easily.)
     -->
     <keyed />
 ```
 
-Квота прописывается для пользователей в секции users конфига. Смотрите раздел "Права доступа".
+The quota is assigned to users in the 'users' section of the config. See the section "Access rights".
 
-При распределённой обработке запроса, накопленные величины хранятся на сервере-инициаторе запроса. То есть, если пользователь пойдёт на другой сервер - там квота будет действовать "с нуля".
+For distributed query processing, the accumulated amounts are stored on the requestor server. So if the user goes to another server, the quota there will "start over".
 
-При перезапуске сервера, квоты сбрасываются.
+When the server is restarted, quotas are reset.

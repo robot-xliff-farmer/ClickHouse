@@ -1,17 +1,17 @@
 # ReplacingMergeTree
 
-Движок таблиц отличается от `MergeTree` тем, что выполняет удаление дублирующихся записей с одинаковым значением первичного ключа.
+This engine table differs from `MergeTree` in that it removes duplicate entries with the same primary key value.
 
-Последний, необязательный параметр движка таблицы — столбец с версией. При слиянии для всех строк с одинаковым значением первичного ключа оставляет только одну строку: если задан столбец версии — строку с максимальной версией, иначе — последнюю строку.
+The last optional parameter for the table engine is the version column. When merging, it reduces all rows with the same primary key value to just one row. If the version column is specified, it leaves the row with the highest version; otherwise, it leaves the last row.
 
-Столбец с версией должен иметь тип из семейства `UInt`, или `Date`, или `DateTime`.
+The version column must have a type from the `UInt` family, `Date`, or `DateTime`.
 
 ```sql
 ReplacingMergeTree(EventDate, (OrderID, EventDate, BannerID, ...), 8192, ver)
 ```
 
-Обратите внимание, что дедупликация данных производится лишь во время слияний. Слияние происходят в фоне в неизвестный момент времени, на который вы не можете ориентироваться. Некоторая часть данных может так и остаться необработанной. Хотя вы можете вызвать внеочередное слияние с помощью запроса OPTIMIZE, на это не стоит рассчитывать, так как запрос OPTIMIZE приводит к чтению и записи большого объёма данных.
+Note that data is only deduplicated during merges. Merging occurs in the background at an unknown time, so you can't plan for it. Some of the data may remain unprocessed. Although you can run an unscheduled merge using the OPTIMIZE query, don't count on using it, because the OPTIMIZE query will read and write a large amount of data.
 
-Таким образом, `ReplacingMergeTree` подходит для фоновой чистки дублирующихся данных в целях экономии места, но не даёт гарантий отсутствия дубликатов.
+Thus, `ReplacingMergeTree` is suitable for clearing out duplicate data in the background in order to save space, but it doesn't guarantee the absence of duplicates.
 
-*Движок не используется в Яндекс.Метрике, но нашёл своё применение в других отделах Яндекса.*
+*This engine is not used in Yandex.Metrica, but it has been applied in other Yandex projects.*

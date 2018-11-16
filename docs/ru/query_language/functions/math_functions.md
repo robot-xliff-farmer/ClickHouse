@@ -1,43 +1,52 @@
-# Математические функции
+# Mathematical functions
 
-Все функции возвращают число типа Float64. Точность результата близка к максимально возможной, но результат может не совпадать с наиболее близким к соответствующему вещественному числу машинно представимым числом.
+All the functions return a Float64 number. The accuracy of the result is close to the maximum precision possible, but the result might not coincide with the machine representable number nearest to the corresponding real number.
 
 ## e()
 
-Возвращает число типа Float64, близкое к числу e.
+Returns a Float64 number that is close to the number e.
 
 ## pi()
-Возвращает число типа Float64, близкое к числу π.
+
+Returns a Float64 number that is close to the number π.
 
 ## exp(x)
-Принимает числовой аргумент, возвращает число типа Float64, близкое к экспоненте от аргумента.
+
+Accepts a numeric argument and returns a Float64 number close to the exponent of the argument.
 
 ## log(x)
-Принимает числовой аргумент, возвращает число типа Float64, близкое к натуральному логарифму от аргумента.
+
+Accepts a numeric argument and returns a Float64 number close to the natural logarithm of the argument.
 
 ## exp2(x)
-Принимает числовой аргумент, возвращает число типа Float64, близкое к 2 в степени x.
+
+Accepts a numeric argument and returns a Float64 number close to 2 to the power of x.
 
 ## log2(x)
-Принимает числовой аргумент, возвращает число типа Float64, близкое к двоичному логарифму от аргумента.
+
+Accepts a numeric argument and returns a Float64 number close to the binary logarithm of the argument.
 
 ## exp10(x)
-Принимает числовой аргумент, возвращает число типа Float64, близкое к 10 в степени x.
+
+Accepts a numeric argument and returns a Float64 number close to 10 to the power of x.
 
 ## log10(x)
-Принимает числовой аргумент, возвращает число типа Float64, близкое к десятичному логарифму от аргумента.
+
+Accepts a numeric argument and returns a Float64 number close to the decimal logarithm of the argument.
 
 ## sqrt(x)
-Принимает числовой аргумент, возвращает число типа Float64, близкое к квадратному корню от аргумента.
+
+Accepts a numeric argument and returns a Float64 number close to the square root of the argument.
 
 ## cbrt(x)
-Принимает числовой аргумент, возвращает число типа Float64, близкое к кубическому корню от аргумента.
+
+Accepts a numeric argument and returns a Float64 number close to the cubic root of the argument.
 
 ## erf(x)
 
-Если x неотрицательно, то erf(x / σ√2) - вероятность того, что случайная величина, имеющая нормальное распределение со среднеквадратичным отклонением σ, принимает значение, отстоящее от мат. ожидания больше чем на x.
+If 'x' is non-negative, then erf(x / σ√2)<g> is the probability that a random variable having a normal distribution with standard deviation 'σ' takes the value that is separated from the expected value by more than 'x'.
 
-Пример (правило трёх сигм):
+Example (three sigma rule):
 
 ```sql
 SELECT erf(3 / sqrt(2))
@@ -50,31 +59,41 @@ SELECT erf(3 / sqrt(2))
 ```
 
 ## erfc(x)
-Принимает числовой аргумент, возвращает число типа Float64, близкое к 1 - erf(x), но без потери точности для больших x.
+
+Accepts a numeric argument and returns a Float64 number close to 1 - erf(x), but without loss of precision for large 'x' values.
 
 ## lgamma(x)
-Логарифм от гамма функции.
+
+The logarithm of the gamma function.
 
 ## tgamma(x)
-Гамма функция.
+
+Gamma function.
 
 ## sin(x)
-Синус.
+
+The sine.
 
 ## cos(x)
-Косинус.
+
+The cosine.
 
 ## tan(x)
-Тангенс.
+
+The tangent.
 
 ## asin(x)
-Арксинус.
+
+The arc sine.
 
 ## acos(x)
-Арккосинус.
+
+The arc cosine.
 
 ## atan(x)
-Арктангенс.
+
+The arc tangent.
 
 ## pow(x, y)
-Принимает два числовых аргумента x и y. Возвращает число типа Float64, близкое к x в степени y.
+
+Takes two numeric arguments x and y. Returns a Float64 number close to x to the power of y.

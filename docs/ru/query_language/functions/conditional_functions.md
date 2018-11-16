@@ -1,48 +1,43 @@
-# Условные функции
+# Conditional functions
 
-## if(cond, then, else), оператор cond ? then : else
+## if(cond, then, else), cond ? operator then : else
 
-Возвращает `then`, если `cond != 0` или `else`, если `cond = 0`.
-`cond` должно иметь тип `UInt8`, а `then` и `else` должны иметь тип, для которого есть наименьший общий тип.
+Returns `then` if `cond != 0`, or `else` if `cond = 0`. `cond` must be of type `UInt8`, and `then` and `else` must have the lowest common type.
 
-`then` и `else` могут быть `NULL`
+`then` and `else` can be `NULL`
 
 ## multiIf
 
-Позволяет более компактно записать оператор [CASE](../operators.md#operator_case) в запросе.
+Allows you to write the [CASE](../operators.md#operator_case) operator more compactly in the query.
 
-```
-multiIf(cond_1, then_1, cond_2, then_2...else)
-```
+    multiIf(cond_1, then_1, cond_2, then_2...else)
+    
 
-**Параметры**
+**Parameters:**
 
-- `cond_N` — Условие, при выполнении которого функция вернёт `then_N`.
-- `then_N` — Результат функции при выполнении.
-- `else` — Результат функции, если ни одно из условий не выполнено.
+- `cond_N` — The condition for the function to return `then_N`.
+- `then_N` — The result of the function when executed.
+- `else` — The result of the function if none of the conditions is met.
 
-Функция принимает `2N+1` параметров.
+The function accepts `2N+1` parameters.
 
-**Возвращаемые значения**
+**Returned values**
 
-Функция возвращает одно из значений `then_N` или `else`, в зависимости от условий `cond_N`.
+The function returns one of the values `then_N` or `else`, depending on the conditions `cond_N`.
 
-**Пример**
+**Example**
 
-Рассмотрим таблицу
+Take the table
 
-```
-┌─x─┬────y─┐
-│ 1 │ ᴺᵁᴸᴸ │
-│ 2 │    3 │
-└───┴──────┘
-```
+    ┌─x─┬────y─┐
+    │ 1 │ ᴺᵁᴸᴸ │
+    │ 2 │    3 │
+    └───┴──────┘
+    
 
-Выполним запрос `SELECT multiIf(isNull(y), x, y < 3, y, NULL) FROM t_null`. Результат:
+Run the query `SELECT multiIf(isNull(y) x, y < 3, y, NULL) FROM t_null`. Result:
 
-```
-┌─multiIf(isNull(y), x, less(y, 3), y, NULL)─┐
-│                                          1 │
-│                                       ᴺᵁᴸᴸ │
-└────────────────────────────────────────────┘
-```
+    ┌─multiIf(isNull(y), x, less(y, 3), y, NULL)─┐
+    │                                          1 │
+    │                                       ᴺᵁᴸᴸ │
+    └────────────────────────────────────────────┘

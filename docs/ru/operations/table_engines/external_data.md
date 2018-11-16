@@ -1,36 +1,32 @@
-# Внешние данные для обработки запроса
+<a name="external-data"></a>
 
-ClickHouse позволяет отправить на сервер данные, необходимые для обработки одного запроса, вместе с запросом SELECT. Такие данные будут положены во временную таблицу (см. раздел "Временные таблицы") и смогут использоваться в запросе (например, в операторах IN).
+# External Data for Query Processing
 
-Для примера, если у вас есть текстовый файл с важными идентификаторами посетителей, вы можете загрузить его на сервер вместе с запросом, в котором используется фильтрация по этому списку.
+ClickHouse allows sending a server the data that is needed for processing a query, together with a SELECT query. This data is put in a temporary table (see the section "Temporary tables") and can be used in the query (for example, in IN operators).
 
-Если вам нужно будет выполнить более одного запроса с достаточно большими внешними данными - лучше не использовать эту функциональность, а загрузить данные в БД заранее.
+For example, if you have a text file with important user identifiers, you can upload it to the server along with a query that uses filtration by this list.
 
-Внешние данные могут быть загружены как с помощью клиента командной строки (в неинтерактивном режиме), так и через HTTP-интерфейс.
+If you need to run more than one query with a large volume of external data, don't use this feature. It is better to upload the data to the DB ahead of time.
 
-В клиенте командной строки, может быть указана секция параметров вида
+External data can be uploaded using the command-line client (in non-interactive mode), or using the HTTP interface.
+
+In the command-line client, you can specify a parameters section in the format
 
 ```bash
 --external --file=... [--name=...] [--format=...] [--types=...|--structure=...]
 ```
 
-Таких секций может быть несколько - по числу передаваемых таблиц.
+You may have multiple sections like this, for the number of tables being transmitted.
 
-**--external** - маркер начала секции.
-**--file** - путь к файлу с дампом таблицы, или -, что обозначает stdin.
-Из stdin может быть считана только одна таблица.
+**--external** – Marks the beginning of a clause. **--file** – Path to the file with the table dump, or -, which refers to stdin. Only a single table can be retrieved from stdin.
 
-Следующие параметры не обязательные:
-**--name** - имя таблицы. Если не указано - используется _data.
-**--format** - формат данных в файле. Если не указано - используется TabSeparated.
+The following parameters are optional: **--name**– Name of the table. If omitted, _data is used. **--format** – Data format in the file. If omitted, TabSeparated is used.
 
-Должен быть указан один из следующих параметров:
-**--types** - список типов столбцов через запятую. Например, `UInt64,String`. Столбцы будут названы _1, _2, ...
-**--structure** - структура таблицы, в форме `UserID UInt64`, `URL String`. Определяет имена и типы столбцов.
+One of the following parameters is required:**--types** – A list of comma-separated column types. For example: `UInt64,String`. The columns will be named _1, _2, ... **--structure**– The table structure in the format`UserID UInt64`, `URL String`. Defines the column names and types.
 
-Файлы, указанные в file, будут разобраны форматом, указанным в format, с использованием типов данных, указанных в types или structure. Таблица будет загружена на сервер, и доступна там в качестве временной таблицы с именем name.
+The files specified in 'file' will be parsed by the format specified in 'format', using the data types specified in 'types' or 'structure'. The table will be uploaded to the server and accessible there as a temporary table with the name in 'name'.
 
-Примеры:
+Examples:
 
 ```bash
 echo -ne "1\n2\n3\n" | clickhouse-client --query="SELECT count() FROM test.visits WHERE TraficSourceID IN _data" --external --file=- --types=Int8
@@ -43,9 +39,9 @@ cat /etc/passwd | sed 's/:/\t/g' | clickhouse-client --query="SELECT shell, coun
 /bin/sync       1
 ```
 
-При использовании HTTP интерфейса, внешние данные передаются в формате multipart/form-data. Каждая таблица передаётся отдельным файлом. Имя таблицы берётся из имени файла. В query_string передаются параметры name_format, name_types, name_structure, где name - имя таблицы, которой соответствуют эти параметры. Смысл параметров такой же, как при использовании клиента командной строки.
+When using the HTTP interface, external data is passed in the multipart/form-data format. Each table is transmitted as a separate file. The table name is taken from the file name. The 'query_string' is passed the parameters 'name_format', 'name_types', and 'name_structure', where 'name' is the name of the table that these parameters correspond to. The meaning of the parameters is the same as when using the command-line client.
 
-Пример:
+Example:
 
 ```bash
 cat /etc/passwd | sed 's/:/\t/g' > passwd.tsv
@@ -58,4 +54,4 @@ curl -F 'passwd=@passwd.tsv;' 'http://localhost:8123/?query=SELECT+shell,+count(
 /bin/sync       1
 ```
 
-При распределённой обработке запроса, временные таблицы передаются на все удалённые серверы.
+For distributed query processing, the temporary tables are sent to all the remote servers.

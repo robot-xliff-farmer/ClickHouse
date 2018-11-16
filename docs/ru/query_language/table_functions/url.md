@@ -2,19 +2,17 @@
 
 # url
 
-`url(URL, format, structure)` - возвращает таблицу со столбцами, указанными в
-`structure`, созданную из данных находящихся по `URL` в формате `format`.
+`url(URL, format, structure)` - returns a table created from the `URL` with given `format` and `structure`.
 
-URL - адрес, по которому сервер принимает `GET` и/или `POST` запросы по
-протоколу HTTP или HTTPS.
+URL - HTTP or HTTPS server address, which can accept `GET` and/or `POST` requests.
 
-format - [формат](../../interfaces/formats.md#formats) данных.
+format - [format](../../interfaces/formats.md#formats) of the data.
 
-structure - структура таблицы в форме `'UserID UInt64, Name String'`. Определяет имена и типы столбцов.
+structure - table structure in `'UserID UInt64, Name String'` format. Determines column names and types.
 
-**Пример**
+**Example**
 
 ```sql
--- получение 3-х строк таблицы, состоящей из двух колонк типа String и UInt32 от сервера, отдающего данные в формате CSV
+-- getting the first 3 lines of a table that contains columns of String and UInt32 type from HTTP-server which answers in CSV format.
 SELECT * FROM url('http://127.0.0.1:12345/', CSV, 'column1 String, column2 UInt32') LIMIT 3
 ```

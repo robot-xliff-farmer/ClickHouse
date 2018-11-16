@@ -1,10 +1,10 @@
 <a name="dicts-external_dicts_dict_sources"></a>
 
-# Источники внешних словарей
+# Sources of External Dictionaries
 
-Внешний словарь можно подключить из множества источников.
+An external dictionary can be connected from many different sources.
 
-Общий вид конфигурации:
+The configuration looks like this:
 
 ```xml
 <yandex>
@@ -21,24 +21,24 @@
 </yandex>
 ```
 
-Источник настраивается в разделе `source`.
+The source is configured in the `source` section.
 
-Типы источников (`source_type`):
+Types of sources (`source_type`):
 
-- [Локальный файл](#dicts-external_dicts_dict_sources-local_file)
-- [Исполняемый файл](#dicts-external_dicts_dict_sources-executable)
+- [Local file](#dicts-external_dicts_dict_sources-local_file)
+- [Executable file](#dicts-external_dicts_dict_sources-executable)
 - [HTTP(s)](#dicts-external_dicts_dict_sources-http)
 - [ODBC](#dicts-external_dicts_dict_sources-odbc)
--   СУБД:
+- DBMS 
     - [MySQL](#dicts-external_dicts_dict_sources-mysql)
     - [ClickHouse](#dicts-external_dicts_dict_sources-clickhouse)
     - [MongoDB](#dicts-external_dicts_dict_sources-mongodb)
 
 <a name="dicts-external_dicts_dict_sources-local_file"></a>
 
-## Локальный файл
+## Local File
 
-Пример настройки:
+Example of settings:
 
 ```xml
 <source>
@@ -49,18 +49,18 @@
 </source>
 ```
 
-Поля настройки:
+Setting fields:
 
--   `path` - Абсолютный путь к файлу.
--   `format` - Формат файла. Поддерживаются все форматы, описанные в разделе "[Форматы](../../interfaces/formats.md#formats)".
+- `path` – The absolute path to the file.
+- `format` – The file format. All the formats described in "[Formats](../../interfaces/formats.md#formats)" are supported.
 
 <a name="dicts-external_dicts_dict_sources-executable"></a>
 
-## Исполняемый файл
+## Executable File
 
-Работа с исполняемым файлом зависит от [размещения словаря в памяти](external_dicts_dict_layout.md#dicts-external_dicts_dict_layout). Если тип размещения словаря `cache` и `complex_key_cache`, то ClickHouse запрашивает необходимые ключи, отправляя запрос в `STDIN` исполняемого файла.
+Working with executable files depends on [how the dictionary is stored in memory](external_dicts_dict_layout.md#dicts-external_dicts_dict_layout). If the dictionary is stored using `cache` and `complex_key_cache`, ClickHouse requests the necessary keys by sending a request to the executable file's `STDIN`.
 
-Пример настройки:
+Example of settings:
 
 ```xml
 <source>
@@ -71,18 +71,18 @@
 </source>
 ```
 
-Поля настройки:
+Setting fields:
 
--   `command` - Абсолютный путь к исполняемому файлу или имя файла (если каталог программы прописан в `PATH`).
--   `format` - Формат файла. Поддерживаются все форматы, описанные в разделе "[Форматы](../../interfaces/formats.md#formats)".
+- `command` – The absolute path to the executable file, or the file name (if the program directory is written to `PATH`).
+- `format` – The file format. All the formats described in "[Formats](../../interfaces/formats.md#formats)" are supported.
 
 <a name="dicts-external_dicts_dict_sources-http"></a>
 
 ## HTTP(s)
 
-Работа с HTTP(s) сервером зависит от [размещения словаря в памяти](external_dicts_dict_layout.md#dicts-external_dicts_dict_layout). Если тип размещения словаря `cache` и `complex_key_cache`, то ClickHouse запрашивает необходимые ключи, отправляя запрос методом `POST`.
+Working with an HTTP(s) server depends on [how the dictionary is stored in memory](external_dicts_dict_layout.md#dicts-external_dicts_dict_layout). If the dictionary is stored using `cache` and `complex_key_cache`, ClickHouse requests the necessary keys by sending a request via the `POST` method.
 
-Пример настройки:
+Example of settings:
 
 ```xml
 <source>
@@ -93,20 +93,20 @@
 </source>
 ```
 
-Чтобы ClickHouse смог обратиться к HTTPS-ресурсу, необходимо [настроить openSSL](../../operations/server_settings/settings.md#server_settings-openSSL) в конфигурации сервера.
+In order for ClickHouse to access an HTTPS resource, you must [configure openSSL](../../operations/server_settings/settings.md#server_settings-openSSL) in the server configuration.
 
-Поля настройки:
+Setting fields:
 
--   `url` - URL источника.
--   `format` - Формат файла. Поддерживаются все форматы, описанные в разделе "[Форматы](../../interfaces/formats.md#formats)".
+- `url` – The source URL.
+- `format` – The file format. All the formats described in "[Formats](../../interfaces/formats.md#formats)" are supported.
 
 <a name="dicts-external_dicts_dict_sources-odbc"></a>
 
 ## ODBC
 
-Этим способом можно подключить любую базу данных, имеющую ODBC драйвер.
+You can use this method to connect any database that has an ODBC driver.
 
-Пример настройки:
+Example of settings:
 
 ```xml
 <odbc>
@@ -117,71 +117,68 @@
 </odbc>
 ```
 
-Поля настройки:
+Setting fields:
 
--   `db` - имя базы данных. Не указывать, если имя базы задано в параметрах `<connection_string>`.
--   `table` - имя таблицы.
--   `connection_string` - строка соединения.
--   `invalidate_query` - запрос для проверки статуса словаря. Необязательный параметр. Читайте подробнее в разделе [Обновление словарей](external_dicts_dict_lifetime.md#dicts-external_dicts_dict_lifetime).
+- `db` – Name of the database. Omit it if the database name is set in the `<connection_string>` parameters.
+- `table` – Name of the table.
+- `connection_string` – Connection string.
+- `invalidate_query` – Query for checking the dictionary status. Optional parameter. Read more in the section [Updating dictionaries](external_dicts_dict_lifetime.md#dicts-external_dicts_dict_lifetime).
 
-### Выявленная уязвимость в функционировании ODBC словарей
+### Known vulnerability of the ODBC dictionary functionality
 
-!!! attention
-    При соединении с базой данных через ODBC можно заменить параметр соединения `Servername`. В этом случае, значения `USERNAME` и `PASSWORD` из `odbc.ini` отправляются на удаленный сервер и могут быть скомпроментированы.
+!!! attention When connecting to the database through the ODBC driver connection parameter `Servername` can be substituted. In this case values of `USERNAME` and `PASSWORD` from `odbc.ini` are sent to the remote server and can be compromised.
 
-**Пример небезопасного использования**
+**Example of insecure use**
 
-Сконфигурируем unixODBC для работы с PostgreSQL. Содержимое `/etc/odbc.ini`:
+Let's configure unixODBC for PostgreSQL. Content of `/etc/odbc.ini`:
 
-```
-[gregtest]
-Driver = /usr/lib/psqlodbca.so
-Servername = localhost
-PORT = 5432
-DATABASE = test_db
-#OPTION = 3
-USERNAME = test
-PASSWORD = test
-```
+    [gregtest]
+    Driver = /usr/lib/psqlodbca.so
+    Servername = localhost
+    PORT = 5432
+    DATABASE = test_db
+    #OPTION = 3
+    USERNAME = test
+    PASSWORD = test
+    
 
-Если выполнить запрос вида:
+If you then make a query such as
 
-```
-SELECT * FROM odbc('DSN=gregtest;Servername=some-server.com', 'test_db');    
-```
+    SELECT * FROM odbc('DSN=gregtest;Servername=some-server.com', 'test_db');    
+    
 
-то ODBC драйвер отправит значения `USERNAME` и `PASSWORD` из `odbc.ini` на `some-server.com`.
+ODBC driver will send values of `USERNAME` and `PASSWORD` from `odbc.ini` to `some-server.com`.
 
-### Пример подключения PostgreSQL
+### Example of Connecting PostgreSQL
 
-ОС Ubuntu.
+Ubuntu OS.
 
-Установка unixODBC и ODBC-драйвера для PostgreSQL: :
+Installing unixODBC and the ODBC driver for PostgreSQL:
 
     sudo apt-get install -y unixodbc odbcinst odbc-postgresql
+    
 
-Настройка `/etc/odbc.ini` (или `~/.odbc.ini`):
+Configuring `/etc/odbc.ini` (or `~/.odbc.ini`):
 
-```
-    [DEFAULT]
-    Driver = myconnection
+        [DEFAULT]
+        Driver = myconnection
+    
+        [myconnection]
+        Description         = PostgreSQL connection to my_db
+        Driver              = PostgreSQL Unicode
+        Database            = my_db
+        Servername          = 127.0.0.1
+        UserName            = username
+        Password            = password
+        Port                = 5432
+        Protocol            = 9.3
+        ReadOnly            = No
+        RowVersioning       = No
+        ShowSystemTables    = No
+        ConnSettings        =
+    
 
-    [myconnection]
-    Description         = PostgreSQL connection to my_db
-    Driver              = PostgreSQL Unicode
-    Database            = my_db
-    Servername          = 127.0.0.1
-    UserName            = username
-    Password            = password
-    Port                = 5432
-    Protocol            = 9.3
-    ReadOnly            = No
-    RowVersioning       = No
-    ShowSystemTables    = No
-    ConnSettings        =
-```
-
-Конфигурация словаря в ClickHouse:
+The dictionary configuration in ClickHouse:
 
 ```xml
 <yandex>
@@ -189,7 +186,7 @@ SELECT * FROM odbc('DSN=gregtest;Servername=some-server.com', 'test_db');
         <name>table_name</name>
         <source>
             <odbc>
-                <!-- в connection_string можно указывать следующие параметры: -->
+                <!-- You can specify the following parameters in connection_string: -->
                 <!-- DSN=myconnection;UID=username;PWD=password;HOST=127.0.0.1;PORT=5432;DATABASE=my_db -->
                 <connection_string>DSN=myconnection</connection_string>
                 <table>postgresql_table</table>
@@ -216,54 +213,52 @@ SELECT * FROM odbc('DSN=gregtest;Servername=some-server.com', 'test_db');
 </yandex>
 ```
 
-Может понадобиться в `odbc.ini` указать полный путь до библиотеки с драйвером `DRIVER=/usr/local/lib/psqlodbcw.so`.
+You may need to edit `odbc.ini` to specify the full path to the library with the driver `DRIVER=/usr/local/lib/psqlodbcw.so`.
 
-### Пример подключения MS SQL Server
+### Example of Connecting MS SQL Server
 
-ОС Ubuntu.
+Ubuntu OS.
 
-Установка драйвера: :
+Installing the driver: :
 
-```
-    sudo apt-get install tdsodbc freetds-bin sqsh
-```
+        sudo apt-get install tdsodbc freetds-bin sqsh
+    
 
-Настройка драйвера: :
+Configuring the driver: :
 
-```
-    $ cat /etc/freetds/freetds.conf
-    ...
+        $ cat /etc/freetds/freetds.conf
+        ...
+    
+        [MSSQL]
+        host = 192.168.56.101
+        port = 1433
+        tds version = 7.0
+        client charset = UTF-8
+    
+        $ cat /etc/odbcinst.ini
+        ...
+    
+        [FreeTDS]
+        Description     = FreeTDS
+        Driver          = /usr/lib/x86_64-linux-gnu/odbc/libtdsodbc.so
+        Setup           = /usr/lib/x86_64-linux-gnu/odbc/libtdsS.so
+        FileUsage       = 1
+        UsageCount      = 5
+    
+        $ cat ~/.odbc.ini
+        ...
+    
+        [MSSQL]
+        Description     = FreeTDS
+        Driver          = FreeTDS
+        Servername      = MSSQL
+        Database        = test
+        UID             = test
+        PWD             = test
+        Port            = 1433
+    
 
-    [MSSQL]
-    host = 192.168.56.101
-    port = 1433
-    tds version = 7.0
-    client charset = UTF-8
-
-    $ cat /etc/odbcinst.ini
-    ...
-
-    [FreeTDS]
-    Description     = FreeTDS
-    Driver          = /usr/lib/x86_64-linux-gnu/odbc/libtdsodbc.so
-    Setup           = /usr/lib/x86_64-linux-gnu/odbc/libtdsS.so
-    FileUsage       = 1
-    UsageCount      = 5
-
-    $ cat ~/.odbc.ini
-    ...
-
-    [MSSQL]
-    Description     = FreeTDS
-    Driver          = FreeTDS
-    Servername      = MSSQL
-    Database        = test
-    UID             = test
-    PWD             = test
-    Port            = 1433
-```
-
-Настройка словаря в ClickHouse:
+Configuring the dictionary in ClickHouse:
 
 ```xml
 <yandex>
@@ -299,13 +294,13 @@ SELECT * FROM odbc('DSN=gregtest;Servername=some-server.com', 'test_db');
 </yandex>
 ```
 
-## СУБД
+## DBMS
 
 <a name="dicts-external_dicts_dict_sources-mysql"></a>
 
 ### MySQL
 
-Пример настройки:
+Example of settings:
 
 ```xml
 <source>
@@ -329,24 +324,31 @@ SELECT * FROM odbc('DSN=gregtest;Servername=some-server.com', 'test_db');
 </source>
 ```
 
-Поля настройки:
+Setting fields:
 
--   `port` - порт сервера MySQL. Можно указать для всех реплик или для каждой в отдельности (внутри `<replica>`).
--   `user` - имя пользователя MySQL. Можно указать для всех реплик или для каждой в отдельности (внутри `<replica>`).
--   `password` - пароль пользователя MySQL. Можно указать для всех реплик или для каждой в отдельности (внутри `<replica>`).
--   `replica` - блок конфигурации реплики. Блоков может быть несколько.
+- `port` – The port on the MySQL server. You can specify it for all replicas, or for each one individually (inside `<replica>`).
 
-    -   `replica/host` - хост MySQL.
+- `user` – Name of the MySQL user. You can specify it for all replicas, or for each one individually (inside `<replica>`).
 
-    \* `replica/priority` - приоритет реплики. При попытке соединения ClickHouse обходит реплики в соответствии с приоритетом. Чем меньше цифра, тем выше приоритет.
--   `db` - имя базы данных.
--   `table` - имя таблицы.
--   `where` - условие выбора. Необязательный параметр.
--   `invalidate_query` - запрос для проверки статуса словаря. Необязательный параметр. Читайте подробнее в разделе [Обновление словарей](external_dicts_dict_lifetime.md#dicts-external_dicts_dict_lifetime).
+- `password` – Password of the MySQL user. You can specify it for all replicas, or for each one individually (inside `<replica>`).
 
-MySQL можно подключить на локальном хосте через сокеты, для этого необходимо задать `host` и `socket`.
+- `replica` – Section of replica configurations. There can be multiple sections.
+    
+    - `replica/host` – The MySQL host.
+    
+    \* `replica/priority` – The replica priority. When attempting to connect, ClickHouse traverses the replicas in order of priority. The lower the number, the higher the priority.
 
-Пример настройки:
+- `db` – Name of the database.
+
+- `table` – Name of the table.
+
+- `where` – The selection criteria. Optional parameter.
+
+- `invalidate_query` – Query for checking the dictionary status. Optional parameter. Read more in the section [Updating dictionaries](external_dicts_dict_lifetime.md#dicts-external_dicts_dict_lifetime).
+
+MySQL can be connected on a local host via sockets. To do this, set `host` and `socket`.
+
+Example of settings:
 
 ```xml
 <source>
@@ -367,7 +369,7 @@ MySQL можно подключить на локальном хосте чер�
 
 ### ClickHouse
 
-Пример настройки:
+Example of settings:
 
 ```xml
 <source>
@@ -383,22 +385,21 @@ MySQL можно подключить на локальном хосте чер�
 </source>
 ```
 
-Поля настройки:
+Setting fields:
 
--   `host` - хост ClickHouse. Если host локальный, то запрос выполняется без сетевого взаимодействия. Чтобы повысить отказоустойчивость решения, можно создать таблицу типа [Distributed](../../operations/table_engines/distributed.md#table_engines-distributed) и прописать её в дальнейших настройках.
--   `port` - порт сервера ClickHouse.
--   `user` - имя пользователя ClickHouse.
--   `password` - пароль пользователя ClickHouse.
--   `db` - имя базы данных.
--   `table` - имя таблицы.
--   `where` - условие выбора. Может отсутствовать.
--   `invalidate_query` - запрос для проверки статуса словаря. Необязательный параметр. Читайте подробнее в разделе [Обновление словарей](external_dicts_dict_lifetime.md#dicts-external_dicts_dict_lifetime).
+- `host` – The ClickHouse host. If it is a local host, the query is processed without any network activity. To improve fault tolerance, you can create a [Distributed](../../operations/table_engines/distributed.md#table_engines-distributed) table and enter it in subsequent configurations.
+- `port` – The port on the ClickHouse server.
+- `user` – Name of the ClickHouse user.
+- `password` – Password of the ClickHouse user.
+- `db` – Name of the database.
+- `table` – Name of the table.
+- `where` – The selection criteria. May be omitted.
 
 <a name="dicts-external_dicts_dict_sources-mongodb"></a>
 
 ### MongoDB
 
-Пример настройки:
+Example of settings:
 
 ```xml
 <source>
@@ -413,11 +414,11 @@ MySQL можно подключить на локальном хосте чер�
 </source>
 ```
 
-Поля настройки:
+Setting fields:
 
--   `host` - хост MongoDB.
--   `port` - порт сервера MongoDB.
--   `user` - имя пользователя MongoDB.
--   `password` - пароль пользователя MongoDB.
--   `db` - имя базы данных.
--   `collection` - имя коллекции.
+- `host` – The MongoDB host.
+- `port` – The port on the MongoDB server.
+- `user` – Name of the MongoDB user.
+- `password` – Password of the MongoDB user.
+- `db` – Name of the database.
+- `collection` – Name of the collection.

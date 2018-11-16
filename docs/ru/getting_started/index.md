@@ -1,36 +1,36 @@
-# Начало работы
+# Getting Started
 
-## Системные требования
+## System Requirements
 
-Для установки из официального репозитория требуется ОС Linux; архитектура x86_64 с поддержкой набора инструкций SSE 4.2.
+Installation from the official repository requires Linux with x86_64 architecture and support for the SSE 4.2 instruction set.
 
-Для проверки наличия SSE 4.2, выполните:
+To check for SSE 4.2:
 
 ```bash
 grep -q sse4_2 /proc/cpuinfo && echo "SSE 4.2 supported" || echo "SSE 4.2 not supported"
 ```
 
-Рекомендуется использовать Ubuntu или Debian. Терминал должен работать в кодировке UTF-8.
+We recommend using Ubuntu or Debian. The terminal must use UTF-8 encoding.
 
-Для rpm-based систем вы можете использовать 3rd-party пакеты: https://packagecloud.io/altinity/clickhouse либо установить debian пакеты.
+For rpm-based systems, you can use 3rd-party packages: https://packagecloud.io/altinity/clickhouse or install debian packages.
 
-ClickHouse также работает на FreeBSD и Mac OS X; может быть собран для процессоров x86_64 без поддержки SSE 4.2, и для процессоров AArch64.
+ClickHouse also works on FreeBSD and Mac OS X. It can be compiled for x86_64 processors without SSE 4.2 support, and for AArch64 CPUs.
 
-## Установка
+## Installation
 
-В целях тестирования и разработки, система может быть установлена на один сервер или на рабочий компьютер.
+For testing and development, the system can be installed on a single server or on a desktop computer.
 
-### Установка из пакетов для Debian/Ubuntu
+### Installing from Packages for Debian/Ubuntu
 
-Пропишите в `/etc/apt/sources.list` (или в отдельный файл `/etc/apt/sources.list.d/clickhouse.list`) репозитории:
+In `/etc/apt/sources.list` (or in a separate `/etc/apt/sources.list.d/clickhouse.list` file), add the repository:
 
 ```text
 deb http://repo.yandex.ru/clickhouse/deb/stable/ main/
 ```
 
-Если вы хотите использовать наиболее свежую тестовую версию, замените stable на testing.
+If you want to use the most recent test version, replace 'stable' with 'testing'.
 
-Затем выполните:
+Then run:
 
 ```bash
 sudo apt-key adv --keyserver keyserver.ubuntu.com --recv E0C56BD4    # optional
@@ -38,81 +38,75 @@ sudo apt-get update
 sudo apt-get install clickhouse-client clickhouse-server
 ```
 
-Также можно скачать и установить пакеты вручную, отсюда: <https://repo.yandex.ru/clickhouse/deb/stable/main/>.
+You can also download and install packages manually from here: <https://repo.yandex.ru/clickhouse/deb/stable/main/>.
 
-ClickHouse содержит настройки ограничения доступа. Они расположены в файле users.xml (рядом с config.xml).
-По умолчанию, разрешён доступ отовсюду для пользователя default без пароля. См. секцию users/default/networks.
-Подробнее смотрите в разделе "конфигурационные файлы".
+ClickHouse contains access restriction settings. They are located in the 'users.xml' file (next to 'config.xml'). By default, access is allowed from anywhere for the 'default' user, without a password. See 'user/default/networks'. For more information, see the section "Configuration files".
 
-### Установка из исходников
+### Installing from Sources
 
-Для сборки воспользуйтесь инструкцией: build.md
+To compile, follow the instructions: build.md
 
-Вы можете собрать пакеты и установить их.
-Также вы можете использовать программы без установки пакетов.
+You can compile packages and install them. You can also use programs without installing packages.
 
 ```text
 Client: dbms/programs/clickhouse-client
 Server: dbms/programs/clickhouse-server
 ```
 
-Для сервера создаёте директории с данными, например:
+For the server, create a catalog with data, such as:
 
 ```text
 /opt/clickhouse/data/default/
 /opt/clickhouse/metadata/default/
 ```
 
-(Настраивается в конфиге сервера.)
-Сделайте chown под нужного пользователя.
+(Configurable in the server config.) Run 'chown' for the desired user.
 
-Обратите внимание на путь к логам в конфиге сервера (src/dbms/programs/server/config.xml).
+Note the path to logs in the server config (src/dbms/programs/server/config.xml).
 
-### Другие методы установки
+### Other Installation Methods
 
-Docker образ: <https://hub.docker.com/r/yandex/clickhouse-server/>
+Docker image: <https://hub.docker.com/r/yandex/clickhouse-server/>
 
-RPM пакеты для CentOS, RHEL: <https://github.com/Altinity/clickhouse-rpm-install>
+RPM packages for CentOS or RHEL: <https://github.com/Altinity/clickhouse-rpm-install>
 
 Gentoo: `emerge clickhouse`
 
-## Запуск
+## Launch
 
-Для запуска сервера (в качестве демона), выполните:
+To start the server (as a daemon), run:
 
 ```bash
 sudo service clickhouse-server start
 ```
 
-Смотрите логи в директории `/var/log/clickhouse-server/`
+See the logs in the `/var/log/clickhouse-server/ directory.`
 
-Если сервер не стартует - проверьте правильность конфигурации в файле `/etc/clickhouse-server/config.xml`
+If the server doesn't start, check the configurations in the file `/etc/clickhouse-server/config.xml.`
 
-Также можно запустить сервер из консоли:
+You can also launch the server from the console:
 
 ```bash
 clickhouse-server --config-file=/etc/clickhouse-server/config.xml
 ```
 
-При этом, лог будет выводиться в консоль - удобно для разработки.
-Если конфигурационный файл лежит в текущей директории, то указывать параметр --config-file не требуется - по умолчанию будет использован файл ./config.xml
+In this case, the log will be printed to the console, which is convenient during development. If the configuration file is in the current directory, you don't need to specify the '--config-file' parameter. By default, it uses './config.xml'.
 
-Соединиться с сервером можно с помощью клиента командной строки:
+You can use the command-line client to connect to the server:
 
 ```bash
 clickhouse-client
 ```
 
-Параметры по умолчанию обозначают - соединяться с localhost:9000, от имени пользователя default без пароля.
-Клиент может быть использован для соединения с удалённым сервером. Пример:
+The default parameters indicate connecting with localhost:9000 on behalf of the user 'default' without a password. The client can be used for connecting to a remote server. Example:
 
 ```bash
 clickhouse-client --host=example.com
 ```
 
-Подробнее смотри раздел "Клиент командной строки".
+For more information, see the section "Command-line client".
 
-Проверим работоспособность системы:
+Checking the system:
 
 ```bash
 milovidov@hostname:~/work/metrica/src/dbms/src/Client$ ./clickhouse-client
@@ -133,6 +127,6 @@ SELECT 1
 :)
 ```
 
-**Поздравляем, система работает!**
+**Congratulations, the system works!**
 
-Для дальнейших экспериментов можно попробовать загрузить из тестовых наборов данных.
+To continue experimenting, you can try to download from the test data sets.

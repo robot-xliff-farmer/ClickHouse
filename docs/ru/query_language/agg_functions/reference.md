@@ -1,113 +1,96 @@
 <a name="aggregate_functions_reference"></a>
 
-# Справочник функций
-
+# Function reference
 
 ## count()
 
-Считает количество строк. Принимает ноль аргументов, возвращает UInt64.
-Не поддерживается синтаксис `COUNT(DISTINCT x)` - для этого есть отдельная агрегатная функция `uniq`.
+Counts the number of rows. Accepts zero arguments and returns UInt64. The syntax `COUNT(DISTINCT x)` is not supported. The separate `uniq` aggregate function exists for this purpose.
 
-Запрос вида `SELECT count() FROM table` не оптимизируется, так как количество записей в таблице нигде не хранится отдельно - из таблицы будет выбран какой-нибудь достаточно маленький столбец, и будет посчитано количество значений в нём.
-
+A `SELECT count() FROM table` query is not optimized, because the number of entries in the table is not stored separately. It will select some small column from the table and count the number of values in it.
 
 ## any(x)
 
-Выбирает первое попавшееся значение.
-Порядок выполнения запроса может быть произвольным и даже каждый раз разным, поэтому результат данной функции недетерминирован.
-Для получения детерминированного результата, можно использовать функции min или max вместо any.
+Selects the first encountered value. The query can be executed in any order and even in a different order each time, so the result of this function is indeterminate. To get a determinate result, you can use the 'min' or 'max' function instead of 'any'.
 
-В некоторых случаях, вы всё-таки можете рассчитывать на порядок выполнения запроса. Это - случаи, когда SELECT идёт из подзапроса, в котором используется ORDER BY.
+In some cases, you can rely on the order of execution. This applies to cases when SELECT comes from a subquery that uses ORDER BY.
 
-При наличии в запросе `SELECT` секции `GROUP BY` или хотя бы одной агрегатной функции, ClickHouse (в отличие от, например, MySQL) требует, чтобы все выражения в секциях `SELECT`, `HAVING`, `ORDER BY` вычислялись из ключей или из агрегатных функций. То есть, каждый выбираемый из таблицы столбец, должен использоваться либо в ключах, либо внутри агрегатных функций. Чтобы получить поведение, как в MySQL, вы можете поместить остальные столбцы в агрегатную функцию `any`.
-
+When a `SELECT` query has the `GROUP BY` clause or at least one aggregate function, ClickHouse (in contrast to MySQL) requires that all expressions in the `SELECT`, `HAVING`, and `ORDER BY` clauses be calculated from keys or from aggregate functions. In other words, each column selected from the table must be used either in keys or inside aggregate functions. To get behavior like in MySQL, you can put the other columns in the `any` aggregate function.
 
 ## anyHeavy(x)
 
-Выбирает часто встречающееся значение с помощью алгоритма "[heavy hitters](http://www.cs.umd.edu/~samir/498/karp.pdf)". Если существует значение, которое встречается чаще, чем в половине случаев, в каждом потоке выполнения запроса, то возвращается данное значение. В общем случае, результат недетерминирован.
+Selects a frequently occurring value using the [heavy hitters](http://www.cs.umd.edu/~samir/498/karp.pdf) algorithm. If there is a value that occurs more than in half the cases in each of the query's execution threads, this value is returned. Normally, the result is nondeterministic.
 
-```
-anyHeavy(column)
-```
+    anyHeavy(column)
+    
 
-**Аргументы**
-- `column` - Имя столбца.
+**Arguments**
 
-**Пример**
+- `column` – The column name.
 
-Возьмем набор данных [OnTime](../../getting_started/example_datasets/ontime.md#example_datasets-ontime) и выберем произвольное часто встречающееся значение в столбце `AirlineID`.
+**Example**
+
+Take the [OnTime](../../getting_started/example_datasets/ontime.md#example_datasets-ontime) data set and select any frequently occurring value in the `AirlineID` column.
 
 ```sql
 SELECT anyHeavy(AirlineID) AS res
 FROM ontime
 ```
-```
-┌───res─┐
-│ 19690 │
-└───────┘
-```
 
+    ┌───res─┐
+    │ 19690 │
+    └───────┘
+    
 
 ## anyLast(x)
 
-Выбирает последнее попавшееся значение.
-Результат так же недетерминирован, как и для функции `any`.
-
+Selects the last value encountered. The result is just as indeterminate as for the `any` function.
 
 ## min(x)
 
-Вычисляет минимум.
-
+Calculates the minimum.
 
 ## max(x)
 
-Вычисляет максимум.
-
+Calculates the maximum.
 
 ## argMin(arg, val)
 
-Вычисляет значение arg при минимальном значении val. Если есть несколько разных значений arg для минимальных значений val, то выдаётся первое попавшееся из таких значений.
+Calculates the 'arg' value for a minimal 'val' value. If there are several different values of 'arg' for minimal values of 'val', the first of these values encountered is output.
 
-**Пример:**
-```
-┌─user─────┬─salary─┐
-│ director │   5000 │
-│ manager  │   3000 │
-│ worker   │   1000 │
-└──────────┴────────┘
+**Example:**
 
-SELECT argMin(user, salary) FROM salary
-
-┌─argMin(user, salary)─┐
-│ worker               │
-└──────────────────────┘
-```
+    ┌─user─────┬─salary─┐
+    │ director │   5000 │
+    │ manager  │   3000 │
+    │ worker   │   1000 │
+    └──────────┴────────┘
+    
+    SELECT argMin(user, salary) FROM salary
+    
+    ┌─argMin(user, salary)─┐
+    │ worker               │
+    └──────────────────────┘
+    
 
 ## argMax(arg, val)
 
-Вычисляет значение arg при максимальном значении val. Если есть несколько разных значений arg для максимальных значений val, то выдаётся первое попавшееся из таких значений.
-
+Calculates the 'arg' value for a maximum 'val' value. If there are several different values of 'arg' for maximum values of 'val', the first of these values encountered is output.
 
 ## sum(x)
 
-Вычисляет сумму.
-Работает только для чисел.
-
+Calculates the sum. Only works for numbers.
 
 ## sumWithOverflow(x)
 
-Вычисляет сумму чисел, используя для результата тот же тип данных, что и для входных параметров. Если сумма выйдет за максимальное значение для заданного типа данных, то функция вернёт ошибку.
+Computes the sum of the numbers, using the same data type for the result as for the input parameters. If the sum exceeds the maximum value for this data type, the function returns an error.
 
-Работает только для чисел.
-
+Only works for numbers.
 
 ## sumMap(key, value)
 
-Производит суммирование массива 'value' по соотвествующим ключам заданным в массиве 'key'.
-Количество элементов в 'key' и 'value' должно быть одинаковым для каждой строки, для которой происходит суммирование.
-Возвращает кортеж из двух массивов - ключи в отсортированном порядке и значения, просуммированные по соотвествующим ключам.
+Totals the 'value' array according to the keys specified in the 'key' array. The number of elements in 'key' and 'value' must be the same for each row that is totaled. Returns a tuple of two arrays: keys in sorted order, and values ​​summed for the corresponding keys.
 
-Пример:
+Example:
 
 ```sql
 CREATE TABLE sum_map(
@@ -137,243 +120,206 @@ GROUP BY timeslot
 └─────────────────────┴──────────────────────────────────────────────┘
 ```
 
-
 ## avg(x)
 
-Вычисляет среднее.
-Работает только для чисел.
-Результат всегда - Float64.
+Calculates the average. Only works for numbers. The result is always Float64.
 
 ## uniq(x)
 
-Приближённо вычисляет количество различных значений аргумента. Работает для чисел, строк, дат, дат-с-временем, для нескольких аргументов и аргументов-кортежей.
+Calculates the approximate number of different values of the argument. Works for numbers, strings, dates, date-with-time, and for multiple arguments and tuple arguments.
 
-Используется алгоритм типа adaptive sampling: в качестве состояния вычислений используется выборка значений хэшей элементов, размером до 65536.
-Алгоритм является очень точным для множеств небольшой кардинальности (до 65536) и очень эффективным по CPU (при расчёте не слишком большого количества таких функций, использование `uniq` почти так же быстро, как использование других агрегатных функций).
+Uses an adaptive sampling algorithm: for the calculation state, it uses a sample of element hash values with a size up to 65536. This algorithm is also very accurate for data sets with low cardinality (up to 65536) and very efficient on CPU (when computing not too many of these functions, using `uniq` is almost as fast as using other aggregate functions).
 
-Результат детерминирован (не зависит от порядка выполнения запроса).
+The result is determinate (it doesn't depend on the order of query processing).
 
-Данная функция обеспечивает отличную точность даже для множеств огромной кардинальности (10B+ элементов) и рекомендуется к использованию по умолчанию.
-
+This function provides excellent accuracy even for data sets with extremely high cardinality (over 10 billion elements). It is recommended for default use.
 
 ## uniqCombined(x)
 
-Приближённо вычисляет количество различных значений аргумента. Работает для чисел, строк, дат, дат-с-временем, для нескольких аргументов и аргументов-кортежей.
+Calculates the approximate number of different values of the argument. Works for numbers, strings, dates, date-with-time, and for multiple arguments and tuple arguments.
 
-Используется комбинация трёх алгоритмов: массив, хэш-таблица и [HyperLogLog](https://en.wikipedia.org/wiki/HyperLogLog) с таблицей коррекции погрешности. Расход памяти в несколько раз меньше, чем у функции `uniq`, а точность в несколько раз выше. Скорость работы чуть ниже, чем у функции `uniq`, но иногда может быть даже выше - в случае распределённых запросов, в которых по сети передаётся большое количество состояний агрегации. Максимальный размер состояния составляет 96 KiB (HyperLogLog из 217 6-битовых ячеек).
+A combination of three algorithms is used: array, hash table and [HyperLogLog](https://en.wikipedia.org/wiki/HyperLogLog) with an error correction table. The memory consumption is several times smaller than for the `uniq` function, and the accuracy is several times higher. Performance is slightly lower than for the `uniq` function, but sometimes it can be even higher than it, such as with distributed queries that transmit a large number of aggregation states over the network. The maximum state size is 96 KiB (HyperLogLog of 217 6-bit cells).
 
-Результат детерминирован (не зависит от порядка выполнения запроса).
+The result is determinate (it doesn't depend on the order of query processing).
 
-Функция `uniqCombined` является хорошим выбором по умолчанию для подсчёта количества различных значений, но стоит иметь ввиду что для множеств большой кардинальности (200M+) ошибка оценки будет только расти и для множеств огромной кардинальности (1B+ элементов) функция возвращает результат с очень большой неточностью.
-
+The `uniqCombined` function is a good default choice for calculating the number of different values, but keep in mind that the estimation error will increase for high-cardinality data sets (200M+ elements), and the function will return very inaccurate results for data sets with extremely high cardinality (1B+ elements).
 
 ## uniqHLL12(x)
 
-Приближённо вычисляет количество различных значений аргумента, используя алгоритм [HyperLogLog](https://en.wikipedia.org/wiki/HyperLogLog).
-Используется 212 5-битовых ячеек. Размер состояния чуть больше 2.5 КБ. Результат является не точным(ошибка до ~10%) для небольших множеств (<10K элементов), но для множеств большой кардинальности (10K - 100M) результат довольно точен (ошибка до ~1.6%) и начиная с 100M ошибка оценки будет только расти и для множеств огромной кардинальности (1B+ элементов) функция возвращает результат с очень большой неточностью.
+Uses the [HyperLogLog](https://en.wikipedia.org/wiki/HyperLogLog) algorithm to approximate the number of different values of the argument. 212 5-bit cells are used. The size of the state is slightly more than 2.5 KB. The result is not very accurate (up to ~10% error) for small data sets (<10K elements). However, the result is fairly accurate for high-cardinality data sets (10K-100M), with a maximum error of ~1.6%. Starting from 100M, the estimation error increases, and the function will return very inaccurate results for data sets with extremely high cardinality (1B+ elements).
 
-Результат детерминирован (не зависит от порядка выполнения запроса).
+The result is determinate (it doesn't depend on the order of query processing).
 
-Данная функция не рекомендуется к использованию, и в большинстве случаев, используйте функцию `uniq` или `uniqCombined`.
-
+We don't recommend using this function. In most cases, use the `uniq` or `uniqCombined` function.
 
 ## uniqExact(x)
 
-Вычисляет количество различных значений аргумента, точно.
-Не стоит бояться приближённых расчётов. Поэтому, используйте лучше функцию `uniq`.
-Функцию `uniqExact` следует использовать, если вам точно нужен точный результат.
+Calculates the number of different values of the argument, exactly. There is no reason to fear approximations. It's better to use the `uniq` function. Use the `uniqExact` function if you definitely need an exact result.
 
-Функция `uniqExact` расходует больше оперативки, чем функция `uniq`, так как размер состояния неограниченно растёт по мере роста количества различных значений.
-
+The `uniqExact` function uses more memory than the `uniq` function, because the size of the state has unbounded growth as the number of different values increases.
 
 ## groupArray(x), groupArray(max_size)(x)
 
-Составляет массив из значений аргумента.
-Значения в массив могут быть добавлены в любом (недетерминированном) порядке.
+Creates an array of argument values. Values can be added to the array in any (indeterminate) order.
 
-Вторая версия (с параметром `max_size`) ограничивает размер результирующего массива `max_size` элементами.
-Например, `groupArray(1)(x)` эквивалентно `[any(x)]`.
+The second version (with the `max_size` parameter) limits the size of the resulting array to `max_size` elements. For example, `groupArray (1) (x)` is equivalent to `[any (x)]`.
 
-В некоторых случаях, вы всё же можете рассчитывать на порядок выполнения запроса. Это — случаи, когда `SELECT` идёт из подзапроса, в котором используется `ORDER BY`.
+In some cases, you can still rely on the order of execution. This applies to cases when `SELECT` comes from a subquery that uses `ORDER BY`.
 
 <a name="agg_functions_groupArrayInsertAt"></a>
 
-
 ## groupArrayInsertAt(x)
 
-Вставляет в массив значение в заданную позицию.
+Inserts a value into the array in the specified position.
 
-Принимает на вход значение и позицию. Если на одну и ту же позицию вставляется несколько значений, в результирующем массиве может оказаться любое (первое в случае однопоточного выполнения). Если в позицию не вставляется ни одного значения, то позиции присваивается значение по умолчанию.
+Accepts the value and position as input. If several values ​​are inserted into the same position, any of them might end up in the resulting array (the first one will be used in the case of single-threaded execution). If no value is inserted into a position, the position is assigned the default value.
 
-Опциональные параметры:
+Optional parameters:
 
--   Значение по умолчанию для подстановки на пустые позиции.
--   Длина результирующего массива. Например, если вы хотите получать массисы одинакового размера для всех агрегатных ключей. При использовании этого параметра значение по умолчанию задавать обязательно.
-
+- The default value for substituting in empty positions.
+- The length of the resulting array. This allows you to receive arrays of the same size for all the aggregate keys. When using this parameter, the default value must be specified.
 
 ## groupUniqArray(x)
 
-Составляет массив из различных значений аргумента. Расход оперативки такой же, как у функции `uniqExact`.
-
+Creates an array from different argument values. Memory consumption is the same as for the `uniqExact` function.
 
 ## quantile(level)(x)
 
-Приближённо вычисляет квантиль уровня level. level - константа, число с плавающей запятой от 0 до 1.
-Рекомендуется использовать значения level в диапазоне 0.01..0.99.
-Не используйте значения level, равные 0 или 1 - для таких случаев есть функции min и max.
+Approximates the 'level' quantile. 'level' is a constant, a floating-point number from 0 to 1. We recommend using a 'level' value in the range of 0.01..0.99 Don't use a 'level' value equal to 0 or 1 – use the 'min' and 'max' functions for these cases.
 
-В этой функции, равно как и во всех функциях для расчёта квантилей, параметр level может быть не указан. В таком случае, он принимается равным 0.5 - то есть, функция будет вычислять медиану.
+In this function, as well as in all functions for calculating quantiles, the 'level' parameter can be omitted. In this case, it is assumed to be equal to 0.5 (in other words, the function will calculate the median).
 
-Работает для чисел, дат, дат-с-временем.
-Для чисел возвращает Float64, для дат - дату, для дат-с-временем - дату-с-временем.
+Works for numbers, dates, and dates with times. Returns: for numbers – Float64; for dates – a date; for dates with times – a date with time.
 
-Используется [reservoir sampling](https://en.wikipedia.org/wiki/Reservoir_sampling) с размером резервуара до 8192.
-При необходимости, результат выдаётся с линейной аппроксимацией из двух соседних значений.
-Этот алгоритм обеспечивает весьма низкую точность расчёта. Смотрите также функции `quantileTiming`, `quantileTDigest`, `quantileExact`.
+Uses [reservoir sampling](https://en.wikipedia.org/wiki/Reservoir_sampling) with a reservoir size up to 8192. If necessary, the result is output with linear approximation from the two neighboring values. This algorithm provides very low accuracy. See also: `quantileTiming`, `quantileTDigest`, `quantileExact`.
 
-Результат зависит от порядка выполнения запроса, и является недетерминированным.
+The result depends on the order of running the query, and is nondeterministic.
 
-При использовании нескольких функций `quantile` (и аналогичных) с разными уровнями в запросе, внутренние состояния не объединяются (то есть, запрос работает менее эффективно, чем мог бы). В этом случае, используйте функцию `quantiles` (и аналогичные).
-
+When using multiple `quantile` (and similar) functions with different levels in a query, the internal states are not combined (that is, the query works less efficiently than it could). In this case, use the `quantiles` (and similar) functions.
 
 ## quantileDeterministic(level)(x, determinator)
 
-Работает аналогично функции `quantile`, но, в отличие от неё, результат является детерминированным и не зависит от порядка выполнения запроса.
+Works the same way as the `quantile` function, but the result is deterministic and does not depend on the order of query execution.
 
-Для этого, функция принимает второй аргумент - «детерминатор». Это некоторое число, хэш от которого используется вместо генератора случайных чисел в алгоритме reservoir sampling. Для правильной работы функции, одно и то же значение детерминатора не должно встречаться слишком часто. В качестве детерминатора вы можете использовать идентификатор события, идентификатор посетителя и т. п.
+To achieve this, the function takes a second argument – the "determinator". This is a number whose hash is used instead of a random number generator in the reservoir sampling algorithm. For the function to work correctly, the same determinator value should not occur too often. For the determinator, you can use an event ID, user ID, and so on.
 
-Не используйте эту функцию для рассчёта таймингов. Для этого есть более подходящая функции - `quantileTiming`.
-
+Don't use this function for calculating timings. There is a more suitable function for this purpose: `quantileTiming`.
 
 ## quantileTiming(level)(x)
 
-Вычисляет квантиль уровня level с фиксированной точностью.
-Работает для чисел. Предназначена для расчёта квантилей от времени загрузки страницы в миллисекундах.
+Computes the quantile of 'level' with a fixed precision. Works for numbers. Intended for calculating quantiles of page loading time in milliseconds.
 
-Если значение больше 30000 (соответствует времени загрузки страницы большем 30 секундам) - результат приравнивается к 30000.
+If the value is greater than 30,000 (a page loading time of more than 30 seconds), the result is equated to 30,000.
 
-Если всего значений не больше примерно 5670, то вычисление точное.
+If the total value is not more than about 5670, then the calculation is accurate.
 
-Иначе:
+Otherwise:
 
--   если время меньше 1024 мс., то вычисление точное.
--   иначе вычисление идёт с округлением до числа, кратного 16 мс.
+- if the time is less than 1024 ms, then the calculation is accurate.
+- otherwise the calculation is rounded to a multiple of 16 ms.
 
-При передаче в функцию отрицательных значений, поведение не определено.
+When passing negative values to the function, the behavior is undefined.
 
-Возвращаемое значение имеет тип Float32. Когда в функцию не было передано ни одного значения (при использовании `quantileTimingIf`), возвращается nan. Это сделано, чтобы отличать такие случаи от нулей. Смотрите замечание о сортировке NaN-ов в разделе «Секция ORDER BY».
+The returned value has the Float32 type. If no values were passed to the function (when using `quantileTimingIf`), 'nan' is returned. The purpose of this is to differentiate these instances from zeros. See the note on sorting NaNs in "ORDER BY clause".
 
-Результат детерминирован (не зависит от порядка выполнения запроса).
+The result is determinate (it doesn't depend on the order of query processing).
 
-Для своей задачи (расчёт квантилей времени загрузки страниц), использование этой функции эффективнее и результат точнее, чем для функции `quantile`.
-
+For its purpose (calculating quantiles of page loading times), using this function is more effective and the result is more accurate than for the `quantile` function.
 
 ## quantileTimingWeighted(level)(x, weight)
 
-Отличается от функции `quantileTiming` наличием второго аргумента - «веса». Вес - неотрицательное целое число.
-Результат считается так же, как если бы в функцию `quantileTiming` значение `x` было передано `weight` количество раз.
-
+Differs from the `quantileTiming` function in that it has a second argument, "weights". Weight is a non-negative integer. The result is calculated as if the `x` value were passed `weight` number of times to the `quantileTiming` function.
 
 ## quantileExact(level)(x)
 
-Вычисляет квантиль уровня level точно. Для этого, все переданные значения складываются в массив, который затем частично сортируется. Поэтому, функция потребляет O(n) памяти, где n - количество переданных значений. Впрочем, для случая маленького количества значений, функция весьма эффективна.
-
+Computes the quantile of 'level' exactly. To do this, all the passed values ​​are combined into an array, which is then partially sorted. Therefore, the function consumes O(n) memory, where 'n' is the number of values that were passed. However, for a small number of values, the function is very effective.
 
 ## quantileExactWeighted(level)(x, weight)
 
-Вычисляет квантиль уровня level точно. При этом, каждое значение учитывается с весом weight - как будто оно присутствует weight раз. Аргументы функции можно рассматривать как гистограммы, где значению x соответствует «столбик» гистограммы высоты weight, а саму функцию можно рассматривать как суммирование гистограмм.
+Computes the quantile of 'level' exactly. In addition, each value is counted with its weight, as if it is present 'weight' times. The arguments of the function can be considered as histograms, where the value 'x' corresponds to a histogram "column" of the height 'weight', and the function itself can be considered as a summation of histograms.
 
-В качестве алгоритма используется хэш-таблица. Из-за этого, в случае, если передаваемые значения часто повторяются, функция потребляет меньше оперативки, чем `quantileExact`. Вы можете использовать эту функцию вместо `quantileExact`, указав в качестве веса число 1.
-
+A hash table is used as the algorithm. Because of this, if the passed values ​​are frequently repeated, the function consumes less RAM than `quantileExact`. You can use this function instead of `quantileExact` and specify the weight as 1.
 
 ## quantileTDigest(level)(x)
 
-Вычисляет квантиль уровня level приближённо, с использованием алгоритма [t-digest](https://github.com/tdunning/t-digest/blob/master/docs/t-digest-paper/histo.pdf). Максимальная погрешность составляет 1%. Расход памяти на состояние пропорционален логарифму от количества переданных значений.
+Approximates the quantile level using the [t-digest](https://github.com/tdunning/t-digest/blob/master/docs/t-digest-paper/histo.pdf) algorithm. The maximum error is 1%. Memory consumption by State is proportional to the logarithm of the number of passed values.
 
-Производительность функции ниже `quantile`, `quantileTiming`. По соотношению размера состояния и точности, функция существенно лучше, чем `quantile`.
+The performance of the function is lower than for `quantile`, `quantileTiming`. In terms of the ratio of State size to precision, this function is much better than `quantile`.
 
-Результат зависит от порядка выполнения запроса, и является недетерминированным.
-
+The result depends on the order of running the query, and is nondeterministic.
 
 ## median(x)
 
-Для всех quantile-функций, также присутствуют соответствующие median-функции: `median`, `medianDeterministic`, `medianTiming`, `medianTimingWeighted`, `medianExact`, `medianExactWeighted`, `medianTDigest`. Они являются синонимами и их поведение ничем не отличается.
-
+All the quantile functions have corresponding median functions: `median`, `medianDeterministic`, `medianTiming`, `medianTimingWeighted`, `medianExact`, `medianExactWeighted`, `medianTDigest`. They are synonyms and their behavior is identical.
 
 ## quantiles(level1, level2, ...)(x)
 
-Для всех quantile-функций, также присутствуют соответствующие quantiles-функции: `quantiles`, `quantilesDeterministic`, `quantilesTiming`, `quantilesTimingWeighted`, `quantilesExact`, `quantilesExactWeighted`, `quantilesTDigest`. Эти функции за один проход вычисляют все квантили перечисленных уровней и возвращают массив вычисленных значений.
-
+All the quantile functions also have corresponding quantiles functions: `quantiles`, `quantilesDeterministic`, `quantilesTiming`, `quantilesTimingWeighted`, `quantilesExact`, `quantilesExactWeighted`, `quantilesTDigest`. These functions calculate all the quantiles of the listed levels in one pass, and return an array of the resulting values.
 
 ## varSamp(x)
 
-Вычисляет величину `Σ((x - x̅)^2) / (n - 1)`, где `n` - размер выборки, `x̅`- среднее значение `x`.
+Calculates the amount `Σ((x - x̅)^2) / (n - 1)`, where `n` is the sample size and `x̅`is the average value of `x`.
 
-Она представляет собой несмещённую оценку дисперсии случайной величины, если переданные в функцию значения являются выборкой этой случайной величины.
+It represents an unbiased estimate of the variance of a random variable, if the values passed to the function are a sample of this random amount.
 
-Возвращает `Float64`. В случае, когда `n <= 1`, возвращается `+∞`.
+Returns `Float64`. When `n <= 1`, returns `+∞`.
 
 ## varPop(x)
 
-Вычисляет величину `Σ((x - x̅)^2) / n`, где `n` - размер выборки, `x̅`- среднее значение `x`.
+Calculates the amount `Σ((x - x̅)^2) / (n - 1)`, where `n` is the sample size and `x̅`is the average value of `x`.
 
-То есть, дисперсию для множества значений. Возвращает `Float64`.
+In other words, dispersion for a set of values. Returns `Float64`.
 
 ## stddevSamp(x)
 
-Результат равен квадратному корню от `varSamp(x)`.
-
+The result is equal to the square root of `varSamp(x)`.
 
 ## stddevPop(x)
 
-Результат равен квадратному корню от `varPop(x)`.
-
+The result is equal to the square root of `varPop(x)`.
 
 ## topK(N)(column)
 
-Возвращает массив наиболее часто встречающихся значений в указанном столбце. Результирующий массив упорядочен по убыванию частоты значения (не по самим значениям).
+Returns an array of the most frequent values in the specified column. The resulting array is sorted in descending order of frequency of values (not by the values themselves).
 
-Реализует [Filtered Space-Saving](http://www.l2f.inesc-id.pt/~fmmb/wiki/uploads/Work/misnis.ref0a.pdf) алгоритм для анализа TopK, на основе reduce-and-combine
-алгоритма из методики [Parallel Space Saving](https://arxiv.org/pdf/1401.0702.pdf).
+Implements the [ Filtered Space-Saving](http://www.l2f.inesc-id.pt/~fmmb/wiki/uploads/Work/misnis.ref0a.pdf) algorithm for analyzing TopK, based on the reduce-and-combine algorithm from [Parallel Space Saving](https://arxiv.org/pdf/1401.0702.pdf).
 
-```
-topK(N)(column)
-```
+    topK(N)(column)
+    
 
-Функция не дает гарантированного результата, при определенных условиях возможны ошибки и вернутся частые, но не наиболее частые значения.
+This function doesn't provide a guaranteed result. In certain situations, errors might occur and it might return frequent values that aren't the most frequent values.
 
-Рекомендуем использовать значения `N < 10`, при больших `N` снижается производительность. Максимально возможное значение `N = 65536`.
+We recommend using the `N < 10` value; performance is reduced with large `N` values. Maximum value of `N = 65536`.
 
-**Аргументы**
-- 'N' - Количество значений.
-- 'x' - Столбец.
+**Arguments**
 
-**Пример**
+- 'N' is the number of values.
+- ' x ' – The column.
 
-Возьмем набор данных [OnTime](../../getting_started/example_datasets/ontime.md#example_datasets-ontime) и выберем 3 наиболее часто встречающихся значения в столбце `AirlineID`.
+**Example**
+
+Take the [OnTime](../../getting_started/example_datasets/ontime.md#example_datasets-ontime) data set and select the three most frequently occurring values in the `AirlineID` column.
 
 ```sql
 SELECT topK(3)(AirlineID) AS res
 FROM ontime
 ```
-```
-┌─res─────────────────┐
-│ [19393,19790,19805] │
-└─────────────────────┘
-```
+
+    ┌─res─────────────────┐
+    │ [19393,19790,19805] │
+    └─────────────────────┘
+    
 
 ## covarSamp(x, y)
 
-Вычисляет величину `Σ((x - x̅)(y - y̅)) / (n - 1)`.
+Calculates the value of `Σ((x - x̅)(y - y̅)) / (n - 1)`.
 
-Возвращает Float64. В случае, когда `n <= 1`, возвращается +∞.
-
+Returns Float64. When `n <= 1`, returns +∞.
 
 ## covarPop(x, y)
 
-Вычисляет величину `Σ((x - x̅)(y - y̅)) / n`.
-
+Calculates the value of `Σ((x - x̅)(y - y̅)) / n`.
 
 ## corr(x, y)
 
-Вычисляет коэффициент корреляции Пирсона: `Σ((x - x̅)(y - y̅)) / sqrt(Σ((x - x̅)^2) * Σ((y - y̅)^2))`.
+Calculates the Pearson correlation coefficient: `Σ((x - x̅)(y - y̅)) / sqrt(Σ((x - x̅)^2) * Σ((y - y̅)^2))`.

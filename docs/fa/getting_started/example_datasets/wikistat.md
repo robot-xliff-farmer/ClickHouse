@@ -1,12 +1,8 @@
-<div dir="rtl" markdown="1">
-
 # WikiStat
 
-ببینید: <http://dumps.wikimedia.org/other/pagecounts-raw/>
+See: <http://dumps.wikimedia.org/other/pagecounts-raw/>
 
-ساخت جدول:
-
-</div>
+Creating a table:
 
 ```sql
 CREATE TABLE wikistat
@@ -21,12 +17,7 @@ CREATE TABLE wikistat
 ) ENGINE = MergeTree(date, (path, time), 8192);
 ```
 
-
-<div dir="rtl" markdown="1">
-
-load دیتا
-
-</div>
+Loading data:
 
 ```bash
 for i in {2007..2016}; do for j in {01..12}; do echo $i-$j >&2; curl -sSL "http://dumps.wikimedia.org/other/pagecounts-raw/$i/$i-$j/" | grep -oE 'pagecounts-[0-9]+-[0-9]+\.gz'; done; done | sort | uniq | tee links.txt

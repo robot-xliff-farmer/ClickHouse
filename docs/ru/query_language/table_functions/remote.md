@@ -2,21 +2,20 @@
 
 # remote
 
-Позволяет обратиться к удалённым серверам без создания таблицы типа `Distributed`.
+Allows you to access remote servers without creating a `Distributed` table.
 
-Сигнатуры:
+Signatures:
 
 ```sql
 remote('addresses_expr', db, table[, 'user'[, 'password']])
 remote('addresses_expr', db.table[, 'user'[, 'password']])
 ```
 
-`addresses_expr` - выражение, генерирующее адреса удалённых серверов. Это может быть просто один адрес сервера. Адрес сервера - это `хост:порт`, или только `хост`. Хост может быть указан в виде имени сервера, или в виде IPv4 или IPv6 адреса. IPv6 адрес указывается в квадратных скобках. Порт - TCP-порт удалённого сервера. Если порт не указан, используется `tcp_port` из конфигурационного файла сервера (по умолчанию - 9000).
+`addresses_expr` – An expression that generates addresses of remote servers. This may be just one server address. The server address is `host:port`, or just `host`. The host can be specified as the server name, or as the IPv4 or IPv6 address. An IPv6 address is specified in square brackets. The port is the TCP port on the remote server. If the port is omitted, it uses `tcp_port` from the server's config file (by default, 9000).
 
-!!! important "Важно"
-    С IPv6-адресом обязательно нужно указывать порт.
+!!! important The port is required for an IPv6 address.
 
-Примеры:
+Examples:
 
 ```text
 example01-01-1
@@ -27,48 +26,47 @@ localhost
 [2a02:6b8:0:1111::11]:9000
 ```
 
-Адреса можно указать через запятую, в этом случае ClickHouse обработает запрос как распределённый, т.е. отправит его по всем указанным адресам как на шарды с разными данными.
+Multiple addresses can be comma-separated. In this case, ClickHouse will use distributed processing, so it will send the query to all specified addresses (like to shards with different data).
 
-Пример:
+Example:
 
 ```text
 example01-01-1,example01-02-1
 ```
 
-Часть выражения может быть указана в фигурных скобках. Предыдущий пример может быть записан следующим образом:
+Part of the expression can be specified in curly brackets. The previous example can be written as follows:
 
 ```text
 example01-0{1,2}-1
 ```
 
-В фигурных скобках может быть указан диапазон (неотрицательных целых) чисел через две точки. В этом случае, диапазон раскрывается в множество значений, генерирующих адреса шардов. Если запись первого числа начинается с нуля, то значения формируются с таким же выравниванием нулями. Предыдущий пример может быть записан следующим образом:
+Curly brackets can contain a range of numbers separated by two dots (non-negative integers). In this case, the range is expanded to a set of values that generate shard addresses. If the first number starts with zero, the values are formed with the same zero alignment. The previous example can be written as follows:
 
 ```text
 example01-{01..02}-1
 ```
 
-При наличии нескольких пар фигурных скобок, генерируется прямое произведение соответствующих множеств.
+If you have multiple pairs of curly brackets, it generates the direct product of the corresponding sets.
 
-Адреса или их фрагменты в фигурных скобках можно указать через символ |. В этом случае, соответствующие множества адресов понимаются как реплики - запрос будет отправлен на первую живую реплику. При этом, реплики перебираются в порядке, согласно текущей настройке [load_balancing](../../operations/settings/settings.md#settings-load_balancing).
+Addresses and parts of addresses in curly brackets can be separated by the pipe symbol (|). In this case, the corresponding sets of addresses are interpreted as replicas, and the query will be sent to the first healthy replica. However, the replicas are iterated in the order currently set in the [load_balancing](../../operations/settings/settings.md#settings-load_balancing) setting.
 
-Пример:
+Example:
 
 ```text
 example01-{01..02}-{1|2}
 ```
 
-В этом примере указано два шарда, в каждом из которых имеется две реплики.
+This example specifies two shards that each have two replicas.
 
-Количество генерируемых адресов ограничено константой - сейчас это 1000 штук.
+The number of addresses generated is limited by a constant. Right now this is 1000 addresses.
 
-Использование табличной функции `remote` менее оптимально, чем создание таблицы типа `Distributed`, так как в этом случае, соединения с серверами устанавливаются заново при каждом запросе, в случае задания имён хостов, делается резолвинг имён, а также не ведётся подсчёт ошибок при работе с разными репликами. При обработке большого количества запросов, всегда создавайте `Distributed` таблицу заранее, не используйте табличную функцию `remote`.
+Using the `remote` table function is less optimal than creating a `Distributed` table, because in this case, the server connection is re-established for every request. In addition, if host names are set, the names are resolved, and errors are not counted when working with various replicas. When processing a large number of queries, always create the `Distributed` table ahead of time, and don't use the `remote` table function.
 
-Табличная функция `remote` может быть полезна для следующих случаях:
+The `remote` table function can be useful in the following cases:
 
--   обращение на конкретный сервер в целях сравнения данных, отладки и тестирования;
--   запросы между разными кластерами ClickHouse в целях исследований;
--   нечастых распределённых запросов, задаваемых вручную;
--   распределённых запросов, где набор серверов определяется каждый раз заново.
+- Accessing a specific server for data comparison, debugging, and testing.
+- Queries between various ClickHouse clusters for research purposes.
+- Infrequent distributed requests that are made manually.
+- Distributed requests where the set of servers is re-defined each time.
 
-Если пользователь не задан,то используется `default`.
-Если пароль не задан, то используется пустой пароль.
+If the user is not specified, `default` is used. If the password is not specified, an empty password is used.

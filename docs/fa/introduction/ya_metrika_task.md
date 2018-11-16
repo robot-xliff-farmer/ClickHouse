@@ -1,48 +1,44 @@
-<div dir="rtl" markdown="1">
+# Yandex.Metrica Use Case
 
-# Yandex.Metrica use case
+ClickHouse was originally developed to power [Yandex.Metrica](https://metrica.yandex.com/), [the second largest web analytics platform in the world](http://w3techs.com/technologies/overview/traffic_analysis/all), and continues to be the core component of this system. With more than 13 trillion records in the database and more than 20 billion events daily, ClickHouse allows generating custom reports on the fly directly from non-aggregated data. This article briefly covers the goals of ClickHouse in the early stages of its development.
 
-ClickHouse در ابتدا برای قدرت به Yandex.Metrica دومین بستر آنالیز وب در دنیا توسعه داده شد، و همچنان جز اصلی آن است. ClickHouse اجازه می دهند که با بیش از 13 تریلیون رکورد در دیتابیس و بیش از 20 میلیارد event در روز، گزارش های مستقیم (On the fly) از داده های non-aggregate تهیه کنیم. این مقاله پیشنیه ی تاریخی در ارتباط با اهداف اصلی ClickHouse قبل از آنکه به یک محصول open source تبدیل شود، می دهد.
+Yandex.Metrica builds customized reports on the fly based on hits and sessions, with arbitrary segments defined by the user. This often requires building complex aggregates, such as the number of unique users. New data for building a report is received in real time.
 
-Yandex.Metrica تولید گزارش های برپایه بازدید و session ها به صورت on the fly و با استفده از بخش های دلخواه و دوره ی زمانی که توسط کاربر انتخاب می شود را انجام می دهد. aggregate های پیچیده معمولا مورد نیاز هستند، مانند تعداد بازدیدکنندگان unique. داده های جدید برای تهیه گزارش گیری به صورت real-time می رسند.
+As of April 2014, Yandex.Metrica was tracking about 12 billion events (page views and clicks) daily. All these events must be stored in order to build custom reports. A single query may require scanning millions of rows within a few hundred milliseconds, or hundreds of millions of rows in just a few seconds.
 
-از آوریل 2014، Yandex.Metrica تقریبا 12 میلیارد event شامل page view و click در روز دریافت کرد. تمام این event ها باید به ترتیب برای ساخت گزارش های سفارشی ذخیره سازی می شدند. یک query ممکن است نیاز به اسکن کردن میلیون ها سطر با زمان کمتر از چند صد میلی ثانیه، یا چند صد میلیون سطر در عرض چند ثانیه داشته باشد.
+## Usage in Yandex.Metrica and Other Yandex Services
 
-## استفاده در Yandex.Metrica و دیگر سرویس های Yandex
+ClickHouse is used for multiple purposes in Yandex.Metrica. Its main task is to build reports in online mode using non-aggregated data. It uses a cluster of 374 servers, which store over 20.3 trillion rows in the database. The volume of compressed data, without counting duplication and replication, is about 2 PB. The volume of uncompressed data (in TSV format) would be approximately 17 PB.
 
-ClickHouse با چندین اهداف در Yandex.Metrica استفاده می شود. وظیفه اصلی آن ساخت گزارش های آنلاین از داده های non-aggregate می باشد. ClickHouse در یک کلاستر با سایز 374 سرور، که بیش از 20.3 تریلیون سطر در دیتابیس را دارد مورد استفاده قرار می گیرد. اندازه فشرده داده ها، بدون شمارش داده های تکراری و replication، حدود 2 پتابایت می باشد. اندازه ی غیرفشرده داده ها (در فرمت TSV) حدودا 17 پتابایت می باشد.
+ClickHouse is also used for:
 
-ClickHouse همچنین در موارد زیراستفاده می شود:
+- Storing data for Session Replay from Yandex.Metrica.
+- Processing intermediate data.
+- Building global reports with Analytics.
+- Running queries for debugging the Yandex.Metrica engine.
+- Analyzing logs from the API and the user interface.
 
-- ذخیره سازی داده ها برای Session replay از Yandex.Metrica.
-- پردازش داده های Intermediate.
-- ساخت گزارش های سراسری از آنالیز ها.
-- اجرای query ها برای debug کردن موتور Yandex.Metrica.
-- آنالیز لاگ های به دست آمده از API ها و user interface.
+ClickHouse has at least a dozen installations in other Yandex services: in search verticals, Market, Direct, business analytics, mobile development, AdFox, personal services, and others.
 
-ClickHouse حداقل در دوازده جای دیگر سرویس Yandex نصب شده است: در search verticals، Market، Direct، Business Analytics، Mobile Development، AdFox، سرویس های شخصی و..
+## Aggregated and Non-aggregated Data
 
-## داده های Aggregate , Non-Aggregate
+There is a popular opinion that in order to effectively calculate statistics, you must aggregate data, since this reduces the volume of data.
 
-یک دیدگاه محبوب وجود دارد که شما باید، داده های خود را به منظور کاهش اندازه داده ها Aggregate کنید.
+But data aggregation is a very limited solution, for the following reasons:
 
-اما به دلایل زیر، aggregate کردن داده ها راه حل بسیار محدودی است:
+- You must have a pre-defined list of reports the user will need.
+- The user can't make custom reports.
+- When aggregating a large quantity of keys, the volume of data is not reduced, and aggregation is useless.
+- For a large number of reports, there are too many aggregation variations (combinatorial explosion).
+- When aggregating keys with high cardinality (such as URLs), the volume of data is not reduced by much (less than twofold).
+- For this reason, the volume of data with aggregation might grow instead of shrink.
+- Users do not view all the reports we generate for them. A large portion of calculations are useless.
+- The logical integrity of data may be violated for various aggregations.
 
-- شما باید لیست گزارش های از قبل تعریف شده توسط کاربر که نیاز به تهیه گزارش آنها را دارید، داشته باشید.
-- کاربر نمیتواند گزارش های سفارشی تهیه کند.
-- در هنگام aggregate کردن تعداد بسیار زیاد key، اندازه ی داده ها کم نمی شود و aggregate بی فایده است.
-- برای تعداد زیادی از گزارش ها، aggregate های متنوع و تغییرپذیر زیادی وجود دارد. (انفجار ترکیبی).
-- هنگام aggregate کردن key ها با cardinality بالا (مثل URL ها)، اندازه داده ها به اندازه کافی کاهش پیدا نمی کند (کمتر از دو برابر).
-- به این دلیل اندازه ی داده ها با aggregate کردن ممکن است به جای شکستن، رشد هم بکند.
-- کاربر تمام گزارش هایی که ما تولید کردیم را نگاه نمی کند. بخش بزرگی از محاسبات بی فایده است.
-- یکپارچگی منطقی داده ها ممکن است برای aggregate های مختلف نقض شود.
+If we do not aggregate anything and work with non-aggregated data, this might actually reduce the volume of calculations.
 
-اگر ما هیچ چیزی را aggregate نکنیم و با داده های non-aggregate کار کنیم، در واقع این ممکن است باعث کاهش اندازه ی محاسبات شود.
+However, with aggregation, a significant part of the work is taken offline and completed relatively calmly. In contrast, online calculations require calculating as fast as possible, since the user is waiting for the result.
 
-با این حال، با aggregate کردن، بخش قابل توجهی از کار به صورت آفلاین انجام می شود و نسبتا آرام به پایان می رسد. در مقابل، محاسبات آنلاین به دلیل اینکه کاربر منتظر نمایش نتایج می باشد، نیازمند محاسبه سریع تا جایی که ممکن است می باشد.
+Yandex.Metrica has a specialized system for aggregating data called Metrage, which is used for the majority of reports. Starting in 2009, Yandex.Metrica also used a specialized OLAP database for non-aggregated data called OLAPServer, which was previously used for the report builder. OLAPServer worked well for non-aggregated data, but it had many restrictions that did not allow it to be used for all reports as desired. These included the lack of support for data types (only numbers), and the inability to incrementally update data in real-time (it could only be done by rewriting data daily). OLAPServer is not a DBMS, but a specialized DB.
 
-Yandex.Metrica دارای یک سیستم تخصصی برای aggregate کردن داده ها به اسم Metrage می باشد، که برای اکثریت گزارش های مورد استفاده قرار می گیرد. شروع سال 2009، Yandex.Metrica همچنین از یک دیتابیس تخصصی OLAP برای داده های non-aggregate به نام OLAPServer، که قبلا برای ساخت گزارش ها استفاده می شد، استفاده می کرد. OLAPServer به خوبی روی داده های Non-Aggregate کار می کرد، اما محدودیت های بسیار زیادی داشت که اجازه ی استفاده در تمام گزارش های دلخواه را نمی داد. مواردی از قبیل عدم پشتیبانی از data type ها (فقط عدد)، و عدم توانایی در بروزرسانی افزایشی داده ها به صورت real-time (این کار فقط به rewrite کردن داده ها به صورت روزانه امکام پذیر بود). OLAPServer یک مدیریت دیتابیس نبود اما یک دیتابیس تخصصی بود.
-
-برای حذف محدودیت های OLAPServer و حل مشکلات کار با داده های Non-Aggregate برای تمام گزارش ها، ما مدیریت دیتابیس ClicHouse را توسعه دادیم..
-
-</div>
+To remove the limitations of OLAPServer and solve the problem of working with non-aggregated data for all reports, we developed the ClickHouse DBMS.

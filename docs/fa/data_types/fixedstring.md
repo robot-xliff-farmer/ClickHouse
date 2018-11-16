@@ -1,9 +1,5 @@
-<div dir="rtl" markdown="1">
-
 # FixedString(N)
 
-یک رشته با طول ثابت N بایت (fixed-length) (نه تعداد کاراکتر یا code point). N باید یک عدد طبیعی مثبت باشد. هنگامی که سرور رشته ای با اندازه ی کمتر از N میخواند (مثل زمان پارس کردن برای INSERT داده ها)، سمت راست رشته به اندازه فضای خالی باقی مانده به بایت، null درج می شود. زمانی که سرور رشته ای بزرگتر از N میخواند، پیغام خطا بر میگردد. زمانی که سرور یک رشته با طول ثابت را می نویسد (مثلا در زمانی که خروجی یک SELECT را برمیگرداند)، بایت های null از انتهای رشته حذف نمی شوند، و در خروجی می آیند. توجه داشته باشید که این رفتار متفاوت از رفتار MySQL برای Char می باشد (زمانی که رشته با space پر می شود و در خروجی space ها حذف می شود).
+A fixed-length string of N bytes (not characters or code points). N must be a strictly positive natural number. When the server reads a string that contains fewer bytes (such as when parsing INSERT data), the string is padded to N bytes by appending null bytes at the right. When the server reads a string that contains more bytes, an error message is returned. When the server writes a string (such as when outputting the result of a SELECT query), null bytes are not trimmed off of the end of the string, but are output. Note that this behavior differs from MySQL behavior for the CHAR type (where strings are padded with spaces, and the spaces are removed for output).
 
-توابع کمتری نسبت به String برای FixedString(N) وجود دارد، و برای استفاده کمتر مناسب است.
-
-</div>
+Fewer functions can work with the FixedString(N) type than with String, so it is less convenient to use.

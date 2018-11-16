@@ -1,9 +1,5 @@
-<div dir="rtl" markdown="1">
-
 # Date
 
-Date، دو بایت به ازای هر تاریخ که به صورت عددی و از تاریخ 01-01-1970 می باشد ذخیره می کند (unsigned).این type به شما اجازه ی ذخیره سازی تاریخ های از ابتدای Unix Epoch تا بالاترین مقدار قابل پشتیبانی توسط این استاندارد را می دهد (در حال حاضر بالاترین مقدار این روش سال 2106 می باشد، اما سال آخری که به طور کامل پشتیبانی می شود سال 2105 است). کمترین مقدار این type در خروجی 0000-00-00 می باشد.
+A date. Stored in two bytes as the number of days since 1970-01-01 (unsigned). Allows storing values from just after the beginning of the Unix Epoch to the upper threshold defined by a constant at the compilation stage (currently, this is until the year 2106, but the final fully-supported year is 2105). The minimum value is output as 0000-00-00.
 
-Date بدون time zone ذخیره می شود.
-
-</div>
+The date is stored without the time zone.

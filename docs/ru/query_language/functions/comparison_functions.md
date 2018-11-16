@@ -1,31 +1,30 @@
-# Функции сравнения
+# Comparison functions
 
+Comparison functions always return 0 or 1 (Uint8).
 
-Функции сравнения возвращают всегда 0 или 1 (UInt8).
+The following types can be compared:
 
-Сравнивать можно следующие типы:
+- numbers
+- strings and fixed strings
+- dates
+- dates with times
 
--   числа;
--   строки и фиксированные строки;
--   даты;
--   даты-с-временем;
+within each group, but not between different groups.
 
-внутри каждой группы, но не из разных групп.
+For example, you can't compare a date with a string. You have to use a function to convert the string to a date, or vice versa.
 
-Например, вы не можете сравнить дату со строкой. Надо использовать функцию преобразования строки в дату или наоборот.
+Strings are compared by bytes. A shorter string is smaller than all strings that start with it and that contain at least one more character.
 
-Строки сравниваются побайтово. Более короткая строка меньше всех строк, начинающихся с неё и содержащих ещё хотя бы один символ.
+Note. Up until version 1.1.54134, signed and unsigned numbers were compared the same way as in C++. In other words, you could get an incorrect result in cases like SELECT 9223372036854775807 &gt; -1. This behavior changed in version 1.1.54134 and is now mathematically correct.
 
-Замечание. До версии 1.1.54134 сравнение знаковых и беззнаковых целых чисел производилось также, как в C++. То есть, вы могли получить неверный результат в таких случаях: SELECT 9223372036854775807 &gt; -1. С версии 1.1.54134 поведение изменилось и стало математически корректным.
+## equals, a = b and a == b operator
 
-## equals, оператор a = b и a == b
+## notEquals, a ! operator= b and a `<>` b
 
-## notEquals, оператор a != b и a `<>` b
+## less, `< operator`
 
-## less, оператор `<`
+## greater, `> operator`
 
-## greater, оператор `>`
+## lessOrEquals, `<= operator`
 
-## lessOrEquals, оператор `<=`
-
-## greaterOrEquals, оператор `>=`
+## greaterOrEquals, `>= operator`

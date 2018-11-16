@@ -1,76 +1,79 @@
-# Прочие функции
+# Other functions
 
 ## hostName()
-Возвращает строку - имя хоста, на котором эта функция была выполнена. При распределённой обработке запроса, это будет имя хоста удалённого сервера, если функция выполняется на удалённом сервере.
+
+Returns a string with the name of the host that this function was performed on. For distributed processing, this is the name of the remote server host, if the function is performed on a remote server.
 
 ## visibleWidth(x)
-Вычисляет приблизительную ширину при выводе значения в текстовом (tab-separated) виде на консоль.
-Функция используется системой для реализации Pretty форматов.
 
-`NULL` представляется как строка, соответствующая отображению `NULL` в форматах `Pretty`.
+Calculates the approximate width when outputting values to the console in text format (tab-separated). This function is used by the system for implementing Pretty formats.
 
-```
-SELECT visibleWidth(NULL)
+`NULL` is represented as a string corresponding to `NULL` in `Pretty` formats.
 
-┌─visibleWidth(NULL)─┐
-│                  4 │
-└────────────────────┘
-```
+    SELECT visibleWidth(NULL)
+    
+    ┌─visibleWidth(NULL)─┐
+    │                  4 │
+    └────────────────────┘
+    
 
 ## toTypeName(x)
-Возвращает строку, содержащую имя типа переданного аргумента.
 
-Если на вход функции передать `NULL`, то она вернёт тип `Nullable(Nothing)`, что соответствует внутреннему представлению `NULL` в ClickHouse.
+Returns a string containing the type name of the passed argument.
+
+If `NULL` is passed to the function as input, then it returns the `Nullable(Nothing)` type, which corresponds to an internal `NULL` representation in ClickHouse.
 
 ## blockSize()
-Получить размер блока.
-В ClickHouse выполнение запроса всегда идёт по блокам (наборам кусочков столбцов). Функция позволяет получить размер блока, для которого её вызвали.
+
+Gets the size of the block. In ClickHouse, queries are always run on blocks (sets of column parts). This function allows getting the size of the block that you called it for.
 
 ## materialize(x)
-Превращает константу в полноценный столбец, содержащий только одно значение.
-В ClickHouse полноценные столбцы и константы представлены в памяти по-разному. Функции по-разному работают для аргументов-констант и обычных аргументов (выполняется разный код), хотя результат почти всегда должен быть одинаковым. Эта функция предназначена для отладки такого поведения.
+
+Turns a constant into a full column containing just one value. In ClickHouse, full columns and constants are represented differently in memory. Functions work differently for constant arguments and normal arguments (different code is executed), although the result is almost always the same. This function is for debugging this behavior.
 
 ## ignore(...)
-Принимает любые аргументы, в т.ч. `NULL`, всегда возвращает 0.
-При этом, аргумент всё равно вычисляется. Это может использоваться для бенчмарков.
+
+Accepts any arguments, including `NULL`. Always returns 0. However, the argument is still evaluated. This can be used for benchmarks.
 
 ## sleep(seconds)
-Спит seconds секунд на каждый блок данных. Можно указать как целое число, так и число с плавающей запятой.
+
+Sleeps 'seconds' seconds on each data block. You can specify an integer or a floating-point number.
 
 ## currentDatabase()
-Возвращает имя текущей базы данных.
-Эта функция может использоваться в параметрах движка таблицы в запросе CREATE TABLE там, где нужно указать базу данных.
+
+Returns the name of the current database. You can use this function in table engine parameters in a CREATE TABLE query where you need to specify the database.
 
 ## isFinite(x)
-Принимает Float32 или Float64 и возвращает UInt8, равный 1, если аргумент не бесконечный и не NaN, иначе 0.
+
+Accepts Float32 and Float64 and returns UInt8 equal to 1 if the argument is not infinite and not a NaN, otherwise 0.
 
 ## isInfinite(x)
-Принимает Float32 или Float64 и возвращает UInt8, равный 1, если аргумент бесконечный, иначе 0. Отметим, что в случае NaN возвращается 0.
+
+Accepts Float32 and Float64 and returns UInt8 equal to 1 if the argument is infinite, otherwise 0. Note that 0 is returned for a NaN.
 
 ## isNaN(x)
-Принимает Float32 или Float64 и возвращает UInt8, равный 1, если аргумент является NaN, иначе 0.
+
+Accepts Float32 and Float64 and returns UInt8 equal to 1 if the argument is a NaN, otherwise 0.
 
 ## hasColumnInTable(\['hostname'\[, 'username'\[, 'password'\]\],\] 'database', 'table', 'column')
-Принимает константные строки - имя базы данных, имя таблицы и название столбца. Возвращает константное выражение типа UInt8, равное 1,
-если есть столбец, иначе 0. Если задан параметр hostname, проверка будет выполнена на удалённом сервере.
-Функция кидает исключение, если таблица не существует.
-Для элементов вложенной структуры данных функция проверяет существование столбца. Для самой же вложенной структуры данных функция возвращает 0.
+
+Accepts constant strings: database name, table name, and column name. Returns a UInt8 constant expression equal to 1 if there is a column, otherwise 0. If the hostname parameter is set, the test will run on a remote server. The function throws an exception if the table does not exist. For elements in a nested data structure, the function checks for the existence of a column. For the nested data structure itself, the function returns 0.
 
 ## bar
 
-Позволяет построить unicode-art диаграмму.
+Allows building a unicode-art diagram.
 
-`bar(x, min, max, width)` рисует полосу ширины пропорциональной `(x - min)` и равной `width` символов при `x = max`.
+`bar(x, min, max, width)` draws a band with a width proportional to `(x - min)` and equal to `width` characters when `x = max`.
 
-Параметры:
+Parameters:
 
-- `x` — Величина для отображения.
-- `min, max` — Целочисленные константы, значение должно помещаться в `Int64`.
-- `width` — Константа, положительное число, может быть дробным.
+- `x` — Size to display.
+- `min, max` — Integer constants. The value must fit in `Int64`.
+- `width` — Constant, positive integer, can be fractional.
 
-Полоса рисуется с точностью до одной восьмой символа.
+The band is drawn with accuracy to one eighth of a symbol.
 
-Пример:
+Example:
 
 ```sql
 SELECT
@@ -114,32 +117,30 @@ ORDER BY h ASC
 <a name="other_functions-transform"></a>
 
 ## transform
-Преобразовать значение согласно явно указанному отображению одних элементов на другие.
-Имеется два варианта функции:
 
-1.  `transform(x, array_from, array_to, default)`
+Transforms a value according to the explicitly defined mapping of some elements to other ones. There are two variations of this function:
 
-`x` - что преобразовывать.
+1. `transform(x, array_from, array_to, default)`
 
-`array_from` - константный массив значений для преобразования.
+`x` – What to transform.
 
-`array_to` - константный массив значений, в которые должны быть преобразованы значения из from.
+`array_from` – Constant array of values for converting.
 
-`default` - какое значение использовать, если x не равен ни одному из значений во from.
+`array_to` – Constant array of values to convert the values in 'from' to.
 
-`array_from` и `array_to` - массивы одинаковых размеров.
+`default` – Which value to use if 'x' is not equal to any of the values in 'from'.
 
-Типы:
+`array_from` and `array_to` – Arrays of the same size.
+
+Types:
 
 `transform(T, Array(T), Array(U), U) -> U`
 
-`T` и `U` - могут быть числовыми, строковыми, или Date или DateTime типами.
-При этом, где обозначена одна и та же буква (T или U), могут быть, в случае числовых типов, не совпадающие типы, а типы, для которых есть общий тип.
-Например, первый аргумент может иметь тип Int64, а второй - Array(UInt16).
+`T` and `U` can be numeric, string, or Date or DateTime types. Where the same letter is indicated (T or U), for numeric types these might not be matching types, but types that have a common type. For example, the first argument can have the Int64 type, while the second has the Array(Uint16) type.
 
-Если значение x равно одному из элементов массива array_from, то возвращает соответствующий (такой же по номеру) элемент массива array_to; иначе возвращает default. Если имеется несколько совпадающих элементов в array_from, то возвращает какой-нибудь из соответствующих.
+If the 'x' value is equal to one of the elements in the 'array_from' array, it returns the existing element (that is numbered the same) from the 'array_to' array. Otherwise, it returns 'default'. If there are multiple matching elements in 'array_from', it returns one of the matches.
 
-Пример:
+Example:
 
 ```sql
 SELECT
@@ -159,16 +160,15 @@ ORDER BY c DESC
 └───────────┴────────┘
 ```
 
-2.  `transform(x, array_from, array_to)`
+2. `transform(x, array_from, array_to)`
 
-Отличается от первого варианта отсутствующим аргументом default.
-Если значение x равно одному из элементов массива array_from, то возвращает соответствующий (такой же по номеру) элемент массива array_to; иначе возвращает x.
+Differs from the first variation in that the 'default' argument is omitted. If the 'x' value is equal to one of the elements in the 'array_from' array, it returns the matching element (that is numbered the same) from the 'array_to' array. Otherwise, it returns 'x'.
 
-Типы:
+Types:
 
 `transform(T, Array(T), Array(T)) -> T`
 
-Пример:
+Example:
 
 ```sql
 SELECT
@@ -195,9 +195,10 @@ LIMIT 10
 ```
 
 ## formatReadableSize(x)
-Принимает размер (число байт). Возвращает округленный размер с суффиксом (KiB, MiB и т.д.) в виде строки.
 
-Пример:
+Accepts the size (number of bytes). Returns a rounded size with a suffix (KiB, MiB, etc.) as a string.
+
+Example:
 
 ```sql
 SELECT
@@ -215,28 +216,32 @@ SELECT
 ```
 
 ## least(a, b)
-Возвращает наименьшее значение из a и b.
+
+Returns the smallest value from a and b.
 
 ## greatest(a, b)
-Возвращает наибольшее значение из a и b.
+
+Returns the largest value of a and b.
 
 ## uptime()
-Возвращает аптайм сервера в секундах.
+
+Returns the server's uptime in seconds.
 
 ## version()
-Возвращает версию сервера в виде строки.
+
+Returns the version of the server as a string.
 
 ## rowNumberInAllBlocks()
-Возвращает порядковый номер строки в блоке данных. Функция учитывает только задействованные блоки данных.
+
+Returns the ordinal number of the row in the data block. This function only considers the affected data blocks.
 
 ## runningDifference(x)
-Считает разницу между последовательными значениями строк в блоке данных.
-Возвращает 0 для первой строки и разницу с предыдущей строкой для каждой последующей строки.
 
-Результат функции зависит от затронутых блоков данных и порядка данных в блоке.
-Если сделать подзапрос с ORDER BY и вызывать функцию извне подзапроса, можно будет получить ожидаемый результат.
+Calculates the difference between successive row values ​​in the data block. Returns 0 for the first row and the difference from the previous row for each subsequent row.
 
-Пример:
+The result of the function depends on the affected data blocks and the order of data in the block. If you make a subquery with ORDER BY and call the function from outside the subquery, you can get the expected result.
+
+Example:
 
 ```sql
 SELECT
@@ -266,277 +271,261 @@ FROM
 ```
 
 ## MACNumToString(num)
-Принимает число типа UInt64. Интерпретирует его, как MAC-адрес в big endian. Возвращает строку, содержащую соответствующий MAC-адрес в формате AA:BB:CC:DD:EE:FF (числа в шестнадцатеричной форме через двоеточие).
+
+Accepts a UInt64 number. Interprets it as a MAC address in big endian. Returns a string containing the corresponding MAC address in the format AA:BB:CC:DD:EE:FF (colon-separated numbers in hexadecimal form).
 
 ## MACStringToNum(s)
-Функция, обратная к MACNumToString. Если MAC адрес в неправильном формате, то возвращает 0.
+
+The inverse function of MACNumToString. If the MAC address has an invalid format, it returns 0.
 
 ## MACStringToOUI(s)
-Принимает MAC адрес в формате AA:BB:CC:DD:EE:FF (числа в шестнадцатеричной форме через двоеточие). Возвращает первые три октета как число в формате UInt64. Если MAC адрес в неправильном формате, то возвращает 0.
+
+Accepts a MAC address in the format AA:BB:CC:DD:EE:FF (colon-separated numbers in hexadecimal form). Returns the first three octets as a UInt64 number. If the MAC address has an invalid format, it returns 0.
 
 ## getSizeOfEnumType
 
-Возвращает количество полей в [Enum](../../data_types/enum.md#data_type-enum).
+Returns the number of fields in [Enum](../../data_types/enum.md#data_type-enum).
 
-```
-getSizeOfEnumType(value)
-```
+    getSizeOfEnumType(value)
+    
 
-**Параметры**
+**Parameters:**
 
-- `value` — Значение типа `Enum`.
+- `value` — Value of type `Enum`.
 
+**Returned values**
 
-**Возвращаемые значения**
+- The number of fields with `Enum` input values.
+- An exception is thrown if the type is not `Enum`.
 
-- Количество полей входного значения типа `Enum`.
-- Исключение, если тип не `Enum`.
+**Example**
 
-**Пример**
-
-```
-SELECT getSizeOfEnumType( CAST('a' AS Enum8('a' = 1, 'b' = 2) ) ) AS x
-
-┌─x─┐
-│ 2 │
-└───┘
-```
+    SELECT getSizeOfEnumType( CAST('a' AS Enum8('a' = 1, 'b' = 2) ) ) AS x
+    
+    ┌─x─┐
+    │ 2 │
+    └───┘
+    
 
 ## toColumnTypeName
 
-Возвращает имя класса, которым представлен тип данных столбца в оперативной памяти.
+Returns the name of the class that represents the data type of the column in RAM.
 
-```
-toColumnTypeName(value)
-```
+    toColumnTypeName(value)
+    
 
-**Параметры**
+**Parameters:**
 
-- `value` — Значение произвольного типа.
+- `value` — Any type of value.
 
-**Возвращаемые значения**
+**Returned values**
 
-- Строка с именем класса, который используется для представления типа данных `value` в оперативной памяти.
+- A string with the name of the class that is used for representing the `value` data type in RAM.
 
-**Пример разницы между `toTypeName` и `toColumnTypeName`**
+**Example of the difference between`toTypeName ' and ' toColumnTypeName`**
 
-```
-:) select toTypeName(cast('2018-01-01 01:02:03' AS DateTime))
+    :) select toTypeName(cast('2018-01-01 01:02:03' AS DateTime))
+    
+    SELECT toTypeName(CAST('2018-01-01 01:02:03', 'DateTime'))
+    
+    ┌─toTypeName(CAST('2018-01-01 01:02:03', 'DateTime'))─┐
+    │ DateTime                                            │
+    └─────────────────────────────────────────────────────┘
+    
+    1 rows in set. Elapsed: 0.008 sec.
+    
+    :) select toColumnTypeName(cast('2018-01-01 01:02:03' AS DateTime))
+    
+    SELECT toColumnTypeName(CAST('2018-01-01 01:02:03', 'DateTime'))
+    
+    ┌─toColumnTypeName(CAST('2018-01-01 01:02:03', 'DateTime'))─┐
+    │ Const(UInt32)                                             │
+    └───────────────────────────────────────────────────────────┘
+    
 
-SELECT toTypeName(CAST('2018-01-01 01:02:03', 'DateTime'))
-
-┌─toTypeName(CAST('2018-01-01 01:02:03', 'DateTime'))─┐
-│ DateTime                                            │
-└─────────────────────────────────────────────────────┘
-
-1 rows in set. Elapsed: 0.008 sec.
-
-:) select toColumnTypeName(cast('2018-01-01 01:02:03' AS DateTime))
-
-SELECT toColumnTypeName(CAST('2018-01-01 01:02:03', 'DateTime'))
-
-┌─toColumnTypeName(CAST('2018-01-01 01:02:03', 'DateTime'))─┐
-│ Const(UInt32)                                             │
-└───────────────────────────────────────────────────────────┘
-```
-
-В примере видно, что тип данных `DateTime` хранится в памяти как `Const(UInt32)`.
+The example shows that the `DateTime` data type is stored in memory as `Const(UInt32)`.
 
 ## dumpColumnStructure
 
-Выводит развернутое описание структур данных в оперативной памяти
+Outputs a detailed description of data structures in RAM
 
-```
-dumpColumnStructure(value)
-```
+    dumpColumnStructure(value)
+    
 
-**Параметры**
+**Parameters:**
 
-- `value` — Значение произвольного типа.
+- `value` — Any type of value.
 
-**Возвращаемые значения**
+**Returned values**
 
-- Строка с описанием структуры, которая используется для представления типа данных `value` в оперативной памяти.
+- A string describing the structure that is used for representing the `value` data type in RAM.
 
-**Пример**
+**Example**
 
-```
-SELECT dumpColumnStructure(CAST('2018-01-01 01:02:03', 'DateTime'))
-
-┌─dumpColumnStructure(CAST('2018-01-01 01:02:03', 'DateTime'))─┐
-│ DateTime, Const(size = 1, UInt32(size = 1))                  │
-└──────────────────────────────────────────────────────────────┘
-```
+    SELECT dumpColumnStructure(CAST('2018-01-01 01:02:03', 'DateTime'))
+    
+    ┌─dumpColumnStructure(CAST('2018-01-01 01:02:03', 'DateTime'))─┐
+    │ DateTime, Const(size = 1, UInt32(size = 1))                  │
+    └──────────────────────────────────────────────────────────────┘
+    
 
 ## defaultValueOfArgumentType
 
-Выводит значение по умолчанию для типа данных.
+Outputs the default value for the data type.
 
-Не учитывает значения по умолчанию для столбцов, заданные пользователем.
+Does not include default values for custom columns set by the user.
 
-```
-defaultValueOfArgumentType(expression)
-```
+    defaultValueOfArgumentType(expression)
+    
 
-**Параметры**
+**Parameters:**
 
-- `expression` — Значение произвольного типа или выражение, результатом которого является значение произвольного типа.
+- `expression` — Arbitrary type of value or an expression that results in a value of an arbitrary type.
 
-**Возвращаемые значения**
+**Returned values**
 
-- `0` для чисел;
-- Пустая строка для строк;
-- `ᴺᵁᴸᴸ` для [Nullable](../../data_types/nullable.md#data_type-nullable).
+- `0` for numbers.
+- Empty string for strings.
+- `ᴺᵁᴸᴸ` for [Nullable](../../data_types/nullable.md#data_type-nullable).
 
-**Пример**
+**Example**
 
-```
-:) SELECT defaultValueOfArgumentType( CAST(1 AS Int8) )
-
-SELECT defaultValueOfArgumentType(CAST(1, 'Int8'))
-
-┌─defaultValueOfArgumentType(CAST(1, 'Int8'))─┐
-│                                           0 │
-└─────────────────────────────────────────────┘
-
-1 rows in set. Elapsed: 0.002 sec.
-
-:) SELECT defaultValueOfArgumentType( CAST(1 AS Nullable(Int8) ) )
-
-SELECT defaultValueOfArgumentType(CAST(1, 'Nullable(Int8)'))
-
-┌─defaultValueOfArgumentType(CAST(1, 'Nullable(Int8)'))─┐
-│                                                  ᴺᵁᴸᴸ │
-└───────────────────────────────────────────────────────┘
-
-1 rows in set. Elapsed: 0.002 sec.
-```
+    :) SELECT defaultValueOfArgumentType( CAST(1 AS Int8) )
+    
+    SELECT defaultValueOfArgumentType(CAST(1, 'Int8'))
+    
+    ┌─defaultValueOfArgumentType(CAST(1, 'Int8'))─┐
+    │                                           0 │
+    └─────────────────────────────────────────────┘
+    
+    1 rows in set. Elapsed: 0.002 sec.
+    
+    :) SELECT defaultValueOfArgumentType( CAST(1 AS Nullable(Int8) ) )
+    
+    SELECT defaultValueOfArgumentType(CAST(1, 'Nullable(Int8)'))
+    
+    ┌─defaultValueOfArgumentType(CAST(1, 'Nullable(Int8)'))─┐
+    │                                                  ᴺᵁᴸᴸ │
+    └───────────────────────────────────────────────────────┘
+    
+    1 rows in set. Elapsed: 0.002 sec.
+    
 
 ## indexHint
 
-Выводит данные, попавшие в диапазон, выбранный по индексу без фильтрации по указанному в качестве аргумента выражению.
+Outputs data in the range selected by the index without filtering by the expression specified as an argument.
 
-Переданное в функцию выражение не вычисляется, но при этом ClickHouse применяет к этому выражению индекс таким же образом, как если бы выражение участвовало в запросе без `indexHint`.
+The expression passed to the function is not calculated, but ClickHouse applies the index to this expression in the same way as if the expression was in the query without `indexHint`.
 
+**Returned value**
 
-**Возвращаемое значение**
+- 1. 
 
-- 1.
+**Example**
 
+Here is a table with the test data for [ontime](../../getting_started/example_datasets/ontime.md#example_datasets-ontime).
 
-**Пример**
+    SELECT count() FROM ontime
+    
+    ┌─count()─┐
+    │ 4276457 │
+    └─────────┘
+    
 
-Рассмотрим таблицу с тестовыми данными [ontime](../../getting_started/example_datasets/ontime.md#example_datasets-ontime).
+The table has indexes for the fields `(FlightDate, (Year, FlightDate))`.
 
-```
-SELECT count() FROM ontime
+Create a selection by date like this:
 
-┌─count()─┐
-│ 4276457 │
-└─────────┘
-```
+    :) SELECT FlightDate AS k, count() FROM ontime GROUP BY k ORDER BY k
+    
+    SELECT
+        FlightDate AS k,
+        count()
+    FROM ontime
+    GROUP BY k
+    ORDER BY k ASC
+    
+    ┌──────────k─┬─count()─┐
+    │ 2017-01-01 │   13970 │
+    │ 2017-01-02 │   15882 │
+    ........................
+    │ 2017-09-28 │   16411 │
+    │ 2017-09-29 │   16384 │
+    │ 2017-09-30 │   12520 │
+    └────────────┴─────────┘
+    
+    273 rows in set. Elapsed: 0.072 sec. Processed 4.28 million rows, 8.55 MB (59.00 million rows/s., 118.01 MB/s.)
+    
 
-В таблице есть индексы по полям `(FlightDate, (Year, FlightDate))`.
+In this selection, the index is not used and ClickHouse processed the entire table (`Processed 4.28 million rows`). To apply the index, select a specific date and run the following query:
 
-Выполним выборку по дате следующим образом:
+    :) SELECT FlightDate AS k, count() FROM ontime WHERE k = '2017-09-15' GROUP BY k ORDER BY k
+    
+    SELECT
+        FlightDate AS k,
+        count()
+    FROM ontime
+    WHERE k = '2017-09-15'
+    GROUP BY k
+    ORDER BY k ASC
+    
+    ┌──────────k─┬─count()─┐
+    │ 2017-09-15 │   16428 │
+    └────────────┴─────────┘
+    
+    1 rows in set. Elapsed: 0.014 sec. Processed 32.74 thousand rows, 65.49 KB (2.31 million rows/s., 4.63 MB/s.)
+    
 
-```
-:) SELECT FlightDate AS k, count() FROM ontime GROUP BY k ORDER BY k
+The last line of output shows that by using the index, ClickHouse processed a significantly smaller number of rows (`Processed 32.74 thousand rows`).
 
-SELECT
-    FlightDate AS k,
-    count()
-FROM ontime
-GROUP BY k
-ORDER BY k ASC
+Now pass the expression `k = '2017-09-15'` to the `indexHint` function:
 
-┌──────────k─┬─count()─┐
-│ 2017-01-01 │   13970 │
-│ 2017-01-02 │   15882 │
-........................
-│ 2017-09-28 │   16411 │
-│ 2017-09-29 │   16384 │
-│ 2017-09-30 │   12520 │
-└────────────┴─────────┘
+    :) SELECT FlightDate AS k, count() FROM ontime WHERE indexHint(k = '2017-09-15') GROUP BY k ORDER BY k
+    
+    SELECT
+        FlightDate AS k,
+        count()
+    FROM ontime
+    WHERE indexHint(k = '2017-09-15')
+    GROUP BY k
+    ORDER BY k ASC
+    
+    ┌──────────k─┬─count()─┐
+    │ 2017-09-14 │    7071 │
+    │ 2017-09-15 │   16428 │
+    │ 2017-09-16 │    1077 │
+    │ 2017-09-30 │    8167 │
+    └────────────┴─────────┘
+    
+    4 rows in set. Elapsed: 0.004 sec. Processed 32.74 thousand rows, 65.49 KB (8.97 million rows/s., 17.94 MB/s.)
+    
 
-273 rows in set. Elapsed: 0.072 sec. Processed 4.28 million rows, 8.55 MB (59.00 million rows/s., 118.01 MB/s.)
-```
+The response to the request shows that ClickHouse applied the index in the same way as the previous time (`Processed 32.74 thousand rows`). However, the resulting set of rows shows that the expression `k = '2017-09-15'` was not used when generating the result.
 
-В этой выборке индекс не используется и ClickHouse обработал всю таблицу (`Processed 4.28 million rows`). Для подключения индекса выберем конкретную дату и выполним следующий запрос:
-
-```
-:) SELECT FlightDate AS k, count() FROM ontime WHERE k = '2017-09-15' GROUP BY k ORDER BY k
-
-SELECT
-    FlightDate AS k,
-    count()
-FROM ontime
-WHERE k = '2017-09-15'
-GROUP BY k
-ORDER BY k ASC
-
-┌──────────k─┬─count()─┐
-│ 2017-09-15 │   16428 │
-└────────────┴─────────┘
-
-1 rows in set. Elapsed: 0.014 sec. Processed 32.74 thousand rows, 65.49 KB (2.31 million rows/s., 4.63 MB/s.)
-```
-
-В последней строке выдачи видно, что благодаря использованию индекса, ClickHouse обработал значительно меньшее количество строк (`Processed 32.74 thousand rows`).
-
-
-Теперь передадим выражение `k = '2017-09-15'` в функцию `indexHint`:
-
-```
-:) SELECT FlightDate AS k, count() FROM ontime WHERE indexHint(k = '2017-09-15') GROUP BY k ORDER BY k
-
-SELECT
-    FlightDate AS k,
-    count()
-FROM ontime
-WHERE indexHint(k = '2017-09-15')
-GROUP BY k
-ORDER BY k ASC
-
-┌──────────k─┬─count()─┐
-│ 2017-09-14 │    7071 │
-│ 2017-09-15 │   16428 │
-│ 2017-09-16 │    1077 │
-│ 2017-09-30 │    8167 │
-└────────────┴─────────┘
-
-4 rows in set. Elapsed: 0.004 sec. Processed 32.74 thousand rows, 65.49 KB (8.97 million rows/s., 17.94 MB/s.)
-```
-
-В ответе на запрос видно, что ClickHouse применил индекс таким же образом, что и в предыдущий раз (`Processed 32.74 thousand rows`). Однако по результирующему набору строк видно, что выражение `k = '2017-09-15'` не использовалось при формировании результата.
-
-Поскольку индекс в ClickHouse разреженный, то при чтении диапазона в ответ попадают "лишние" данные, в данном случае соседние даты. Функция `indexHint` позволяет их увидеть.
+Because the index is sparse in ClickHouse, "extra" data ends up in the response when reading a range (in this case, the adjacent dates). Use the `indexHint` function to see it.
 
 ## replicate
 
-Создает массив, заполненный одним значением.
+Creates an array with a single value.
 
-Используется для внутренней реализации [arrayJoin](array_join.md#functions_arrayjoin).
+Used for internal implementation of [arrayJoin](array_join.md#functions_arrayjoin).
 
-```
-replicate(x, arr)
-```
+    replicate(x, arr)
+    
 
-**Параметры**
+**Parameters:**
 
-- `arr` — Исходный массив. ClickHouse создаёт новый массив такой же длины как исходный и заполняет его значением `x`.
-- `x` — Значение, которым будет заполнен результирующий массив.
+- `arr` — Original array. ClickHouse creates a new array of the same length as the original and fills it with the value `x`.
+- `x` — The value that the resulting array will be filled with.
 
-**Выходное значение**
+**Output value**
 
-- Массив, заполненный значением `x`.
+- An array filled with the value `x`.
 
-**Пример**
+**Example**
 
-```
-SELECT replicate(1, ['a', 'b', 'c'])
-
-┌─replicate(1, ['a', 'b', 'c'])─┐
-│ [1,1,1]                       │
-└───────────────────────────────┘
-```
+    SELECT replicate(1, ['a', 'b', 'c'])
+    
+    ┌─replicate(1, ['a', 'b', 'c'])─┐
+    │ [1,1,1]                       │
+    └───────────────────────────────┘

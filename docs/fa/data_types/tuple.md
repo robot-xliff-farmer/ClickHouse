@@ -1,9 +1,49 @@
-<div dir="rtl" markdown="1">
+<a name="data_type-tuple"></a>
 
 # Tuple(T1, T2, ...)
 
-Tuple ها نمیتوانند در جدول نوشته شوند (به غیر جداول Memory). آنها برای گروه بندی موقت ستون ها مورد استفاده قرار می گیرند. ستون های می توانند گروه بندی شوند اگر از عبارت In در query استفاده کنیم، و برای تعیین فرمت پارامتر های خاصی از توابع لامبدا. برای اطلاعات بیشتر "اپراتور IN" , "توابع Higher order" را ببینید.
+A tuple of elements, each having an individual [type](index.md#data_types).
 
-Tuple می توانند در خروجی نتیجه query در حال اجرا باشند. در این مورد، برای فرمت های text به غیر از JSON\*، مقادیر به صورت comma-separate داخل براکت قرار میگیرند. در فرمت های JSON\* مقادیر tuple به صورت آرایه در خروجی می آیند.
+You can't store tuples in tables (other than Memory tables). They are used for temporary column grouping. Columns can be grouped when an IN expression is used in a query, and for specifying certain formal parameters of lambda functions. For more information, see the sections [IN operators](../query_language/select.md#in_operators) and [Higher order functions](../query_language/functions/higher_order_functions.md#higher_order_functions).
 
-</div>
+Tuples can be the result of a query. In this case, for text formats other than JSON, values are comma-separated in brackets. In JSON formats, tuples are output as arrays (in square brackets).
+
+## Creating a tuple
+
+You can use a function to create a tuple:
+
+    tuple(T1, T2, ...)
+    
+
+Example of creating a tuple:
+
+    :) SELECT tuple(1,'a') AS x, toTypeName(x)
+    
+    SELECT
+        (1, 'a') AS x,
+        toTypeName(x)
+    
+    ┌─x───────┬─toTypeName(tuple(1, 'a'))─┐
+    │ (1,'a') │ Tuple(UInt8, String)      │
+    └─────────┴───────────────────────────┘
+    
+    1 rows in set. Elapsed: 0.021 sec.
+    
+
+## Working with data types
+
+When creating a tuple on the fly, ClickHouse automatically detects the type of each argument as the minimum of the types which can store the argument value. If the argument is [NULL](../query_language/syntax.md#null-literal), the type of the tuple element is [Nullable](nullable.md#data_type-nullable).
+
+Example of automatic data type detection:
+
+    SELECT tuple(1, NULL) AS x, toTypeName(x)
+    
+    SELECT
+        (1, NULL) AS x,
+        toTypeName(x)
+    
+    ┌─x────────┬─toTypeName(tuple(1, NULL))──────┐
+    │ (1,NULL) │ Tuple(UInt8, Nullable(Nothing)) │
+    └──────────┴─────────────────────────────────┘
+    
+    1 rows in set. Elapsed: 0.002 sec.

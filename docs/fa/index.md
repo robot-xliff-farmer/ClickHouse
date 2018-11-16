@@ -1,92 +1,82 @@
-<div dir="rtl" markdown="1">
+# What is ClickHouse?
 
-# ClickHouse چیست؟
+ClickHouse is a column-oriented database management system (DBMS) for online analytical processing of queries (OLAP).
 
-ClickHouse یک مدیریت دیتابیس (DBMS) ستون گرا برای پردازش تحلیلی آنلاین (OLAP) می باشد.
+In a "normal" row-oriented DBMS, data is stored in this order:
 
+| Row | WatchID     | JavaEnable | Title              | GoodEvent | EventTime           |
+| --- | ----------- | ---------- | ------------------ | --------- | ------------------- |
+| #0  | 89354350662 | 1          | Investor Relations | 1         | 2016-05-18 05:19:20 |
+| #1  | 90329509958 | 0          | Contact us         | 1         | 2016-05-18 08:10:20 |
+| #2  | 89953706054 | 1          | Mission            | 1         | 2016-05-18 07:38:00 |
+| #N  | ...         | ...        | ...                | ...       | ...                 |
 
-در یک مدیریت دیتابیس ردیف گرا، داده ها به فرم زیر ذخیره سازی می شوند:
+In order words, all the values related to a row are physically stored next to each other.
 
+Examples of a row-oriented DBMS are MySQL, Postgres, and MS SQL Server. {: .grey }
 
-| Row | WatchID             | JavaEnable | Title              | GoodEvent | EventTime           |
-| --- | ------------------- | ---------- | ------------------ | --------- | ------------------- |
-| #0  | 5385521489354350662 | 1          | Investor Relations | 1         | 2016-05-18 05:19:20 |
-| #1  | 5385521490329509958 | 0          | Contact us         | 1         | 2016-05-18 08:10:20 |
-| #2  | 5385521489953706054 | 1          | Mission            | 1         | 2016-05-18 07:38:00 |
-| #N  | ...                 | ...        | ...                | ...       | ...                 |
+In a column-oriented DBMS, data is stored like this:
 
-به این صورت، تمام مقادیر مربوط به یک سطر (رکورد) به صورت فیزیکی و در کنار یکدگیر ذخیره سازی می شوند.
+| Row:        | #0                  | #1                  | #2                  | #N  |
+| ----------- | ------------------- | ------------------- | ------------------- | --- |
+| WatchID:    | 89354350662         | 90329509958         | 89953706054         | ... |
+| JavaEnable: | 1                   | 0                   | 1                   | ... |
+| Title:      | Investor Relations  | Contact us          | Mission             | ... |
+| GoodEvent:  | 1                   | 1                   | 1                   | ... |
+| EventTime:  | 2016-05-18 05:19:20 | 2016-05-18 08:10:20 | 2016-05-18 07:38:00 | ... |
 
-دیتابیس های MySQL, Postgres و MS SQL Server از انواع دیتابیس های ردیف گرا می باشند.
-{: .grey }
+These examples only show the order that data is arranged in. The values from different columns are stored separately, and data from the same column is stored together.
 
-در یک دیتابیس ستون گرا، داده ها به شکل زیر ذخیره سازی می شوند:
+Examples of a column-oriented DBMS: Vertica, Paraccel (Actian Matrix and Amazon Redshift), Sybase IQ, Exasol, Infobright, InfiniDB, MonetDB (VectorWise and Actian Vector), LucidDB, SAP HANA, Google Dremel, Google PowerDrill, Druid, and kdb+. {: .grey }
 
+Different orders for storing data are better suited to different scenarios. The data access scenario refers to what queries are made, how often, and in what proportion; how much data is read for each type of query – rows, columns, and bytes; the relationship between reading and updating data; the working size of the data and how locally it is used; whether transactions are used, and how isolated they are; requirements for data replication and logical integrity; requirements for latency and throughput for each type of query, and so on.
 
-| Row:        | #0                  | #1                  | #2                  | #N                  |
-| ----------- | ------------------- | ------------------- | ------------------- | ------------------- |
-| WatchID:    | 5385521489354350662 | 5385521490329509958 | 5385521489953706054 | ...                 |
-| JavaEnable: | 1                   | 0                   | 1                   | ...                 |
-| Title:      | Investor Relations  | Contact us          | Mission             | ...                 |
-| GoodEvent:  | 1                   | 1                   | 1                   | ...                 |
-| EventTime:  | 2016-05-18 05:19:20 | 2016-05-18 08:10:20 | 2016-05-18 07:38:00 | ...                 |
+The higher the load on the system, the more important it is to customize the system set up to match the requirements of the usage scenario, and the more fine grained this customization becomes. There is no system that is equally well-suited to significantly different scenarios. If a system is adaptable to a wide set of scenarios, under a high load, the system will handle all the scenarios equally poorly, or will work well for just one or few of possible scenarios.
 
+## Key Properties of the OLAP scenario
 
-این مثال ها تنها نشان می دهند که داده ها منظم شده اند.
-مقادیر ستون های مختلف به صورت جدا، و داده های مربوط به یک ستون در کنار یکدیگر ذخیره می شوند.
+- The vast majority of requests are for read access.
+- Data is updated in fairly large batches (> 1000 rows), not by single rows; or it is not updated at all.
+- Data is added to the DB but is not modified.
+- For reads, quite a large number of rows are extracted from the DB, but only a small subset of columns.
+- Tables are "wide," meaning they contain a large number of columns.
+- Queries are relatively rare (usually hundreds of queries per server or less per second).
+- For simple queries, latencies around 50 ms are allowed.
+- Column values are fairly small: numbers and short strings (for example, 60 bytes per URL).
+- Requires high throughput when processing a single query (up to billions of rows per second per server).
+- Transactions are not necessary.
+- Low requirements for data consistency.
+- There is one large table per query. All tables are small, except for one.
+- A query result is significantly smaller than the source data. In other words, data is filtered or aggregated, so the result fits in a single server's RAM.
 
-مثال های از دیتابیس های ستون گرا: Vertica, Paraccel (Actian Matrix, Amazon Redshift), Sybase IQ, Exasol, Infobright, InfiniDB, MonetDB (VectorWise, Actian Vector), LucidDB, SAP HANA, Google Dremel, Google PowerDrill, Druid, kdb+.
-{: .grey }
+It is easy to see that the OLAP scenario is very different from other popular scenarios (such as OLTP or Key-Value access). So it doesn't make sense to try to use OLTP or a Key-Value DB for processing analytical queries if you want to get decent performance. For example, if you try to use MongoDB or Redis for analytics, you will get very poor performance compared to OLAP databases.
 
-ترتیب های مختلف برای ذخیره سازی داده ها، مناسب سناریو های مختلف هستند. سناریو دسترسی به داده اشاره دارد به، چه query هایی ساخته شده اند، چند وقت به چند وقت، در چه مقداری، چقدر داده در هنگام اجرای هر query خوانده می شود، چند رکورد، چند ستون و چند بایت؛ رابطه ی بین خوانده و نوشتن داده؛ سایز دیتاسی فعال مورد استفاده و نحوه ی استفاده آن به صورت محلی؛ آیا از تراکنش استفاده می شود؛ چگونه داده ها جدا می شوند؛ نیازمندی ها برای replication داده ها و یکپارچگی منطقی داده ها؛ نیازمندی ها برای latency و throughput برای هر نوع از query، و...
+## Why Column-Oriented Databases Work Better in the OLAP Scenario
 
-مهمتر از بالا بودن لود سیستم، سفارشی کردن سیستم مطابق با نیازمندی های سناریو می باشد، و این سفارشی سازی در ادامه دقیق تر می شود. هیج سیستمی وجود ندارد که مناسب انجام سناریو های متفاوت(بسیار متفاوت) باشد. اگر یک سیستم برای اجرای سناریو های مختلف آداپته شده باشد، در زمان بالا بودن لود، سیستم تمام سناریوها را به صورت ضعیف handle می کند.
+Column-oriented databases are better suited to OLAP scenarios: they are at least 100 times faster in processing most queries. The reasons are explained in detail below, but the fact is easier to demonstrate visually:
 
-## ویژگی های کلیدی یک سناریو OLAP
+**Row-oriented DBMS**
 
-- اکثریت درخواست های برای خواندن می باشد.
-- داده ها به صورت batch های بزرگ (< 1000 رکورد) وارد می شوند، نه به صورت تکی؛ یا اینکه اصلا بروز نمی شوند.
-- داده ها به دیتابیس اضافه می شوند و تغییر پیدا نمی کنند.
-- برای خواندن، تعداد زیادی از رکورد ها از دیتابیس استخراج می شوند، اما فقط چند ستون از رکورد ها.
-- جداول "wide" هستند، به این معنی تعداد زیادی ستون دارند.
-- query ها نسبتا کم هستند (معمولا صدها query در ثانیه به ازای هر سرور یا کمتر)
-- برای query های ساده، زمان تاخیر 50 میلی ثانیه مجاز باشد.
-- مقادیر ستون ها کوچک باشد: اعداد و رشته های کوتاه (برای مثال 60 بایت به ازای هر url)
-- نیازمند throughput بالا در هنگام اجرای یک query (بالای یک میلیارد رکورد در هر ثانیه به ازای هر سرور)
-- تراکنش واجب نیست.
-- نیازمندی کم برای consistency بودن داده ها.
-- فقط یک جدول بزرگ به ازای هر query وجود دارد. تمام جداول کوچک هستند، به جز یکی.
-- نتیجه query به طول قابل توجهی کوچکتر از source داده ها می باشد. به عبارتی دیگر در یک query، داده ها فیلتر یا تجمیع می شوند، پس نتایج در RAM یک سرور فیت می شوند.
+![Row-oriented](images/row_oriented.gif#)
 
-خوب خیلی ساده می توان دید که سناریو های OLAP خیلی متفاوت تر از دیگر سناریو های محبوب هستند (مثل OLTP یا Key-Value). پس اگر میخواهید performance مناسب داشته باشید، استفاده از دیتابیس های OLTP یا Key-Value برای اجرای query های OLAP معنی ندارد. برای مثال، اگر شما از دیتابیس MongoDB یا Redis برای آنالیز استفاده کنید، قطعا performance بسیار ضعیف تری نسبت به دیتابیس های OLAP خواهید داشت.
+**Column-oriented DBMS**
 
-## دلایل برتری دیتابیس های ستون گرا برای سناریو های OLAP
+![Column-oriented](images/column_oriented.gif#)
 
-
-دیتابیس های ستون گرا مناسب سناریو های OLAP هستند
- (حداقل 100 برابر در بیشتر query ها سرعت پردازش آنها بهتر است). دلایل این برتری در پایین شرح داده شده است، اما آسانترش این هست که به صورت visually این تفاوت را ببینیم:
-
-**ردیف گرا**
-
-![Row oriented](images/row_oriented.gif#)
-
-**ستون گرا**
-
-![Column oriented](images/column_oriented.gif#)
-
-تفاوت را دیدید؟ بیشتر بخوانید تا یاد بگیرید چرا این اتفاق رخ میدهد.
+See the difference?
 
 ### Input/output
 
-1. برای query های تحلیلی، تنها چند ستون از تمام ستون های جدول نیاز به خواندن دارد. در یک دیتابیس ستون گرا، شما فقط داده ی مورد نیاز را می خوانید. برای مثال، اگر شما نیاز به 5 ستون از 100 ستون را دارید، شما می توانید انتظار 20 برابر کاهش I/O را داشته باشید.
-2. از آنجایی که داده در بسته ها خوانده می شوند، فشرده سازی ساده می باشد. همچنین داده های ستون ها برای فشرده سازی ساده می باشند. این باعث کاهش نرخ I/O در ادامه می شود.
-3. با توجه به کاهش I/O، داده های بیشتری در system cache قرار می گیرند.
+1. For an analytical query, only a small number of table columns need to be read. In a column-oriented database, you can read just the data you need. For example, if you need 5 columns out of 100, you can expect a 20-fold reduction in I/O.
+2. Since data is read in packets, it is easier to compress. Data in columns is also easier to compress. This further reduces the I/O volume.
+3. Due to the reduced I/O, more data fits in the system cache.
 
- برای مثال، query "تعداد رکوردها به ازای هر بستر نیازمندی" نیازمند خواندن ستون "آیدی بستر آگهی"، که 1 بایت بدون فشرده طول می کشد، خواهد بود. اگر بیشتر ترافیک مربوط به بستر های نیازمندی نبود، شما می توانید انتظار حداقل 10 برابر فشرده سازی این ستون را داشته باشید. زمانی که از الگوریتم فشرده سازی quick استفاده می کنید، عملیات decompression داده ها با سرعت حداقل چندین گیگابایت در ثانیه انجام می شود. به عبارت دیگر، این query توانایی پردازش تقریبا چندین میلیارد رکورد در ثانیه به ازای یک سرور را دارد. این سرعت در عمل واقعی و دست یافتنی است.
+For example, the query "count the number of records for each advertising platform" requires reading one "advertising platform ID" column, which takes up 1 byte uncompressed. If most of the traffic was not from advertising platforms, you can expect at least 10-fold compression of this column. When using a quick compression algorithm, data decompression is possible at a speed of at least several gigabytes of uncompressed data per second. In other words, this query can be processed at a speed of approximately several billion rows per second on a single server. This speed is actually achieved in practice.
 
-<details><summary>مثال</summary>
+<details><summary>Example</summary>
+
 <p>
-<pre>
+  <pre>
 $ clickhouse-client
 ClickHouse client version 0.0.52053.
 Connecting to localhost:9000.
@@ -95,8 +85,8 @@ Connected to ClickHouse server version 0.0.52053.
 :) SELECT CounterID, count() FROM hits GROUP BY CounterID ORDER BY count() DESC LIMIT 20
 
 SELECT
-    CounterID,
-    count()
+CounterID,
+count()
 FROM hits
 GROUP BY CounterID
 ORDER BY count() DESC
@@ -127,23 +117,21 @@ LIMIT 20
 
 20 rows in set. Elapsed: 0.153 sec. Processed 1.00 billion rows, 4.00 GB (6.53 billion rows/s., 26.10 GB/s.)
 
-:)
-</pre>
+:)</pre>
 </p>
+
 </details>
 
 ### CPU
 
-از آنجایی که اجرای یک query نیازمند پردازش تعداد زیادی سطر می باشد، این کمک می کند تا تمام عملیات ها به جای ارسال به سطرهای جداگانه، برای کل بردار ارسال شود، یا برای ترکیب query engine به طوری که هیچ هزینه ی ارسالی وجود ندارد. اگر این کار رو نکنید، با هر half-decent disk subsystem، تفسیرگر query ناگزیر است که CPU را متوقف کند. این منطقی است که که در صورت امکان هر دو کار ذخیره سازی داده در ستون ها و پردازش ستون ها با هم انجام شود.
+Since executing a query requires processing a large number of rows, it helps to dispatch all operations for entire vectors instead of for separate rows, or to implement the query engine so that there is almost no dispatching cost. If you don't do this, with any half-decent disk subsystem, the query interpreter inevitably stalls the CPU. It makes sense to both store data in columns and process it, when possible, by columns.
 
-دو راه برای انجام این کار وجود دارد:
+There are two ways to do this:
 
-1. یک موتور بردار. تمام عملیات ها به جای مقادیر جداگانه، برای بردارها نوشته شوند. این به این معنیست که شما خیلی از مواقع نیازی به صدا کردن عملیات ها ندارید، و هزینه انتقال ناچیز است. کد عملیاتی شامل یک چرخه داخلی بهینه شده است.
+1. A vector engine. All operations are written for vectors, instead of for separate values. This means you don't need to call operations very often, and dispatching costs are negligible. Operation code contains an optimized internal cycle.
 
-2. Code generation. کد تولید شده برای query دارای تمام تماس های غیرمستقیم در آن است.
+2. Code generation. The code generated for the query has all the indirect calls in it.
 
-این در یک دیتابیس نرمال انجام نمی شود، چرا که برای اجرای query های ساده این کارها منطقی نیست. هرچند، استثناهاتی هم وجود دارد. برای مثال، MemSQL از code generation برای کاهش latency در هنگام پردازش query های SQL استفاده می کند. (برای مقایسه، مدیریت دیتابیس های آنالیزی نیازمند بهینه سازی توان عملیاتی (throughput) هستند نه latency.)
+This is not done in "normal" databases, because it doesn't make sense when running simple queries. However, there are exceptions. For example, MemSQL uses code generation to reduce latency when processing SQL queries. (For comparison, analytical DBMSs require optimization of throughput, not latency.)
 
-توجه کنید که برای کارایی CPU، query language باید SQL یا MDX باشد، یا حداقل یک بردارد (J, K) باشد. query برای بهینه سازی باید فقط دارای حلقه های implicit باشد.
-
-</div>
+Note that for CPU efficiency, the query language must be declarative (SQL or MDX), or at least a vector (J, K). The query should only contain implicit loops, allowing for optimization.

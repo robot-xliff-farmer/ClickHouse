@@ -2,52 +2,48 @@
 
 # Tuple(T1, T2, ...)
 
-Кортеж из элементов любого [типа](index.md#data_types). Элементы кортежа могут быть одного или разных типов.
+A tuple of elements, each having an individual [type](index.md#data_types).
 
-Кортежи нельзя хранить в таблицах (кроме таблиц типа Memory). Они используется для временной группировки столбцов. Столбцы могут группироваться при использовании выражения IN в запросе, а также для указания нескольких формальных параметров лямбда-функций. Подробнее смотрите разделы [Операторы IN](../query_language/select.md#in_operators), [Функции высшего порядка](../query_language/functions/higher_order_functions.md#higher_order_functions).
+You can't store tuples in tables (other than Memory tables). They are used for temporary column grouping. Columns can be grouped when an IN expression is used in a query, and for specifying certain formal parameters of lambda functions. For more information, see the sections [IN operators](../query_language/select.md#in_operators) and [Higher order functions](../query_language/functions/higher_order_functions.md#higher_order_functions).
 
-Кортежи могут быть результатом запроса. В этом случае, в текстовых форматах кроме JSON, значения выводятся в круглых скобках через запятую. В форматах JSON, кортежи выводятся в виде массивов (в квадратных скобках).
+Tuples can be the result of a query. In this case, for text formats other than JSON, values are comma-separated in brackets. In JSON formats, tuples are output as arrays (in square brackets).
 
-## Создание кортежа
+## Creating a tuple
 
-Кортеж можно создать с помощью функции
+You can use a function to create a tuple:
 
-```
-tuple(T1, T2, ...)
-```
+    tuple(T1, T2, ...)
+    
 
-Пример создания кортежа:
+Example of creating a tuple:
 
-```
-:) SELECT tuple(1,'a') AS x, toTypeName(x)
+    :) SELECT tuple(1,'a') AS x, toTypeName(x)
+    
+    SELECT
+        (1, 'a') AS x,
+        toTypeName(x)
+    
+    ┌─x───────┬─toTypeName(tuple(1, 'a'))─┐
+    │ (1,'a') │ Tuple(UInt8, String)      │
+    └─────────┴───────────────────────────┘
+    
+    1 rows in set. Elapsed: 0.021 sec.
+    
 
-SELECT
-    (1, 'a') AS x,
-    toTypeName(x)
+## Working with data types
 
-┌─x───────┬─toTypeName(tuple(1, 'a'))─┐
-│ (1,'a') │ Tuple(UInt8, String)      │
-└─────────┴───────────────────────────┘
+When creating a tuple on the fly, ClickHouse automatically detects the type of each argument as the minimum of the types which can store the argument value. If the argument is [NULL](../query_language/syntax.md#null-literal), the type of the tuple element is [Nullable](nullable.md#data_type-nullable).
 
-1 rows in set. Elapsed: 0.021 sec.
-```
+Example of automatic data type detection:
 
-## Особенности работы с типами данных
-
-При создании кортежа "на лету" ClickHouse автоматически определяет тип каждого аргументов как минимальный из типов, который может сохранить значение аргумента. Если  аргумент — [NULL](../query_language/syntax.md#null-literal), то тип элемента кортежа — [Nullable](nullable.md#data_type-nullable).
-
-Пример автоматического определения типа данных:
-
-```
-SELECT tuple(1,NULL) AS x, toTypeName(x)
-
-SELECT
-    (1, NULL) AS x,
-    toTypeName(x)
-
-┌─x────────┬─toTypeName(tuple(1, NULL))──────┐
-│ (1,NULL) │ Tuple(UInt8, Nullable(Nothing)) │
-└──────────┴─────────────────────────────────┘
-
-1 rows in set. Elapsed: 0.002 sec.
-```
+    SELECT tuple(1, NULL) AS x, toTypeName(x)
+    
+    SELECT
+        (1, NULL) AS x,
+        toTypeName(x)
+    
+    ┌─x────────┬─toTypeName(tuple(1, NULL))──────┐
+    │ (1,NULL) │ Tuple(UInt8, Nullable(Nothing)) │
+    └──────────┴─────────────────────────────────┘
+    
+    1 rows in set. Elapsed: 0.002 sec.

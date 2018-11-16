@@ -2,36 +2,36 @@
 
 ## INSERT
 
-Добавление данных.
+Adding data.
 
-Базовый формат запроса:
+Basic query format:
 
 ```sql
 INSERT INTO [db.]table [(c1, c2, c3)] VALUES (v11, v12, v13), (v21, v22, v23), ...
 ```
 
-В запросе можно указать список столбцов для вставки `[(c1, c2, c3)]`. В этом случае, в остальные столбцы записываются:
+The query can specify a list of columns to insert `[(c1, c2, c3)]`. In this case, the rest of the columns are filled with:
 
--   Значения, вычисляемые из `DEFAULT` выражений, указанных в определении таблицы.
--   Нули и пустые строки, если `DEFAULT` не определены.
+- The values calculated from the `DEFAULT` expressions specified in the table definition.
+- Zeros and empty strings, if `DEFAULT` expressions are not defined.
 
-Если [strict_insert_defaults=1](../operations/settings/settings.md#settings-strict_insert_defaults), то столбцы, для которых не определены `DEFAULT`, необходимо перечислить в запросе.
+If [strict_insert_defaults=1](../operations/settings/settings.md#settings-strict_insert_defaults), columns that do not have `DEFAULT` defined must be listed in the query.
 
-В INSERT можно передавать данные любого [формата](../interfaces/formats.md#formats), который поддерживает ClickHouse. Для этого формат необходимо указать в запросе в явном виде:
+Data can be passed to the INSERT in any [format](../interfaces/formats.md#formats) supported by ClickHouse. The format must be specified explicitly in the query:
 
 ```sql
 INSERT INTO [db.]table [(c1, c2, c3)] FORMAT format_name data_set
 ```
 
-Например, следующий формат запроса идентичен базовому варианту INSERT ... VALUES:
+For example, the following query format is identical to the basic version of INSERT ... VALUES:
 
 ```sql
 INSERT INTO [db.]table [(c1, c2, c3)] FORMAT Values (v11, v12, v13), (v21, v22, v23), ...
 ```
 
-ClickHouse отсекает все пробелы и один перенос строки (если он есть) перед данными. Рекомендуем при формировании запроса переносить данные на новую строку после операторов запроса (это важно, если данные начинаются с пробелов).
+ClickHouse removes all spaces and one line feed (if there is one) before the data. When forming a query, we recommend putting the data on a new line after the query operators (this is important if the data begins with spaces).
 
-Пример:
+Example:
 
 ```sql
 INSERT INTO t FORMAT TabSeparated
@@ -39,29 +39,28 @@ INSERT INTO t FORMAT TabSeparated
 22  Qwerty
 ```
 
-С помощью консольного клиента или HTTP интерфейса можно вставлять данные отдельно от запроса. Как это сделать, читайте в разделе "[Интерфейсы](../interfaces/index.md#interfaces)".
+You can insert data separately from the query by using the command-line client or the HTTP interface. For more information, see the section "[Interfaces](../interfaces/index.md#interfaces)".
 
-### Вставка результатов `SELECT`
+### Inserting The Results of `SELECT`
 
 ```sql
 INSERT INTO [db.]table [(c1, c2, c3)] SELECT ...
 ```
 
-Соответствие столбцов определяется их позицией в секции SELECT. При этом, их имена в выражении SELECT и в таблице для INSERT, могут отличаться. При необходимости выполняется приведение типов данных, эквивалентное соответствующему оператору CAST.
+Columns are mapped according to their position in the SELECT clause. However, their names in the SELECT expression and the table for INSERT may differ. If necessary, type casting is performed.
 
-Все форматы данных кроме Values не позволяют использовать в качестве значений выражения, такие как `now()`, `1 + 2` и подобные. Формат Values позволяет ограниченно использовать выражения, но это не рекомендуется, так как в этом случае для их выполнения используется неэффективный вариант кода.
+None of the data formats except Values allow setting values to expressions such as `now()`, `1 + 2`, and so on. The Values format allows limited use of expressions, but this is not recommended, because in this case inefficient code is used for their execution.
 
-Не поддерживаются другие запросы на модификацию части данных: `UPDATE`, `DELETE`, `REPLACE`, `MERGE`, `UPSERT`, `INSERT UPDATE`.
-Вы можете удалять старые данные с помощью запроса `ALTER TABLE ... DROP PARTITION`.
+Other queries for modifying data parts are not supported: `UPDATE`, `DELETE`, `REPLACE`, `MERGE`, `UPSERT`, `INSERT UPDATE`. However, you can delete old data using `ALTER TABLE ... DROP PARTITION`.
 
-### Замечания о производительности
+### Performance Considerations
 
-`INSERT` сортирует входящие данные по первичному ключу и разбивает их на партиции по месяцам. Если вы вставляете данные за разные месяцы вперемешку, то это может значительно снизить производительность запроса `INSERT`. Чтобы избежать этого:
+`INSERT` sorts the input data by primary key and splits them into partitions by month. If you insert data for mixed months, it can significantly reduce the performance of the `INSERT` query. To avoid this:
 
--   Добавляйте данные достаточно большими пачками. Например, по 100 000 строк.
--   Группируйте данные по месацам самостоятельно перед загрузкой в ClickHouse.
+- Add data in fairly large batches, such as 100,000 rows at a time.
+- Group data by month before uploading it to ClickHouse.
 
-Снижения производительности не будет, если:
+Performance will not decrease if:
 
--   Данные поступают в режиме реального времени.
--   Вы загружаете данные, которые как правило отсортированы по времени.
+- Data is added in real time.
+- You upload data that is usually sorted by time.

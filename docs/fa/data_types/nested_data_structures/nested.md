@@ -1,12 +1,8 @@
-<div dir="rtl" markdown="1">
-
 # Nested(Name1 Type1, Name2 Type2, ...)
 
-ساختار داده ی nested شبیه به یک جدول nested می باشد.پارامترهای ساختار داده nested، نام ستون ها و type های آنها مشابه دستور CREATE، مشخص می شود. هر سطر از جدول می تواند به هر تعداد سطر در ساختار داده nested مربوط شود.
+A nested data structure is like a nested table. The parameters of a nested data structure – the column names and types – are specified the same way as in a CREATE query. Each table row can correspond to any number of rows in a nested data structure.
 
-مثال:
-
-</div>
+Example:
 
 ```sql
 CREATE TABLE test.visits
@@ -31,17 +27,13 @@ CREATE TABLE test.visits
 ) ENGINE = CollapsingMergeTree(StartDate, intHash32(UserID), (CounterID, StartDate, intHash32(UserID), VisitID), 8192, Sign)
 ```
 
-<div dir="rtl" markdown="1">
+This example declares the `Goals` nested data structure, which contains data about conversions (goals reached). Each row in the 'visits' table can correspond to zero or any number of conversions.
 
-این مثال `Goals` را به عنوان یک ساختار داده nested تعریف می کند، که می تواند شامل داده های مربوط به conversion (اهداف رسیده) باشد. هر سطر در جدول `visit` می تواند با صفر یا چند coversion ارتباط داشته باشد.
+Only a single nesting level is supported. Columns of nested structures containing arrays are equivalent to multidimensional arrays, so they have limited support (there is no support for storing these columns in tables with the MergeTree engine).
 
-فقط تا یک لول از nested پشتیبانی می شود. ستون های nested دارای آرایه، با آرایه های multidimensional یکسان هستند، پس محدودیت در پشتیبانی دارند (جداول با موتور MergeTree از ستون های multidimensional پشتیبانی نمی کنند).
+In most cases, when working with a nested data structure, its individual columns are specified. To do this, the column names are separated by a dot. These columns make up an array of matching types. All the column arrays of a single nested data structure have the same length.
 
-در بیشتر موارد، هنگام کار با ساختار داده ی nested، ستون های آن مشخص شده اند. برای این کار، نام ستون ها با استفاده از دات جدا می شوند. این ستون ها آرایه ای از انواع type ها تشکیل می دهند. تمام آرایه های یک ساختار داده ی nested دارای طول ثابت هستند.
-
-مثال:
-
-</div>
+Example:
 
 ```sql
 SELECT
@@ -67,13 +59,9 @@ LIMIT 10
 └────────────────────────────────┴───────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-<div dir="rtl" markdown="1">
+It is easiest to think of a nested data structure as a set of multiple column arrays of the same length.
 
-ساده ترین راه برای فکر کردن به یک ساختار داده nestet این است که، یک nestet  مجموعه ای از آرایه های چند ستونی با طول ثابت است.
-
-تنها جایی که یک دستور SELECT می تواند کل ساختار داده ی nested را به جای مشخص کردن ستون های آن قرار دهد، عبارت ARRAY JOIN است. برای اطلاعات بیشتر "ARRAY JOIN clouse" را ببینید. مثال:
-
-</div>
+The only place where a SELECT query can specify the name of an entire nested data structure instead of individual columns is the ARRAY JOIN clause. For more information, see "ARRAY JOIN clause". Example:
 
 ```sql
 SELECT
@@ -100,14 +88,10 @@ LIMIT 10
 └─────────┴─────────────────────┘
 ```
 
-<div dir="rtl" markdown="1">
+You can't perform SELECT for an entire nested data structure. You can only explicitly list individual columns that are part of it.
 
-شما نمیتوانید در قسمت SELECT تمام ساختار داده ی nested را قرار دهید. شما فقط می توانید ستون های فردی که هر کدام بخشی از این ساختار داده هستند را لیست کنید.
+For an INSERT query, you should pass all the component column arrays of a nested data structure separately (as if they were individual column arrays). During insertion, the system checks that they have the same length.
 
-برای INSERT، شما باید تمام ستون های nested را به صورت جدا پاس بدید. در حین درج، سیستم بررسی می کند که تمام آنها طول یکسانی داشته باشند.
+For a DESCRIBE query, the columns in a nested data structure are listed separately in the same way.
 
-برای دستور DESCRIBE، ستون های داخل nested، به صورت جدا ستون می شوند.
-
-دستور ALTER برای عناصر داخل nested بسیار محدود است.
-
-</div>
+The ALTER query is very limited for elements in a nested data structure.

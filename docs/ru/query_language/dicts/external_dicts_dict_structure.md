@@ -1,10 +1,10 @@
 <a name="dicts-external_dicts_dict_structure"></a>
 
-# Ключ и поля словаря
+# Dictionary Key and Fields
 
-Секция `<structure>` описывает ключ словаря и поля, доступные для запросов.
+The `<structure>` clause describes the dictionary key and fields available for queries.
 
-Общий вид структуры:
+Overall structure:
 
 ```xml
 <dictionary>
@@ -23,30 +23,29 @@
 </dictionary>
 ```
 
-В структуре описываются столбцы:
+Columns are described in the structure:
 
--   `<id>` - [ключевой столбец](external_dicts_dict_structure.md#dicts-external_dicts_dict_structure-key).
--   `<attribute>` - [столбец данных](external_dicts_dict_structure.md#dicts-external_dicts_dict_structure-attributes). Столбцов может быть много.
+- `<id>` - [key column](external_dicts_dict_structure.md#dicts-external_dicts_dict_structure-key).
+- `<attribute>` - [data column](external_dicts_dict_structure.md#dicts-external_dicts_dict_structure-attributes). There can be a large number of columns.
 
 <a name="dicts-external_dicts_dict_structure-key"></a>
 
-## Ключ
+## Key
 
-ClickHouse поддерживает следующие виды ключей:
+ClickHouse supports the following types of keys:
 
--   Числовой ключ. Формат UInt64. Описывается в теге `<id>`.
--   Составной ключ. Набор значений разного типа. Описывается в теге `<key>`.
+- Numeric key. UInt64. Defined in the tag `<id>` .
+- Composite key. Set of values of different types. Defined in the tag `<key>` .
 
-Структура может содержать либо `<id>` либо `<key>`.
+A structure can contain either `<id>` or `<key>` .
 
-!!! attention "Обратите внимание"
-    Ключ не надо дополнительно описывать в атрибутах.
+!!! warning The key doesn't need to be defined separately in attributes.
 
-### Числовой ключ
+### Numeric Key
 
-Формат: `UInt64`.
+Format: `UInt64`.
 
-Пример конфигурации:
+Configuration example:
 
 ```xml
 <id>
@@ -54,18 +53,17 @@ ClickHouse поддерживает следующие виды ключей:
 </id>
 ```
 
-Поля конфигурации:
+Configuration fields:
 
--   name - имя столбца с ключами.
+- name – The name of the column with keys.
 
-### Составной ключ
+### Composite Key
 
-Ключем может быть кортеж (`tuple`) из полей произвольных типов. [layout](external_dicts_dict_layout.md#dicts-external_dicts_dict_layout) в этом случае должен быть `complex_key_hashed` или `complex_key_cache`.
+The key can be a `tuple` from any types of fields. The [layout](external_dicts_dict_layout.md#dicts-external_dicts_dict_layout) in this case must be `complex_key_hashed` or `complex_key_cache`.
 
-!!! tip "Совет"
-    Cоставной ключ может состоять из одного элемента. Это даёт возможность использовать в качестве ключа, например, строку.
+!!! tip A composite key can consist of a single element. This makes it possible to use a string as the key, for instance.
 
-Структура ключа задаётся в элементе `<key>`. Поля ключа задаются в том же формате, что и [атрибуты](external_dicts_dict_structure.md#dicts-external_dicts_dict_structure-attributes) словаря. Пример:
+The key structure is set in the element `<key>`. Key fields are specified in the same format as the dictionary [attributes](external_dicts_dict_structure.md#dicts-external_dicts_dict_structure-attributes). Example:
 
 ```xml
 <structure>
@@ -83,13 +81,13 @@ ClickHouse поддерживает следующие виды ключей:
 ...
 ```
 
-При запросе в функции `dictGet*` в качестве ключа передаётся кортеж. Пример: `dictGetString('dict_name', 'attr_name', tuple('string for field1', num_for_field2))`.
+For a query to the `dictGet*` function, a tuple is passed as the key. Example: `dictGetString('dict_name', 'attr_name', tuple('string for field1', num_for_field2))`.
 
 <a name="dicts-external_dicts_dict_structure-attributes"></a>
 
-## Атрибуты
+## Attributes
 
-Пример конфигурации:
+Configuration example:
 
 ```xml
 <structure>
@@ -106,13 +104,12 @@ ClickHouse поддерживает следующие виды ключей:
 </structure>
 ```
 
-Поля конфигурации:
+Configuration fields:
 
--   `name` - Имя столбца.
--   `type` - Тип столбца. Задает способ интерпретации данных в источнике. Например, в случае MySQL, в таблице-источнике поле может быть `TEXT`, `VARCHAR`, `BLOB`, но загружено может быть как `String`.
--   `null_value` - Значение по умолчанию для несуществующего элемента. В примере - пустая строка.
--   `expression` - Атрибут может быть выражением. Тег не обязательный.
--   `hierarchical` - Поддержка иерархии. Отображение в идентификатор родителя. По умолчанию, `false`.
--   `injective` - Признак инъективности отображения `id -> attribute`. Если `true`, то можно оптимизировать `GROUP BY`. По умолчанию, `false`.
--   `is_object_id` - Признак того, что запрос выполняется к документу MongoDB по `ObjectID`.
-
+- `name` – The column name.
+- `type` – The column type. Sets the method for interpreting data in the source. For example, for MySQL, the field might be `TEXT`, `VARCHAR`, or `BLOB` in the source table, but it can be uploaded as `String`.
+- `null_value` – The default value for a non-existing element. In the example, it is an empty string.
+- `expression` – The attribute can be an expression. The tag is not required.
+- `hierarchical` – Hierarchical support. Mirrored to the parent identifier. By default, `false`.
+- `injective` – Whether the `id -> attribute` image is injective. If `true`, then you can optimize the `GROUP BY` clause. By default, `false`.
+- `is_object_id` – Whether the query is executed for a MongoDB document by `ObjectID`.
