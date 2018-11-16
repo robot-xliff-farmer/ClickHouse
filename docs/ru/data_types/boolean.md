@@ -1,3 +1,3 @@
-# Булевы значения
+# Boolean Values
 
-Отдельного типа для булевых значений нет. Для них используется тип UInt8, в котором используются только значения 0 и 1.
+There isn't a separate type for boolean values. They use the UInt8 type, restricted to the values 0 or 1.
