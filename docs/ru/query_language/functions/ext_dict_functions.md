@@ -1,8 +1,8 @@
 <a name="ext_dict_functions"></a>
 
-# Функции для работы с внешними словарями
+# Functions for working with external dictionaries
 
-Информация о подключении и настройке внешних словарей смотрите в разделе "[Внешние словари](../dicts/external_dicts.md#dicts-external_dicts)".
+For information on connecting and configuring external dictionaries, see "[External dictionaries](../dicts/external_dicts.md#dicts-external_dicts)".
 
 ## dictGetUInt8, dictGetUInt16, dictGetUInt32, dictGetUInt64
 
@@ -15,26 +15,31 @@
 ## dictGetUUID
 
 ## dictGetString
+
 `dictGetT('dict_name', 'attr_name', id)`
-- получить из словаря dict_name значение атрибута attr_name по ключу id.
-`dict_name` и `attr_name` - константные строки.
-`id` должен иметь тип UInt64.
-Если ключа `id` нет в словаре - вернуть значение по умолчанию, заданное в описании словаря.
+
+- Get the value of the attr_name attribute from the dict_name dictionary using the 'id' key.`dict_name` and `attr_name` are constant strings.`id`must be UInt64. If there is no `id` key in the dictionary, it returns the default value specified in the dictionary description.
 
 ## dictGetTOrDefault
 
 `dictGetT('dict_name', 'attr_name', id, default)`
 
-Аналогично функциям `dictGetT`, но значение по умолчанию берётся из последнего аргумента функции.
+The same as the `dictGetT` functions, but the default value is taken from the function's last argument.
 
 ## dictIsIn
-`dictIsIn('dict_name', child_id, ancestor_id)`
-- для иерархического словаря dict_name - узнать, находится ли ключ child_id внутри ancestor_id (или совпадает с ancestor_id). Возвращает UInt8.
+
+`dictIsIn ('dict_name', child_id, ancestor_id)`
+
+- For the 'dict_name' hierarchical dictionary, finds out whether the 'child_id' key is located inside 'ancestor_id' (or matches 'ancestor_id'). Returns UInt8.
 
 ## dictGetHierarchy
+
 `dictGetHierarchy('dict_name', id)`
-- для иерархического словаря dict_name - вернуть массив ключей словаря, начиная с id и продолжая цепочкой родительских элементов. Возвращает Array(UInt64).
+
+- For the 'dict_name' hierarchical dictionary, returns an array of dictionary keys starting from 'id' and continuing along the chain of parent elements. Returns Array(UInt64).
 
 ## dictHas
+
 `dictHas('dict_name', id)`
-- проверить наличие ключа в словаре. Возвращает значение типа UInt8, равное 0, если ключа нет и 1, если ключ есть.
+
+- Check whether the dictionary has the key. Returns a UInt8 value equal to 0 if there is no key and 1 if there is a key.
