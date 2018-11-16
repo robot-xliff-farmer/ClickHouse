@@ -1,21 +1,23 @@
-## Исправлено в релизе 1.1.54388 от 28 июня 2018 
+## Fixed in ClickHouse Release 1.1.54388, 2018-06-28
 
 ### CVE-2018-14668
-Табличная функция "remote" допускала произвольные символы в полях "user", "password" и "default_database", что позволяло производить атаки класса Cross Protocol Request Forgery.
 
-Обнаружено благодаря: Андрею Красичкову из Службы Информационной Безопасности Яндекса
+"remote" table function allowed arbitrary symbols in "user", "password" and "default_database" fields which led to Cross Protocol Request Forgery Attacks.
 
-## Исправлено в релизе 1.1.54390 от 6 июля 2018
+Credits: Andrey Krasichkov of Yandex Information Security Team
+
+## Fixed in ClickHouse Release 1.1.54390, 2018-07-06
 
 ### CVE-2018-14669
-В ClickHouse MySQL клиенте была включена функциональность "LOAD DATA LOCAL INFILE", что позволяло получать доступ на чтение к произвольным файлам на сервере, где запущен ClickHouse.
 
-Обнаружено благодаря: Андрею Красичкову и Евгению Сидорову из Службы Информационной Безопасности Яндекса
+ClickHouse MySQL client had "LOAD DATA LOCAL INFILE" functionality enabled that allowed a malicious MySQL database read arbitrary files from the connected ClickHouse server.
 
-## Исправлено в релизе 1.1.54131 от 10 января 2017
+Credits: Andrey Krasichkov and Evgeny Sidorov of Yandex Information Security Team
+
+## Fixed in ClickHouse Release 1.1.54131, 2017-01-10
 
 ### CVE-2018-14670
 
-Некоррректная конфигурация в deb пакете могла привести к неавторизованному доступу к базе данных.
+Incorrect configuration in deb package could lead to unauthorized use of the database.
 
-Обнаружено благодаря: the UK's National Cyber Security Centre (NCSC)
+Credits: the UK's National Cyber Security Centre (NCSC)
