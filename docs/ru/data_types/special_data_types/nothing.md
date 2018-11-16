@@ -2,12 +2,14 @@
 
 # Nothing
 
-Этот тип данных предназначен только для того, чтобы представлять [NULL](../../query_language/syntax.md#null-literal), т.е. отсутствие значения.
+The only purpose of this data type is to represent cases where value is not expected. So you can't create a `Nothing` type value.
 
-Невозможно создать значение типа `Nothing`, поэтому он используется там, где значение не подразумевается. Например, `NULL` записывается как `Nullable(Nothing)` ([Nullable](../../data_types/nullable.md#data_type-nullable) — это тип данных, позволяющий хранить `NULL` в таблицах). Также тип `Nothing` используется для обозначения пустых массивов:
+For example, literal [NULL](../../query_language/syntax.md#null-literal) has type of `Nullable(Nothing)`. See more about [Nullable](../../data_types/nullable.md#data_type-nullable).
+
+The `Nothing` type can also used to denote empty arrays:
 
 ```bash
-:) SELECT toTypeName(Array())
+:) SELECT toTypeName(array())
 
 SELECT toTypeName([])
 
