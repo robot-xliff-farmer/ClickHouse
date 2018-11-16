@@ -1,37 +1,37 @@
-# Визуальные интерфейсы от сторонних разработчиков
+# Visual Interfaces from Third-party Developers
 
 ## Tabix
 
-Веб-интерфейс для ClickHouse в проекте [Tabix](https://github.com/tabixio/tabix).
+Web interface for ClickHouse in the [Tabix](https://github.com/tabixio/tabix) project.
 
-Основные возможности:
+Main features:
 
-- Работает с ClickHouse напрямую из браузера, без необходимости установки дополнительного ПО.
-- Редактор запросов с подсветкой синтаксиса.
-- Автодополнение команд.
-- Инструменты графического анализа выполнения запросов.
-- Цветовые схемы на выбор.
+- Works with ClickHouse directly from the browser, without the need to install additional software.
+- Query editor with syntax highlighting.
+- Auto-completion of commands.
+- Tools for graphical analysis of query execution.
+- Color scheme options.
 
-[Документация Tabix](https://tabix.io/doc/).
+[Tabix documentation](https://tabix.io/doc/).
 
 ## HouseOps
 
-[HouseOps](https://github.com/HouseOps/HouseOps) — UI/IDE для OSX, Linux и Windows.
+[HouseOps](https://github.com/HouseOps/HouseOps) is a UI/IDE for OSX, Linux and Windows.
 
-Основные возможности:
+Main features:
 
-- Построение запросов с подсветкой синтаксиса. Просмотр ответа в табличном или JSON представлении.
-- Экспортирование результатов запроса в формате CSV или JSON.
-- Список процессов с описанием. Режим записи. Возможность остановки (`KILL`) процесса.
-- Граф базы данных. Показывает все таблицы и их столбцы с дополнительной информацией.
-- Быстрый просмотр размера столбца.
-- Конфигурирование сервера.
+- Query builder with syntax highlighting. View the response in a table or JSON view.
+- Export query results as CSV or JSON.
+- List of processes with descriptions. Write mode. Ability to stop (`KILL`) a process.
+- Database graph. Shows all tables and their columns with additional information.
+- Quick view of the column size.
+- Server configuration.
 
-Планируется разработка следующих возможностей:
+The following features are planned for development:
 
-- Управление базами.
-- Управление пользователями.
-- Анализ данных  в режиме реального времени.
-- Мониторинг кластера.
-- Управление кластером.
-- Мониторинг реплицированных и Kafka таблиц.
+- Database management.
+- User management.
+- Real-time data analysis.
+- Cluster monitoring.
+- Cluster management.
+- Monitoring replicated and Kafka tables.
