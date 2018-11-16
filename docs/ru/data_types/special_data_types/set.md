@@ -1,3 +1,3 @@
 # Set
 
-Используется для представления правой части выражения IN.
+Used for the right half of an IN expression.
