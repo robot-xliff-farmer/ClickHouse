@@ -1,7 +1,3 @@
-<div dir="rtl" markdown="1">
+# Special Data Types
 
-# Special data types
-
-مقادیر نوع داده special، نمیتوانند در در جدول ذخیره و یا در نتایج خروجی قرار بگیرند، اما در نتایج متوسط (intermediate) یک query در حال اجرا استفاده می شوند.
-
-</div>
+Special data type values can't be saved to a table or output in results, but are used as the intermediate result of running a query.
