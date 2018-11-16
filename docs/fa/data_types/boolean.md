@@ -1,7 +1,3 @@
-<div dir="rtl" markdown="1">
+# Boolean Values
 
-# مقادیر Boolean
-
-type مخصوص مقادیر boolean وجود ندارد. از Uint8 و محدود شده به 0 و 1 می توان استفاده کرد.
-
-</div>
+There isn't a separate type for boolean values. They use the UInt8 type, restricted to the values 0 or 1.
