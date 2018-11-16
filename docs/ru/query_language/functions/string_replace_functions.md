@@ -1,21 +1,18 @@
-# Функции поиска и замены в строках
+# Functions for searching and replacing in strings
 
 ## replaceOne(haystack, pattern, replacement)
-Замена первого вхождения, если такое есть, подстроки pattern в haystack на подстроку replacement.
-Здесь и далее, pattern и replacement должны быть константами.
+
+Replaces the first occurrence, if it exists, of the 'pattern' substring in 'haystack' with the 'replacement' substring. Hereafter, 'pattern' and 'replacement' must be constants.
 
 ## replaceAll(haystack, pattern, replacement)
-Замена всех вхождений подстроки pattern в haystack на подстроку replacement.
+
+Replaces all occurrences of the 'pattern' substring in 'haystack' with the 'replacement' substring.
 
 ## replaceRegexpOne(haystack, pattern, replacement)
-Замена по регулярному выражению pattern. Регулярное выражение re2.
-Заменяется только первое вхождение, если есть.
-В качестве replacement может быть указан шаблон для замен. Этот шаблон может включать в себя подстановки `\0-\9`.
-Подстановка `\0` - вхождение регулярного выражения целиком. Подстановки `\1-\9` - соответствующие по номеру subpattern-ы.
-Для указания символа `\` в шаблоне, он должен быть экранирован с помощью символа `\`.
-Также помните о том, что строковый литерал требует ещё одно экранирование.
 
-Пример 1. Переведём дату в американский формат:
+Replacement using the 'pattern' regular expression. A re2 regular expression. Replaces only the first occurrence, if it exists. A pattern can be specified as 'replacement'. This pattern can include substitutions `\0-\9`. The substitution `\0` includes the entire regular expression. Substitutions `\1-\9` correspond to the subpattern numbers.To use the `` character in a template, escape it using ``. Also keep in mind that a string literal requires an extra escape.
+
+Example 1. Converting the date to American format:
 
 ```sql
 SELECT DISTINCT
@@ -36,7 +33,7 @@ FORMAT TabSeparated
 2014-03-23      03/23/2014
 ```
 
-Пример 2. Размножить строку десять раз:
+Example 2. Copying a string ten times:
 
 ```sql
 SELECT replaceRegexpOne('Hello, World!', '.*', '\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0') AS res
@@ -49,7 +46,8 @@ SELECT replaceRegexpOne('Hello, World!', '.*', '\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0')
 ```
 
 ## replaceRegexpAll(haystack, pattern, replacement)
-То же самое, но делается замена всех вхождений. Пример:
+
+This does the same thing, but replaces all the occurrences. Example:
 
 ```sql
 SELECT replaceRegexpAll('Hello, World!', '.', '\\0\\0') AS res
@@ -61,8 +59,7 @@ SELECT replaceRegexpAll('Hello, World!', '.', '\\0\\0') AS res
 └────────────────────────────┘
 ```
 
-В качестве исключения, если регулярное выражение сработало на пустой подстроке, то замена делается не более одного раза.
-Пример:
+As an exception, if a regular expression worked on an empty substring, the replacement is not made more than once. Example:
 
 ```sql
 SELECT replaceRegexpAll('Hello, World!', '^', 'here: ') AS res
