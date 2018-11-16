@@ -1,16 +1,16 @@
-# Серверные настройки
+# Server settings
 
 <a name="server_settings-builtin_dictionaries_reload_interval"></a>
 
 ## builtin_dictionaries_reload_interval
 
-Интервал (в секундах) перезагрузки встроенных словарей.
+The interval in seconds before reloading built-in dictionaries.
 
-ClickHouse перезагружает встроенные словари с заданным интервалом. Это позволяет править словари "на лету" без перезапуска сервера.
+ClickHouse reloads built-in dictionaries every x seconds. This makes it possible to edit dictionaries "on the fly" without restarting the server.
 
-Значение по умолчанию - 3600.
+Default value: 3600.
 
-**Пример**
+**Example**
 
 ```xml
 <builtin_dictionaries_reload_interval>3600</builtin_dictionaries_reload_interval>
@@ -20,12 +20,11 @@ ClickHouse перезагружает встроенные словари с з�
 
 ## compression
 
-Настройки компрессии данных.
+Data compression settings.
 
-!!! warning "Внимание"
-    Лучше не использовать, если вы только начали работать с ClickHouse.
+!!! warning Don't use it if you have just started using ClickHouse.
 
-Общий вид конфигурации:
+The configuration looks like this:
 
 ```xml
 <compression>
@@ -36,17 +35,17 @@ ClickHouse перезагружает встроенные словари с з�
 </compression>
 ```
 
-Можно сконфигурировать несколько разделов `<case>`.
+You can configure multiple sections `<case>`.
 
-Поля блока `<case>`:
+Block field `<case>`:
 
-- ``min_part_size`` - Минимальный размер части таблицы.
-- ``min_part_size_ratio`` - Отношение размера минимальной части таблицы к полному размеру таблицы.
-- ``method`` - Метод сжатия. Возможные значения: ``lz4``, ``zstd`` (экспериментальный).
+- `min_part_size` – The minimum size of a table part.
+- `min_part_size_ratio` – The ratio of the minimum size of a table part to the full size of the table.
+- `method` – Compression method. Acceptable values ​: `lz4` or `zstd`(experimental).
 
-ClickHouse проверит условия `min_part_size` и `min_part_size_ratio` и выполнит те блоки `case`, для которых условия совпали. Если ни один `<case>` не подходит, то ClickHouse применит алгоритм сжатия `lz4`.
+ClickHouse checks `min_part_size` and `min_part_size_ratio` and processes the `case` blocks that match these conditions. If none of the `<case>` matches, ClickHouse applies the `lz4` compression algorithm.
 
-**Пример**
+**Example**
 
 ```xml
 <compression incl="clickhouse_compression">
@@ -62,11 +61,11 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## default_database
 
-База данных по умолчанию.
+The default database.
 
-Перечень баз данных можно получить запросом [SHOW DATABASES](../../query_language/misc.md#query_language_queries_show_databases).
+To get a list of databases, use the [ SHOW DATABASES](../../query_language/misc.md#query_language_queries_show_databases) query.
 
-**Пример**
+**Example**
 
 ```xml
 <default_database>default</default_database>
@@ -76,11 +75,11 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## default_profile
 
-Профиль настроек по умолчанию.
+Default settings profile.
 
-Профили настроек находятся в файле, указанном в параметре [user_config](#server_settings-users_config).
+Settings profiles are located in the file specified in the parameter [user_config](#server_settings-users_config).
 
-**Пример**
+**Example**
 
 ```xml
 <default_profile>default</default_profile>
@@ -90,16 +89,16 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## dictionaries_config
 
-Путь к конфигурации внешних словарей.
+The path to the config file for external dictionaries.
 
-Путь:
+Path:
 
--   Указывается абсолютным или относительно конфигурационного файла сервера.
--   Может содержать wildcard-ы \* и ?.
+- Specify the absolute path or the path relative to the server config file.
+- The path can contain wildcards \* and ?.
 
-Смотрите также "[Внешние словари](../../query_language/dicts/external_dicts.md#dicts-external_dicts)".
+See also "[External dictionaries](../../query_language/dicts/external_dicts.md#dicts-external_dicts)".
 
-**Пример**
+**Example**
 
 ```xml
 <dictionaries_config>*_dictionary.xml</dictionaries_config>
@@ -109,15 +108,15 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## dictionaries_lazy_load
 
-Отложенная загрузка словарей.
+Lazy loading of dictionaries.
 
-Если `true`, то каждый словарь создаётся при первом использовании. Если словарь не удалось создать, то вызов функции, использующей словарь, сгенерирует исключение.
+If `true`, then each dictionary is created on first use. If dictionary creation failed, the function that was using the dictionary throws an exception.
 
-Если `false`, то все словари создаются при старте сервера, и в случае ошибки сервер завершает работу.
+If `false`, all dictionaries are created when the server starts, and if there is an error, the server shuts down.
 
-По умолчанию - `true`.
+The default is `true`.
 
-**Пример**
+**Example**
 
 ```xml
 <dictionaries_lazy_load>true</dictionaries_lazy_load>
@@ -127,36 +126,35 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## format_schema_path
 
-Путь к каталогу со схемами для входных данных. Например со схемами для формата [CapnProto](../../interfaces/formats.md#format_capnproto).
+The path to the directory with the schemes for the input data, such as schemas for the [CapnProto](../../interfaces/formats.md#format_capnproto) format.
 
-**Пример**
+**Example**
 
 ```xml
   <!-- Directory containing schema files for various input formats. -->
   <format_schema_path>format_schemas/</format_schema_path>
 ```
 
-
 <a name="server_settings-graphite"></a>
 
 ## graphite
 
-Отправка даных в [Graphite](https://github.com/graphite-project).
+Sending data to [Graphite](https://github.com/graphite-project).
 
-Настройки:
+Settings:
 
-- host - Сервер Graphite.
-- port - Порт сервера Graphite.
-- interval - Период отправки в секундах.
-- timeout - Таймаут отправки данных в секундах.
-- root_path - Префикс для ключей.
-- metrics - Отправка данных из таблицы :ref:`system_tables-system.metrics`.
-- events - Отправка данных из таблицы :ref:`system_tables-system.events`.
-- asynchronous_metrics - Отправка данных из таблицы :ref:`system_tables-system.asynchronous_metrics`.
+- host – The Graphite server.
+- port – The port on the Graphite server.
+- interval – The interval for sending, in seconds.
+- timeout – The timeout for sending data, in seconds.
+- root_path – Prefix for keys.
+- metrics – Sending data from a :ref:`system_tables-system.metrics` table.
+- events – Sending data from a :ref:`system_tables-system.events` table.
+- asynchronous_metrics – Sending data from a :ref:`system_tables-system.asynchronous_metrics` table.
 
-Можно определить несколько секций `<graphite>`, например, для передачи различных данных с различной частотой.
+You can configure multiple `<graphite>` clauses. For instance, you can use this for sending different data at different intervals.
 
-**Пример**
+**Example**
 
 ```xml
 <graphite>
@@ -175,11 +173,11 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## graphite_rollup
 
-Настройка прореживания данных для Graphite.
+Settings for thinning data for Graphite.
 
-Подробнее читайте в разделе [GraphiteMergeTree](../../operations/table_engines/graphitemergetree.md#table_engines-graphitemergetree).
+For more details, see [GraphiteMergeTree](../../operations/table_engines/graphitemergetree.md#table_engines-graphitemergetree).
 
-**Пример**
+**Example**
 
 ```xml
 <graphite_rollup_example>
@@ -205,13 +203,13 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## http_port/https_port
 
-Порт для обращений к серверу по протоколу HTTP(s).
+The port for connecting to the server over HTTP(s).
 
-Если указан `https_port`, то требуется конфигурирование [openSSL](#server_settings-openSSL).
+If `https_port` is specified, [openSSL](#server_settings-openSSL) must be configured.
 
-Если указан `http_port`, то настройка openSSL игнорируется, даже если она задана.
+If `http_port` is specified, the openSSL configuration is ignored even if it is set.
 
-**Пример**
+**Example**
 
 ```xml
 <https>0000</https>
@@ -221,11 +219,11 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## http_server_default_response
 
-Страница, показываемая по умолчанию, при обращении к HTTP(s) серверу ClickHouse.
+The page that is shown by default when you access the ClickHouse HTTP(s) server.
 
-**Пример**
+**Example**
 
-Показывает `https://tabix.io/` при обращенинии к `http://localhost:http_port`.
+Opens `https://tabix.io/` when accessing `http://localhost: http_port`.
 
 ```xml
 <http_server_default_response>
@@ -237,11 +235,11 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## include_from
 
-Путь к файлу с подстановками.
+The path to the file with substitutions.
 
-Подробности смотрите в разделе "[Конфигурационный файлы](../configuration_files.md#configuration_files)".
+For more information, see the section "[Configuration files](../configuration_files.md#configuration_files)".
 
-**Пример**
+**Example**
 
 ```xml
 <include_from>/etc/metrica.xml</include_from>
@@ -251,9 +249,9 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## interserver_http_port
 
-Порт для обмена между серверами ClickHouse.
+Port for exchanging data between ClickHouse servers.
 
-**Пример**
+**Example**
 
 ```xml
 <interserver_http_port>9009</interserver_http_port>
@@ -263,13 +261,13 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## interserver_http_host
 
-Имя хоста, которое могут использовать другие серверы для обращения к этому.
+The host name that can be used by other servers to access this server.
 
-Если не указано, то определяется аналогично команде `hostname -f`.
+If omitted, it is defined in the same way as the `hostname-f` command.
 
-Удобно использовать, чтобы отвязаться от конкретного сетевого интерфейса.
+Useful for breaking away from a specific network interface.
 
-**Пример**
+**Example**
 
 ```xml
 <interserver_http_host>example.yandex.ru</interserver_http_host>
@@ -279,9 +277,9 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## keep_alive_timeout
 
-Время в секундах, в течение которого ClickHouse ожидает входящих запросов прежде, чем закрыть соединение.
+The number of seconds that ClickHouse waits for incoming requests before closing the connection. Defaults to 10 seconds
 
-**Пример**
+**Example**
 
 ```xml
 <keep_alive_timeout>10</keep_alive_timeout>
@@ -291,9 +289,9 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## listen_host
 
-Ограничение по хостам, с которых может прийти запрос. Если необходимо, чтобы сервер отвечал всем, то надо указать `::`.
+Restriction on hosts that requests can come from. If you want the server to answer all of them, specify `::`.
 
-Примеры:
+Examples:
 
 ```xml
 <listen_host>::1</listen_host>
@@ -304,17 +302,17 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## logger
 
-Настройки логгирования.
+Logging settings.
 
-Ключи:
+Keys:
 
-- level - Уровень логгирования. Допустимые значения: ``trace``, ``debug``, ``information``, ``warning``, ``error``.
-- log - Файл лога. Содержит все записи согласно ``level``.
-- errorlog - Файл лога ошибок.
-- size - Размер файла. Действует для ``log`` и ``errorlog``. Как только файл достиг размера ``size``, ClickHouse архивирует и переименовывает его, а на его месте создает новый файл лога.
-- count - Количество заархивированных файлов логов, которые сохраняет ClickHouse.
+- level – Logging level. Acceptable values: `trace`, `debug`, `information`, `warning`, `error`.
+- log – The log file. Contains all the entries according to `level`.
+- errorlog – Error log file.
+- size – Size of the file. Applies to `log`and`errorlog`. Once the file reaches `size`, ClickHouse archives and renames it, and creates a new log file in its place.
+- count – The number of archived log files that ClickHouse stores.
 
-**Пример**
+**Example**
 
 ```xml
 <logger>
@@ -326,7 +324,8 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 </logger>
 ```
 
-Также, существует поддержка записи в syslog. Пример конфига:
+Writing to the syslog is also supported. Config example:
+
 ```xml
 <logger>
     <use_syslog>1</use_syslog>
@@ -339,27 +338,25 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 </logger>
 ```
 
-Ключи:
-- user_syslog - обязательная настройка, если требуется запись в syslog
-- address - хост[:порт] демона syslogd. Если не указан, используется локальный
-- hostname - опционально, имя хоста, с которого отсылаются логи
-- facility - [категория syslog](https://en.wikipedia.org/wiki/Syslog#Facility),
-записанная в верхнем регистре, с префиксом "LOG_": (``LOG_USER``, ``LOG_DAEMON``, ``LOG_LOCAL3`` и прочие).
-Значения по умолчанию: при указанном ``address`` - ``LOG_USER``, иначе - ``LOG_DAEMON``
-- format - формат сообщений. Возможные значения - ``bsd`` и ``syslog``
+Keys:
 
+- user_syslog — Required setting if you want to write to the syslog.
+- address — The host[:порт] of syslogd. If omitted, the local daemon is used.
+- hostname — Optional. The name of the host that logs are sent from.
+- facility — [The syslog facility keyword](https://en.wikipedia.org/wiki/Syslog#Facility) in uppercase letters with the "LOG_" prefix: (`LOG_USER`, `LOG_DAEMON`, `LOG_LOCAL3`, and so on). Default value: `LOG_USER` if `address` is specified, `LOG_DAEMON otherwise.`
+- format – Message format. Possible values: `bsd` and `syslog.`
 
 <a name="server_settings-macros"></a>
 
 ## macros
 
-Подстановки параметров реплицируемых таблиц.
+Parameter substitutions for replicated tables.
 
-Можно не указывать, если реплицируемых таблицы не используются.
+Can be omitted if replicated tables are not used.
 
-Подробнее смотрите в разделе "[Создание реплицируемых таблиц](../../operations/table_engines/replication.md#table_engines-replication-creation_of_rep_tables)".
+For more information, see the section "[Creating replicated tables](../../operations/table_engines/replication.md#table_engines-replication-creation_of_rep_tables)".
 
-**Пример**
+**Example**
 
 ```xml
 <macros incl="macros" optional="true" />
@@ -369,11 +366,11 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## mark_cache_size
 
-Приблизительный размер (в байтах) кеша "засечек", используемых движками таблиц семейства [MergeTree](../../operations/table_engines/mergetree.md#table_engines-mergetree).
+Approximate size (in bytes) of the cache of "marks" used by [MergeTree](../../operations/table_engines/mergetree.md#table_engines-mergetree).
 
-Кеш общий для сервера, память выделяется по мере необходимости. Кеш не может быть меньше, чем 5368709120.
+The cache is shared for the server and memory is allocated as needed. The cache size must be at least 5368709120.
 
-**Пример**
+**Example**
 
 ```xml
 <mark_cache_size>5368709120</mark_cache_size>
@@ -383,9 +380,9 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## max_concurrent_queries
 
-Максимальное количество одновременно обрабатываемых запросов.
+The maximum number of simultaneously processed requests.
 
-**Пример**
+**Example**
 
 ```xml
 <max_concurrent_queries>100</max_concurrent_queries>
@@ -395,9 +392,9 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## max_connections
 
-Максимальное количество входящих соединений.
+The maximum number of inbound connections.
 
-**Пример**
+**Example**
 
 ```xml
 <max_connections>4096</max_connections>
@@ -407,13 +404,13 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## max_open_files
 
-Максимальное количество открытых файлов.
+The maximum number of open files.
 
-По умолчанию - `maximum`.
+By default: `maximum`.
 
-Рекомендуется использовать в Mac OS X, поскольу функция `getrlimit()` возвращает некорректное значение.
+We recommend using this option in Mac OS X, since the `getrlimit()` function returns an incorrect value.
 
-**Пример**
+**Example**
 
 ```xml
 <max_open_files>262144</max_open_files>
@@ -423,17 +420,17 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## max_table_size_to_drop
 
-Ограничение на удаление таблиц.
+Restriction on deleting tables.
 
-Если размер таблицы семейства [MergeTree](../../operations/table_engines/mergetree.md#table_engines-mergetree) превышает `max_table_size_to_drop` (в байтах), то ее нельзя удалить запросом DROP.
+If the size of a [MergeTree](../../operations/table_engines/mergetree.md#table_engines-mergetree) table exceeds `max_table_size_to_drop` (in bytes), you can't delete it using a DROP query.
 
-Если таблицу все же необходимо удалить, не перезапуская при этом сервер ClickHouse, то необходимо создать файл `<clickhouse-path>/flags/force_drop_table` и выполнить запрос DROP.
+If you still need to delete the table without restarting the ClickHouse server, create the `<clickhouse-path>/flags/force_drop_table` file and run the DROP query.
 
-Значение по умолчанию - 50GB.
+Default value: 50 GB.
 
-Значение 0 означает, что можно удалять все таблицы без ограничений.
+The value 0 means that you can delete all tables without any restrictions.
 
-**Пример**
+**Example**
 
 ```xml
 <max_table_size_to_drop>0</max_table_size_to_drop>
@@ -443,11 +440,11 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## merge_tree
 
-Тонкая настройка таблиц семейства [MergeTree](../../operations/table_engines/mergetree.md#table_engines-mergetree).
+Fine tuning for tables in the [ MergeTree](../../operations/table_engines/mergetree.md#table_engines-mergetree).
 
-Подробнее смотрите в заголовочном файле MergeTreeSettings.h.
+For more information, see the MergeTreeSettings.h header file.
 
-**Пример**
+**Example**
 
 ```xml
 <merge_tree>
@@ -459,34 +456,34 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## openSSL
 
-Настройки клиента/сервера SSL.
+SSL client/server configuration.
 
-Поддержку SSL обеспечивает библиотека ``libpoco``. Описание интерфейса находится в файле [SSLManager.h](https://github.com/ClickHouse-Extras/poco/blob/master/NetSSL_OpenSSL/include/Poco/Net/SSLManager.h)
+Support for SSL is provided by the `libpoco` library. The interface is described in the file [SSLManager.h](https://github.com/ClickHouse-Extras/poco/blob/master/NetSSL_OpenSSL/include/Poco/Net/SSLManager.h)
 
-Ключи настроек сервера/клиента:
+Keys for server/client settings:
 
-- privateKeyFile - Путь к файлу с секретным ключем сертификата в формате PEM. Файл может содержать ключ и сертификат одновременно.
-- certificateFile - Путь к файлу сертификата клиента/сервера в формате PEM. Можно не указывать, если ``privateKeyFile`` содержит сертификат.
-- caConfig - Путь к файлу или каталогу, которые содержат доверенные корневые сертификаты.
-- verificationMode - Способ проверки сертификатов узла. Подробности находятся в описании класса [Context](https://github.com/ClickHouse-Extras/poco/blob/master/NetSSL_OpenSSL/include/Poco/Net/Context.h). Допустимые значения: ``none``, ``relaxed``, ``strict``, ``once``.
-- verificationDepth - Максимальная длина верификационой цепи. Верификация завершится ошибкой, если длина цепи сертификатов превысит установленное значение.
-- loadDefaultCAFile - Признак того, что будут использоваться встроенные CA-сертификаты для OpenSSL. Допустимые значения: ``true``, ``false``.  |
-- cipherList - Поддерживаемые OpenSSL-шифры. Например, ``ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH``.
-- cacheSessions - Включение/выключение кеширования сессии. Использовать обязательно вместе с ``sessionIdContext``. Допустимые значения: ``true``, ``false``.
-- sessionIdContext - Уникальный набор произвольных символов, которые сервер добавляет к каждому сгенерированному идентификатору. Длина строки не должна превышать ``SSL_MAX_SSL_SESSION_ID_LENGTH``. Рекомендуется к использованию всегда, поскольку позволяет избежать проблем как в случае, если сервер кеширует сессию, так и если клиент затребовал кеширование. По умолчанию ``${application.name}``.
-- sessionCacheSize - Максимальное количество сессий, которые кэширует сервер. По умолчанию - 1024\*20. 0 - неограниченное количество сессий.
-- sessionTimeout - Время кеширования сессии на севрере.
-- extendedVerification - Автоматическая расширенная проверка сертификатов после завершении сессии. Допустимые значения: ``true``, ``false``.
-- requireTLSv1 - Требование соединения TLSv1. Допустимые значения: ``true``, ``false``.
-- requireTLSv1_1 - Требование соединения TLSv1.1. Допустимые значения: ``true``, ``false``.
-- requireTLSv1_2 - Требование соединения TLSv1.2. Допустимые значения: ``true``, ``false``.
-- fips - Активация режима OpenSSL FIPS. Поддерживается, если версия OpenSSL, с которой собрана библиотека поддерживает fips.
-- privateKeyPassphraseHandler - Класс (подкласс PrivateKeyPassphraseHandler)запрашивающий кодовую фразу доступа к секретному ключу. Например, ``<privateKeyPassphraseHandler>``, ``<name>KeyFileHandler</name>``, ``<options><password>test</password></options>``, ``</privateKeyPassphraseHandler>``.
-- invalidCertificateHandler - Класс (подкласс CertificateHandler) для подтвеждения невалидных сертификатов. Например,  ``<invalidCertificateHandler> <name>ConsoleCertificateHandler</name> </invalidCertificateHandler>``.
-- disableProtocols - Запрещенные к искользованию протоколы.
-- preferServerCiphers - Предпочтение серверных шифров на клиенте.
+- privateKeyFile – The path to the file with the secret key of the PEM certificate. The file may contain a key and certificate at the same time.
+- certificateFile – The path to the client/server certificate file in PEM format. You can omit it if `privateKeyFile` contains the certificate.
+- caConfig – The path to the file or directory that contains trusted root certificates.
+- verificationMode – The method for checking the node's certificates. Details are in the description of the [Context](https://github.com/ClickHouse-Extras/poco/blob/master/NetSSL_OpenSSL/include/Poco/Net/Context.h) class. Possible values: `none`, `relaxed`, `strict`, `once`.
+- verificationDepth – The maximum length of the verification chain. Verification will fail if the certificate chain length exceeds the set value.
+- loadDefaultCAFile – Indicates that built-in CA certificates for OpenSSL will be used. Acceptable values: `true`, `false`. |
+- cipherList – Supported OpenSSL encryptions. For example: `ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH`.
+- cacheSessions – Enables or disables caching sessions. Must be used in combination with `sessionIdContext`. Acceptable values: `true`, `false`.
+- sessionIdContext – A unique set of random characters that the server appends to each generated identifier. The length of the string must not exceed `SSL_MAX_SSL_SESSION_ID_LENGTH`. This parameter is always recommended, since it helps avoid problems both if the server caches the session and if the client requested caching. Default value: `${application.name}`.
+- sessionCacheSize – The maximum number of sessions that the server caches. Default value: 1024\*20. 0 – Unlimited sessions.
+- sessionTimeout – Time for caching the session on the server.
+- extendedVerification – Automatically extended verification of certificates after the session ends. Acceptable values: `true`, `false`.
+- requireTLSv1 – Require a TLSv1 connection. Acceptable values: `true`, `false`.
+- requireTLSv1_1 – Require a TLSv1.1 connection. Acceptable values: `true`, `false`.
+- requireTLSv1 – Require a TLSv1.2 connection. Acceptable values: `true`, `false`.
+- fips – Activates OpenSSL FIPS mode. Supported if the library's OpenSSL version supports FIPS.
+- privateKeyPassphraseHandler – Class (PrivateKeyPassphraseHandler subclass) that requests the passphrase for accessing the private key. For example: `<privateKeyPassphraseHandler>`, `<name>KeyFileHandler</name>`, `<options><password>test</password></options>`, `</privateKeyPassphraseHandler>`.
+- invalidCertificateHandler – Class (subclass of CertificateHandler) for verifying invalid certificates. For example: `<invalidCertificateHandler> <name>ConsoleCertificateHandler</name>  </invalidCertificateHandler>` .
+- disableProtocols – Protocols that are not allowed to use.
+- preferServerCiphers – Preferred server ciphers on the client.
 
-**Пример настройки:**
+**Example of settings:**
 
 ```xml
 <openSSL>
@@ -520,32 +517,30 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## part_log
 
-Логгирование событий, связанных с данными типа [MergeTree](../../operations/table_engines/mergetree.md#table_engines-mergetree). Например, события добавления или мержа данных. Лог можно использовать для симуляции алгоритмов слияния, чтобы сравнивать их характеристики. Также, можно визуализировать процесс слияния.
+Logging events that are associated with [MergeTree](../../operations/table_engines/mergetree.md#table_engines-mergetree). For instance, adding or merging data. You can use the log to simulate merge algorithms and compare their characteristics. You can visualize the merge process.
 
-Запросы логгируются не в отдельный файл, а в таблицу ClickHouse.
+Queries are logged in the ClickHouse table, not in a separate file.
 
-Столбцы лога:
+Columns in the log:
 
-- event_time - Дата события.
-- duration_ms - Время события.
-- event_type - Тип события. 1 - кусок новый, 2 - результат мержа, 3 - кусок скачан с реплики, 4 - кусок удаляется.
-- database_name - Имя базы даных.
-- table_name - Имя таблицы.
-- part_name - Имя куска данных.
-- partition_id - Идентификатор партиции.
-- size_in_bytes - Размер куска данных в байтах.
-- merged_from - Массив имён кусков, из которых он образован при мерже (так же заполняется в случае скачивания уже смерженного куска).
-- merge_time_ms - Время, потраченное на мерж.
+- event_time – Date of the event.
+- duration_ms – Duration of the event.
+- event_type – Type of event. 1 – new data part; 2 – merge result; 3 – data part downloaded from replica; 4 – data part deleted.
+- database_name – The name of the database.
+- table_name – Name of the table.
+- part_name – Name of the data part.
+- size_in_bytes – Size of the data part in bytes.
+- merged_from – An array of names of data parts that make up the merge (also used when downloading a merged part).
+- merge_time_ms – Time spent on the merge.
 
-При настройке логгирования используются следующие параметры:
+Use the following parameters to configure logging:
 
-- database - Имя базы данных.
-- table - Имя таблицы.
-- partition_by - Устанавливает [произвольный ключ партиционирования](../../operations/table_engines/custom_partitioning_key.md#custom-partitioning-key).
-- flush_interval_milliseconds - Период сброса данных из оперативной памяти на диск.
+- database – Name of the database.
+- table – Name of the table.
+- partition_by – Sets a [custom partitioning key](../../operations/table_engines/custom_partitioning_key.md#custom-partitioning-key).
+- flush_interval_milliseconds – Interval for flushing data from memory to the disk.
 
-
-**Пример**
+**Example**
 
 ```xml
 <part_log>
@@ -560,12 +555,11 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## path
 
-Путь к каталогу с данными.
+The path to the directory containing data.
 
-!!! warning "Обратите внимание"
-    Завершающий слеш обязателен.
+!!! note The trailing slash is mandatory.
 
-**Пример**
+**Example**
 
 ```xml
 <path>/var/lib/clickhouse/</path>
@@ -575,20 +569,20 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## query_log
 
-Настройка логгирования запросов, принятых с настройкой [log_queries=1](../settings/settings.md#settings_settings-log_queries).
+Setting for logging queries received with the [log_queries=1](../settings/settings.md#settings_settings-log_queries) setting.
 
-Запросы логгируются не в отдельный файл, а в таблицу ClickHouse.
+Queries are logged in the ClickHouse table, not in a separate file.
 
-При настройке логгирования используются следующие параметры:
+Use the following parameters to configure logging:
 
-- database - Имя базы данных.
-- table - Имя таблицы.
-- partition_by - Устанавливает [произвольный ключ партиционирования](../../operations/table_engines/custom_partitioning_key.md#custom-partitioning-key).
-- flush_interval_milliseconds - Период сброса данных из оперативной памяти на диск.
+- database – Name of the database.
+- table – Name of the table.
+- partition_by – Sets a [custom partitioning key](../../operations/table_engines/custom_partitioning_key.md#custom-partitioning-key).
+- flush_interval_milliseconds – Interval for flushing data from memory to the disk.
 
-Если таблица не существует, то ClickHouse создаст её. Если структура журнала запросов изменилась при обновлении сервера ClickHouse, то таблица со старой структурой переименовывается, а новая таблица создается автоматически.
+If the table doesn't exist, ClickHouse will create it. If the structure of the query log changed when the ClickHouse server was updated, the table with the old structure is renamed, and a new table is created automatically.
 
-**Пример**
+**Example**
 
 ```xml
 <query_log>
@@ -603,30 +597,29 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## remote_servers
 
-Конфигурация кластеров, которые использует движок таблиц Distributed.
+Configuration of clusters used by the Distributed table engine.
 
-Пример настройки смотрите в разделе "[Движки таблиц/Distributed](../../operations/table_engines/distributed.md#table_engines-distributed)".
+For more information, see the section "[Table engines/Distributed](../../operations/table_engines/distributed.md#table_engines-distributed)".
 
-**Пример**
+**Example**
 
 ```xml
 <remote_servers incl="clickhouse_remote_servers" />
 ```
 
-Значение атрибута `incl` смотрите в разделе "[Конфигурационные файлы](../configuration_files.md#configuration_files)".
-
+For the value of the `incl` attribute, see the section "[Configuration files](../configuration_files.md#configuration_files)".
 
 <a name="server_settings-timezone"></a>
 
 ## timezone
 
-Временная зона сервера.
+The server's time zone.
 
-Указывается идентификатором IANA в виде часового пояса UTC или географического положения (например, Africa/Abidjan).
+Specified as an IANA identifier for the UTC time zone or geographic location (for example, Africa/Abidjan).
 
-Временная зона необходима при преобразованиях между форматами String и DateTime, которые возникают при выводе полей DateTime в текстовый формат (на экран или в файл) и при получении DateTime из строки. Также, временная зона используется в функциях, которые работают со временем и датой, если они не получили временную зону в параметрах вызова.
+The time zone is necessary for conversions between String and DateTime formats when DateTime fields are output to text format (printed on the screen or in a file), and when getting DateTime from a string. In addition, the time zone is used in functions that work with the time and date if they didn't receive the time zone in the input parameters.
 
-**Пример**
+**Example**
 
 ```xml
 <timezone>Europe/Moscow</timezone>
@@ -636,9 +629,9 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## tcp_port
 
-Порт для взаимодействия с клиентами по протоколу TCP.
+Port for communicating with clients over the TCP protocol.
 
-**Пример**
+**Example**
 
 ```xml
 <tcp_port>9000</tcp_port>
@@ -648,12 +641,11 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## tmp_path
 
-Путь ко временным данным для обработки больших запросов.
+Path to temporary data for processing large queries.
 
-!!! warning "Обратите внимание"
-    Завершающий слеш обязателен.
+!!! note The trailing slash is mandatory.
 
-**Пример**
+**Example**
 
 ```xml
 <tmp_path>/var/lib/clickhouse/tmp/</tmp_path>
@@ -663,13 +655,13 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## uncompressed_cache_size
 
-Размер кеша (в байтах) для несжатых данных, используемых движками таблиц семейства [MergeTree](../../operations/table_engines/mergetree.md#table_engines-mergetree).
+Cache size (in bytes) for uncompressed data used by table engines from the [MergeTree](../../operations/table_engines/mergetree.md#table_engines-mergetree).
 
-Кеш единый для сервера. Память выделяется по-требованию. Кеш используется в том случае, если включена опция [use_uncompressed_cache](../settings/settings.md#settings-use_uncompressed_cache).
+There is one shared cache for the server. Memory is allocated on demand. The cache is used if the option [use_uncompressed_cache](../settings/settings.md#settings-use_uncompressed_cache) is enabled.
 
-Несжатый кеш выгодно использовать для очень коротких запросов в отдельных случаях.
+The uncompressed cache is advantageous for very short queries in individual cases.
 
-**Пример**
+**Example**
 
 ```xml
 <uncompressed_cache_size>8589934592</uncompressed_cache_size>
@@ -677,9 +669,9 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## user_files_path
 
-Каталог с пользовательскими файлами. Используется в табличной функции [file()](../../query_language/table_functions/file.md#table_functions-file).
+The directory with user files. Used in the table function [file()](../../query_language/table_functions/file.md#table_functions-file).
 
-**Пример**
+**Example**
 
 ```xml
 <user_files_path>/var/lib/clickhouse/user_files/</user_files_path>
@@ -689,14 +681,14 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## users_config
 
-Путь к файлу, который содержит:
+Path to the file that contains:
 
--   Конфигурации пользователей.
--   Права доступа.
--   Профили настроек.
--   Настройки квот.
+- User configurations.
+- Access rights.
+- Settings profiles.
+- Quota settings.
 
-**Пример**
+**Example**
 
 ```xml
 <users_config>users.xml</users_config>
@@ -706,15 +698,15 @@ ClickHouse проверит условия `min_part_size` и `min_part_size_rat
 
 ## zookeeper
 
-Конфигурация серверов ZooKeeper.
+Configuration of ZooKeeper servers.
 
-ClickHouse использует ZooKeeper для хранения метаданных о репликах при использовании реплицированных таблиц.
+ClickHouse uses ZooKeeper for storing replica metadata when using replicated tables.
 
-Параметр можно не указывать, если реплицированные таблицы не используются.
+This parameter can be omitted if replicated tables are not used.
 
-Подробно читайте в разделе "[Репликация](../../operations/table_engines/replication.md#table_engines-replication)".
+For more information, see the section "[Replication](../../operations/table_engines/replication.md#table_engines-replication)".
 
-**Пример**
+**Example**
 
 ```xml
 <zookeeper incl="zookeeper-servers" optional="true" />
