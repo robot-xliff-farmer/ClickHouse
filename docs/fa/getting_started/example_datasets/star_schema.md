@@ -1,10 +1,6 @@
-<div dir="rtl" markdown="1">
+# Star Schema Benchmark
 
-# بنچمارک Star Schema
-
-از لینک روبرو dbgen رو کامپایل کنید. <https://github.com/vadimtk/ssb-dbgen>
-
-</div>
+Compiling dbgen: <https://github.com/vadimtk/ssb-dbgen>
 
 ```bash
 git clone git@github.com:vadimtk/ssb-dbgen.git
@@ -12,26 +8,18 @@ cd ssb-dbgen
 make
 ```
 
-<div dir="rtl" markdown="1">
+There will be some warnings during the process, but this is normal.
 
-در هنگام پردازش چند warnings نمایش داده می شود که مشکلی نیست  و طبیعی است.
+Place `dbgen` and `dists.dss` in any location with 800 GB of free disk space.
 
-`dbgen` و ` dists.dss` را در یک جا با 800 گیگابایت فضای حالی دیسک قرار دهید.
-
-تولید داده ها:
-
-</div>
+Generating data:
 
 ```bash
 ./dbgen -s 1000 -T c
 ./dbgen -s 1000 -T l
 ```
 
-<div dir="rtl" markdown="1">
-
-ساخت جداول در ClickHouse
-
-</div>
+Creating tables in ClickHouse:
 
 ```sql
 CREATE TABLE lineorder (
@@ -84,13 +72,9 @@ CREATE TABLE customerd AS customer ENGINE = Distributed(perftest_3shards_1replic
 CREATE TABLE partd AS part ENGINE = Distributed(perftest_3shards_1replicas, default, part, rand());
 ```
 
-<div dir="rtl" markdown="1">
+For testing on a single server, just use MergeTree tables. For distributed testing, you need to configure the `perftest_3shards_1replicas` cluster in the config file. Next, create MergeTree tables on each server and a Distributed above them.
 
-برای تست بر روی یک سرور، فقط از جداول MergeTree استفاده کنید. برای تست توزیع شده، شما نیاز به کانفیگ `perftest_3shards_1replicas` در فایل کانفیگ را دارید. در ادامه جداول MergeTree را در هر سرور ایجاد کنید و موارد بالا را توزیع کنید.
-
-دانلود داده ها (تغییر `customer` به `customerd` در نسخه ی توزیع شده):
-
-</div>
+Downloading data (change 'customer' to 'customerd' in the distributed version):
 
 ```bash
 cat customer.tbl | sed 's/$/2000-01-01/' | clickhouse-client --query "INSERT INTO customer FORMAT CSV"
