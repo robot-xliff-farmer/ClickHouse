@@ -1,35 +1,31 @@
-# Функции округления
+# Rounding functions
 
 ## floor(x\[, N\])
-Возвращает наибольшее круглое число, которое меньше или равно, чем x.
-Круглым называется число, кратное 1 / 10N или ближайшее к нему число соответствующего типа данных, если 1 / 10N не представимо точно.
-N - целочисленная константа, не обязательный параметр. По умолчанию - ноль, что означает - округлять до целого числа.
-N может быть отрицательным.
 
-Примеры: `floor(123.45, 1) = 123.4, floor(123.45, -1) = 120.`
+Returns the largest round number that is less than or equal to x. A round number is a multiple of 1/10N, or the nearest number of the appropriate data type if 1 / 10N isn't exact. 'N' is an integer constant, optional parameter. By default it is zero, which means to round to an integer. 'N' may be negative.
 
-`x` - любой числовой тип. Результат - число того же типа.
-Для целочисленных аргументов имеет смысл округление с отрицательным значением N (для неотрицательных N, функция ничего не делает).
-В случае переполнения при округлении (например, floor(-128, -1)), возвращается implementation specific результат.
+Examples: `floor(123.45, 1) = 123.4, floor(123.45, -1) = 120.`
+
+`x` is any numeric type. The result is a number of the same type. For integer arguments, it makes sense to round with a negative 'N' value (for non-negative 'N', the function doesn't do anything). If rounding causes overflow (for example, floor(-128, -1)), an implementation-specific result is returned.
 
 ## ceil(x\[, N\])
-Возвращает наименьшее круглое число, которое больше или равно, чем x.
-В остальном, аналогично функции floor, см. выше.
+
+Returns the smallest round number that is greater than or equal to 'x'. In every other way, it is the same as the 'floor' function (see above).
 
 ## round(x\[, N\])
 
-Реализует [банковское округление](https://en.wikipedia.org/wiki/Rounding#Round_half_to_even), т.е. округление до ближайшего чётного.
+Implements [banker's rounding](https://en.wikipedia.org/wiki/Rounding#Round_half_to_even), i.e., rounding to the nearest even integer.
 
-**Аргументы функции**
+**Function arguments:**
 
-- `x` — число для округления. [Тип](../../data_types/index.md#data_types) — любой числовой.
-- `N` — позиция цифры после запятой, до которой следует округлять.
+- `x` — the number to be rounded. [Type](../../data_types/index.md#data_types) — any number.
+- `N`— the position of the number after the decimal point to round the number to.
 
-**Возвращаемое значение**
+**Returned value:**
 
-Округлённое число того же типа, что и входное число `x`.
+The rounded number of the same type as the input number `x`
 
-**Пример**
+**Example:**
 
 ```sql
 SELECT
@@ -38,26 +34,29 @@ SELECT
 FROM system.numbers
 LIMIT 10
 ```
-```
-┌───x─┬─round(divide(number, 2))─┐
-│   0 │                        0 │
-│ 0.5 │                        0 │
-│   1 │                        1 │
-│ 1.5 │                        2 │
-│   2 │                        2 │
-│ 2.5 │                        2 │
-│   3 │                        3 │
-│ 3.5 │                        4 │
-│   4 │                        4 │
-│ 4.5 │                        4 │
-└─────┴──────────────────────────┘
-```
+
+    ┌───x─┬─round(divide(number, 2))─┐
+    │   0 │                        0 │
+    │ 0.5 │                        0 │
+    │   1 │                        1 │
+    │ 1.5 │                        2 │
+    │   2 │                        2 │
+    │ 2.5 │                        2 │
+    │   3 │                        3 │
+    │ 3.5 │                        4 │
+    │   4 │                        4 │
+    │ 4.5 │                        4 │
+    └─────┴──────────────────────────┘
+    
 
 ## roundToExp2(num)
-Принимает число. Если число меньше единицы - возвращает 0. Иначе округляет число вниз до ближайшей (целой неотрицательной) степени двух.
+
+Accepts a number. If the number is less than one, it returns 0. Otherwise, it rounds the number down to the nearest (whole non-negative) degree of two.
 
 ## roundDuration(num)
-Принимает число. Если число меньше единицы - возвращает 0. Иначе округляет число вниз до чисел из набора: 1, 10, 30, 60, 120, 180, 240, 300, 600, 1200, 1800, 3600, 7200, 18000, 36000. Эта функция специфична для Яндекс.Метрики и предназначена для реализации отчёта по длительности визита.
+
+Accepts a number. If the number is less than one, it returns 0. Otherwise, it rounds the number down to numbers from the set: 1, 10, 30, 60, 120, 180, 240, 300, 600, 1200, 1800, 3600, 7200, 18000, 36000. This function is specific to Yandex.Metrica and used for implementing the report on session length
 
 ## roundAge(num)
-Принимает число. Если число меньше 18 - возвращает 0. Иначе округляет число вниз до чисел из набора: 18, 25, 35, 45, 55. Эта функция специфична для Яндекс.Метрики и предназначена для реализации отчёта по возрасту посетителей.
+
+Accepts a number. If the number is less than 18, it returns 0. Otherwise, it rounds the number down to a number from the set: 18, 25, 35, 45, 55. This function is specific to Yandex.Metrica and used for implementing the report on user age.
