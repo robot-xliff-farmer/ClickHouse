@@ -1,29 +1,21 @@
-<div dir="rtl" markdown="1">
+# HTTP Interface
 
-# HTTP interface
+The HTTP interface lets you use ClickHouse on any platform from any programming language. We use it for working from Java and Perl, as well as shell scripts. In other departments, the HTTP interface is used from Perl, Python, and Go. The HTTP interface is more limited than the native interface, but it has better compatibility.
 
-HTTP interface به شما امکان استفاده از ClickHpuse در هر پلتفرم با هر زمان برنامه نویسی را می دهد. ما از این Interface برای زبان های Java و Perl به مانند shell استفاده می کنیم. در دیگر دپارتمان ها، HTTP interface در Perl، Python، و Go استفاده می شود. HTTP Interface محدود تر از native interface می باشد، اما سازگاری بهتری دارد.
-
-به صورت پیش فرض، clickhouse-server به پرت 8123 در HTTP گوش می دهد. (میتونه در کانفیگ فایل تغییر پیدا کنه). اگر شما یک درخواست GET / بدون پارامتر بسازید، رشته ی "OK" رو دریافت می کنید (به همراه line feed در انتها). شما می توانید از این درخواست برای اسکریپت های health-check استفاده کنید.
-
-</div>
+By default, clickhouse-server listens for HTTP on port 8123 (this can be changed in the config). If you make a GET / request without parameters, it returns the string "Ok" (with a line feed at the end). You can use this in health-check scripts.
 
 ```bash
 $ curl 'http://localhost:8123/'
 Ok.
 ```
 
-<div dir="rtl" markdown="1">
+Send the request as a URL 'query' parameter, or as a POST. Or send the beginning of the query in the 'query' parameter, and the rest in the POST (we'll explain later why this is necessary). The size of the URL is limited to 16 KB, so keep this in mind when sending large queries.
 
-درخواست های خود را پارامتر 'query'، یا با متد POST، یا ابتدای query را در پارامتر 'query' ارسال کنید، و بقیه را در POST (بعدا توضیح خواهیم داد که چرا این کار ضروری است). سایت URL محدود به 16 کیلوبایت است، پس هنگام ارسال query های بزرگ، اینو به خاطر داشته باشید
+If successful, you receive the 200 response code and the result in the response body. If an error occurs, you receive the 500 response code and an error description text in the response body.
 
-اگر درخواست موفق آمیز باشد، استاتوس کد 200 را دریافت می کنید و نتایج در بدنه response می باشد. اگر اروری رخ دهد، استاتوس کد 500 را دریافت می کنید و توضیحات ارور در بدنه ی reponse قرار می گیرد.
+When using the GET method, 'readonly' is set. In other words, for queries that modify data, you can only use the POST method. You can send the query itself either in the POST body, or in the URL parameter.
 
-در هنگام استفاده از متد GET، 'readonly' ست می شود. به عبارت دیگر، برای query هایی که قصد تغییر دیتا را دارند، شما فقط از طریق متد POST می توانید این تغییرات را انجام دهید. شما میتونید query رو در بدنه ی POST یه یا به عنوان پارامتر های URL ارسال کنید.
-
-مثال:
-
-</div>
+Examples:
 
 ```bash
 $ curl 'http://localhost:8123/?query=SELECT%201'
@@ -40,11 +32,7 @@ Date: Fri, 16 Nov 2012 19:21:50 GMT
 1
 ```
 
-<div dir="rtl" markdown="1">
-
-همانطور که می بینید،  curl is somewhat inconvenient in that spaces must be URL escaped. هر چند wget همه چیز را خودش escape می کنه، ما توصیه به استفاده از اون رو نمی کنیم، چون wget به خوبی با HTTP 1.1 در هنگام استفاده از هدر های keep-alive و Transfer-Encoding: chunked کار نمی کند.
-
-</div>
+As you can see, curl is somewhat inconvenient in that spaces must be URL escaped. Although wget escapes everything itself, we don't recommend using it because it doesn't work well over HTTP 1.1 when using keep-alive and Transfer-Encoding: chunked.
 
 ```bash
 $ echo 'SELECT 1' | curl 'http://localhost:8123/' --data-binary @-
@@ -57,11 +45,7 @@ $ echo '1' | curl 'http://localhost:8123/?query=SELECT' --data-binary @-
 1
 ```
 
-<div dir="rtl" markdown="1">
-
-اگر بخشی از query در پارامتر ارسال شود، و بخش دیگر در POST، یک line feed بین دو بخش وارد می شود. مثال (این کار نمی کند):
-
-</div>
+If part of the query is sent in the parameter, and part in the POST, a line feed is inserted between these two data parts. Example (this won't work):
 
 ```bash
 $ echo 'ECT 1' | curl 'http://localhost:8123/?query=SEL' --data-binary @-
@@ -70,11 +54,7 @@ ECT 1
 , expected One of: SHOW TABLES, SHOW DATABASES, SELECT, INSERT, CREATE, ATTACH, RENAME, DROP, DETACH, USE, SET, OPTIMIZE., e.what() = DB::Exception
 ```
 
-<div dir="rtl" markdown="1">
-
-به صورت پیش فرض، داده ها با فرمت TabSeparated بر میگردند. (برای اطلاعات بیشتر بخش "فرمت" را مشاهده کنید). شما میتوانید از دستور FORMAT در query خود برای ست کردن فرمتی دیگر استفاده کنید.
-
-</div>
+By default, data is returned in TabSeparated format (for more information, see the "Formats" section). You use the FORMAT clause of the query to request any other format.
 
 ```bash
 $ echo 'SELECT 1 FORMAT Pretty' | curl 'http://localhost:8123/?' --data-binary @-
@@ -85,63 +65,39 @@ $ echo 'SELECT 1 FORMAT Pretty' | curl 'http://localhost:8123/?' --data-binary @
 └───┘
 ```
 
-<div dir="rtl" markdown="1">
+The POST method of transmitting data is necessary for INSERT queries. In this case, you can write the beginning of the query in the URL parameter, and use POST to pass the data to insert. The data to insert could be, for example, a tab-separated dump from MySQL. In this way, the INSERT query replaces LOAD DATA LOCAL INFILE from MySQL.
 
-برای query های INSERT متد POST ضروری است. در این مورد، شما می توانید ابتدای query خود را در URL parameter بنویسید، و از POST برای پاس داده داده ها برای درج استفاده کنید. داده ی برای درج می تواند، برای مثال یک دامپ tab-separated شده از MySQL باشد. به این ترتیب، query INSERT جایگزین  LOAD DATA LOCAL INFILE از MySQL می شود.
-
-مثال: ساخت جدول
-
-</div>
+Examples: Creating a table:
 
 ```bash
 echo 'CREATE TABLE t (a UInt8) ENGINE = Memory' | curl 'http://localhost:8123/' --data-binary @-
 ```
 
-<div dir="rtl" markdown="1">
-
-استفاده از query INSERT برای درج داده:
-
-</div>
+Using the familiar INSERT query for data insertion:
 
 ```bash
 echo 'INSERT INTO t VALUES (1),(2),(3)' | curl 'http://localhost:8123/' --data-binary @-
 ```
 
-<div dir="rtl" markdown="1">
-
-داده ها میتوانند جدا از پارامتر query ارسال شوند:
-
-</div>
+Data can be sent separately from the query:
 
 ```bash
 echo '(4),(5),(6)' | curl 'http://localhost:8123/?query=INSERT%20INTO%20t%20VALUES' --data-binary @-
 ```
 
-<div dir="rtl" markdown="1">
-
-شما می توانید هر نوع فرمت دیتایی مشخص کنید. فرمت 'Values' دقیقا مشابه زمانی است که شما INSERT INTO t VALUES را می نویسید:
-
-</div>
+You can specify any data format. The 'Values' format is the same as what is used when writing INSERT INTO t VALUES:
 
 ```bash
 echo '(7),(8),(9)' | curl 'http://localhost:8123/?query=INSERT%20INTO%20t%20FORMAT%20Values' --data-binary @-
 ```
 
-<div dir="rtl" markdown="1">
-
-برای درج داده ها از یک دامپ tab-separate، فرمت مشخص زیر را وارد کنید:
-
-</div>
+To insert data from a tab-separated dump, specify the corresponding format:
 
 ```bash
 echo -ne '10\n11\n12\n' | curl 'http://localhost:8123/?query=INSERT%20INTO%20t%20FORMAT%20TabSeparated' --data-binary @-
 ```
 
-<div dir="rtl" markdown="1">
-
-به دلیل پردازش موازی، نتایج query با ترتیب رندوم چاپ می شود:
-
-</div>
+Reading the table contents. Data is output in random order due to parallel query processing:
 
 ```bash
 $ curl 'http://localhost:8123/?query=SELECT%20a%20FROM%20t'
@@ -159,31 +115,23 @@ $ curl 'http://localhost:8123/?query=SELECT%20a%20FROM%20t'
 6
 ```
 
-<div dir="rtl" markdown="1">
-
-حدف جدول:
-
-</div>
+Deleting the table.
 
 ```bash
 echo 'DROP TABLE t' | curl 'http://localhost:8123/' --data-binary @-
 ```
 
-<div dir="rtl" markdown="1">
+For successful requests that don't return a data table, an empty response body is returned.
 
-برای درخواست هایی موفقی که داده ای از جدول بر نمیگردد، بدنه response خالی است.
+You can use the internal ClickHouse compression format when transmitting data. The compressed data has a non-standard format, and you will need to use the special clickhouse-compressor program to work with it (it is installed with the clickhouse-client package).
 
-شما می توانید از فرمت فشرده سازی داخلی ClickHouse در هنگان انتقال داده ها استفاده کنید. این فشرده سازی داده، یک فرمت غیراستاندارد است، و شما باید از برنامه مخصوص فشرده سازی ClickHouse برای استفاده از آن استفاده کنید. (این برنامه در هنگام نصب پکیج clickhouse-client نصب شده است)
+If you specified 'compress=1' in the URL, the server will compress the data it sends you. If you specified 'decompress=1' in the URL, the server will decompress the same data that you pass in the POST method.
 
-اگر شما در URL پارامتر  'compress=1' را قرار دهید، سرور داده های ارسالی به شما را فشرده سازی می کند. اگر شما پارامتر 'decompress=1' را در URL ست کنید، سرور داده های ارسالی توسط متد POST را decompress می کند.
+It is also possible to use the standard gzip-based HTTP compression. To send a POST request compressed using gzip, append the request header `Content-Encoding: gzip`. In order for ClickHouse to compress the response using gzip, you must append `Accept-Encoding: gzip` to the request headers, and enable the ClickHouse setting `enable_http_compression`.
 
-همچنین استفاده از فشرده سازی استاندارد gzip در HTTP ممکن است. برای ارسال درخواست POST و فشرده سازی آن به صورت gzip، هدر `Content-Encoding: gzip` را به request خود اضافه کنید. برای اینکه ClickHouse، response فشرده شده به صورت gzip برای شما ارسال کند، ابتدا باید `enable_http_compression` را در تنظیمات ClickHouse فعال کنید و در ادامه هدر `Accept-Encoding: gzip` را به درخواست خود اضافه کنید.
+You can use this to reduce network traffic when transmitting a large amount of data, or for creating dumps that are immediately compressed.
 
-شما می توانید از این کار برای کاهش ترافیک شبکه هنگام ارسال مقدار زیادی از داده ها یا برای ایجاد dump هایی که بلافاصله فشرده می شوند، استفاده کنید.
-
-شما می توانید از پارامتر 'database' در URL برای مشخص کردن دیتابیس پیش فرض استفاده کنید.
-
-</div>
+You can use the 'database' URL parameter to specify the default database.
 
 ```bash
 $ echo 'SELECT number FROM numbers LIMIT 10' | curl 'http://localhost:8123/?database=system' --data-binary @-
@@ -199,37 +147,25 @@ $ echo 'SELECT number FROM numbers LIMIT 10' | curl 'http://localhost:8123/?data
 9
 ```
 
-<div dir="rtl" markdown="1">
+By default, the database that is registered in the server settings is used as the default database. By default, this is the database called 'default'. Alternatively, you can always specify the database using a dot before the table name.
 
-به صورت پیش فرض، دیتابیس ثبت شده در تنظیمات سرور به عنوان دیتابیس پیش فرض مورد استفاده قرار می گیرد، این دیتابیس 'default' نامیده می شود. از سوی دیگر، شما می توانید همیشه نام دیتابیس را با دات و قبل از اسم جدول مشخص کنید.
+The username and password can be indicated in one of two ways:
 
-نام کاربری و پسورد می توانند به یکی از دو روش زیر ست شوند:
-
-1. استفاده از HTTP Basic Authentication. مثال:
-
-</div>
+1. Using HTTP Basic Authentication. Example:
 
 ```bash
 echo 'SELECT 1' | curl 'http://user:password@localhost:8123/' -d @-
 ```
 
-<div dir="rtl" markdown="1">
-
-2. با دو پارامتر 'user' و 'password' در URL. مثال:
-
-</div>
+2. In the 'user' and 'password' URL parameters. Example:
 
 ```bash
 echo 'SELECT 1' | curl 'http://localhost:8123/?user=user&password=password' -d @-
 ```
 
-<div dir="rtl" markdown="1">
+If the user name is not indicated, the username 'default' is used. If the password is not indicated, an empty password is used. You can also use the URL parameters to specify any settings for processing a single query, or entire profiles of settings. Example:http://localhost:8123/?profile=web&max_rows_to_read=1000000000&query=SELECT+1
 
-اگر نام کاربری مشخص نشود، نام کاربری 'default' استفاده می شود. اگر پسورد مشخص نشود، پسورد خالی استفاده می شود. شما همچنین می توانید از پارامتر های URL برای مشخص کردن هر تنظیمی برای اجرای یک query استفاده کنید. مثال: http://localhost:8123/?profile=web&max_rows_to_read=1000000000&query=SELECT+1
-
-برای اطلاعات بیشتر بخش "تنظیمات" را مشاهده کنید.
-
-</div>
+For more information, see the section "Settings".
 
 ```bash
 $ echo 'SELECT number FROM system.numbers LIMIT 10' | curl 'http://localhost:8123/?' --data-binary @-
@@ -245,38 +181,30 @@ $ echo 'SELECT number FROM system.numbers LIMIT 10' | curl 'http://localhost:812
 9
 ```
 
-<div dir="rtl" markdown="1">
+For information about other parameters, see the section "SET".
 
-برای اطلاعات بیشتر در مورد دیگر پارامترها، بخش "SET" را ببینید.
+Similarly, you can use ClickHouse sessions in the HTTP protocol. To do this, you need to add the `session_id` GET parameter to the request. You can use any string as the session ID. By default, the session is terminated after 60 seconds of inactivity. To change this timeout, modify the `default_session_timeout` setting in the server configuration, or add the `session_timeout` GET parameter to the request. To check the session status, use the `session_check=1` parameter. Only one query at a time can be executed within a single session.
 
-به طور مشابه، شما می توانید از ClickHouse Session در HTTP استفاده کنید. برای این کار، شما نیاز به ست کردن پارامتر`session_id` برای درخواست را دارید. شما میتوانید از هر رشته ای برای ست کردن Session ID استفاده کنید. به صورت پیش فرض، یک session بعد از 60 ثانیه از اجرای آخرین درخواست نابود می شود. برای تغییر زمان timeout، باید `default_session_timeout` را در تنظیمات سرور تغییر دهید و یا پارامتر `session_timeout` در هنگام درخواست ست کنید. برای بررسی وضعیت status از پارامتر `session_check=1` استفاده کنید. با یک session تنها یک query در لحظه می توان اجرا کرد.
+You have the option to receive information about the progress of query execution in X-ClickHouse-Progress headers. To do this, enable the setting send_progress_in_http_headers.
 
-گزینه ای برای دریافت اطلاعات progress اجرای query وجود دارد. این گزینه هدر X-ClickHouse-Progress می باشد. برای این کار تنظیم send_progress_in_http_headers در کانفیگ فایل فعال کنید.
+Running requests don't stop automatically if the HTTP connection is lost. Parsing and data formatting are performed on the server side, and using the network might be ineffective. The optional 'query_id' parameter can be passed as the query ID (any string). For more information, see the section "Settings, replace_running_query".
 
-درخواست در حال اجرا، در صورت لاست شدن کانکشن HTTP به صورت اتوماتیک متوقف نمی شود. پارس کردن و فرمت کردن داده ها در سمت سرور صورت می گیرد، و استفاده از شبکه ممکن است ناکارآمد باشد. پارامتر 'query_id' می تونه به عنوان query id پاس داده شود (هر رشته ای قابل قبول است). برای اطلاعات بیشتر بخش "تنظیمات، replace_running_query" را مشاهده کنید.
+The optional 'quota_key' parameter can be passed as the quota key (any string). For more information, see the section "Quotas".
 
-پارامتر 'quoto_key' می تواند به عنوان quoto key پاس داده شود (هر رشته ای قابل قبول است). برای اطلاعات بیشتر بخش "Quotas" را مشاهده کنید.
+The HTTP interface allows passing external data (external temporary tables) for querying. For more information, see the section "External data for query processing".
 
-HTTP interface اجازه ی پاس دادن داده های external (جداول موقت external) به query را می دهد. برای اطلاعات بیشتر، بخش "داده های External برای پردازش query" را مشاهده کنید.
+## Response Buffering
 
-## بافرینگ Response
+You can enable response buffering on the server side. The `buffer_size` and `wait_end_of_query` URL parameters are provided for this purpose.
 
-شما می توانید در سمت سرور قابلی بافرینگ response را فعال کنید. پارامترهای `buffer_size` و `wait_end_of_query` در URL برای این هدف ارائه شده اند.
+`buffer_size` determines the number of bytes in the result to buffer in the server memory. If the result body is larger than this threshold, the buffer is written to the HTTP channel, and the remaining data is sent directly to the HTTP channel.
 
-`buffer_size` تعیین کننده ی اندازه ی نتیجه (بایت) برای بافر شدن در حافظه سرور است. اگر بدنه ی نتیجه بیش بزرگتر از این threshold باشد، بافر بر روی HTTP channel نوشته می شود و باقی مانده ی دیتا به صورت مستقیم به HTTP Channel ارسال می شود.
+To ensure that the entire response is buffered, set `wait_end_of_query=1`. In this case, the data that is not stored in memory will be buffered in a temporary server file.
 
-برای اینکه مطمعن بشید که کل response بافر شده است، `wait_end_of_query=1` را ست کنید. در این مورد، داده های که در حافظه ذخیره نمی شوند، در یک فایل موقت سمت سرور بافر می شوند.
-
-مثال:
-
-</div>
+Example:
 
 ```bash
 curl -sS 'http://localhost:8123/?max_result_bytes=4000000&buffer_size=3000000&wait_end_of_query=1' -d 'SELECT toUInt8(number) FROM system.numbers LIMIT 9000000 FORMAT RowBinary'
 ```
 
-<div dir="rtl" markdown="1">
-
-از بافرینگ به منظور اجتناب از شرایطی که یک خطای پردازش query رخ داده بعد از response کد و هدر های ارسال شده به کلاینت استفاده کنید. در این شرایط، پیغام خطا در انتهای بنده response نوشته می شود، و در سمت کلاینت، پیغام خطا فقط از طریق مرحله پارس کردن قابل شناسایی است.
-
-</div>
+Use buffering to avoid situations where a query processing error occurred after the response code and HTTP headers were sent to the client. In this situation, an error message is written at the end of the response body, and on the client side, the error can only be detected at the parsing stage.
