@@ -1,16 +1,16 @@
 <a name="table_engines-custom_partitioning_key"></a>
 
-# Произвольный ключ партиционирования
+# Custom Partitioning Key
 
-Начиная с версии 1.1.54310 доступна возможность создания таблиц семейства MergeTree с произвольным выражением партиционирования (не только по месяцу).
+Starting with version 1.1.54310, you can create tables in the MergeTree family with any partitioning expression (not only partitioning by month).
 
-Ключ партиционирования может представлять собой произвольное выражение из столбцов таблицы, а также кортеж из таких выражений (аналогично первичному ключу). Ключ партиционирования может отсутствовать. При создании таблицы ключ партиционирования указывается в описании движка (ENGINE) с новым синтаксисом:
+The partition key can be an expression from the table columns, or a tuple of such expressions (similar to the primary key). The partition key can be omitted. When creating a table, specify the partition key in the ENGINE description with the new syntax:
 
-```
-ENGINE [=] Name(...) [PARTITION BY expr] [ORDER BY expr] [SAMPLE BY expr] [SETTINGS name=value, ...]
-```
+    ENGINE [=] Name(...) [PARTITION BY expr] [ORDER BY expr] [SAMPLE BY expr] [SETTINGS name=value, ...]
+    
 
-Для MergeTree таблиц выражение партиционирования указывается после `PARTITION BY`, первичный ключ после `ORDER BY`, ключ сэмплирования после `SAMPLE BY`, а в `SETTINGS` можно указать `index_granularity` (не обязательно, значение по умолчанию 8192), а также другие настройки из [MergeTreeSettings.h](https://github.com/yandex/ClickHouse/blob/master/dbms/src/Storages/MergeTree/MergeTreeSettings.h). Остальные параметры движка по-прежнему указываются в скобках после его названия. Пример:
+For MergeTree tables, the partition expression is specified after `PARTITION BY`, the primary key after `ORDER BY`, the sampling key after `SAMPLE BY`, and `SETTINGS` can specify `index_granularity` (optional; the default value is 8192), as well as other settings from [MergeTreeSettings.h](https://github.com/yandex/ClickHouse/blob/master/dbms/src/Storages/MergeTree/MergeTreeSettings.h). The other engine parameters are specified in parentheses after the engine name, as previously. Example:
+
 ```sql
 ENGINE = ReplicatedCollapsingMergeTree('/clickhouse/tables/name', 'replica1', Sign)
     PARTITION BY (toMonday(StartDate), EventType)
@@ -18,26 +18,28 @@ ENGINE = ReplicatedCollapsingMergeTree('/clickhouse/tables/name', 'replica1', Si
     SAMPLE BY intHash32(UserID)
 ```
 
-Традиционному партиционированию по месяцу соответствует выражение `toYYYYMM(date_column)`.
+The traditional partitioning by month is expressed as `toYYYYMM(date_column)`.
 
-Таблицу старого стиля сконвертировать в таблицу с произвольным партиционированием нельзя (только через INSERT SELECT).
+You can't convert an old-style table to a table with custom partitions (only via INSERT SELECT).
 
-После создания такой таблицы слияние кусков будет работать только для кусков с одинаковым значением выражения партиционирования. Замечание: это означает, что нежелательно делать слишком гранулированное партиционирование (более порядка тысячи партиций), иначе производительность SELECT будет неудовлетворительной.
+After this table is created, merge will only work for data parts that have the same value for the partitioning expression. Note: This means that you shouldn't make overly granular partitions (more than about a thousand partitions), or SELECT will perform poorly.
 
-Чтобы указать партицию в командах ALTER PARTITION, нужно указать значение выражения партиционирования (или кортежа). Поддерживаются константы и константные выражения. Пример:
+To specify a partition in ALTER PARTITION commands, specify the value of the partition expression (or a tuple). Constants and constant expressions are supported. Example:
+
 ```sql
 ALTER TABLE table DROP PARTITION (toMonday(today()), 1)
 ```
-удалит партицию за текущую неделю с типом события 1. То же самое для запроса OPTIMIZE. Чтобы указать единственную партицию непартиционированной таблицы, укажите `PARTITION tuple()`.
 
-Замечание: для таблиц старого стиля можно указывать партицию и как число `201710`, и как строку `'201710'`. Синтаксис для таблиц нового типа более строг к типам (аналогично парсеру входного формата VALUES). Также, ALTER TABLE FREEZE PARTITION для таблиц нового типа работает по полному совпадению (не по префиксу).
+Deletes the partition for the current week with event type 1. The same is true for the OPTIMIZE query. To specify the only partition in a non-partitioned table, specify `PARTITION tuple()`.
 
-В таблице `system.parts` в столбце `partition` указывается значение выражения партиционирования, пригодное к использованию в запросах ALTER (если убрать квотирование). В столбце `name` указывается имя куска, формат которого изменился.
+Note: For old-style tables, the partition can be specified either as a number `201710` or a string `'201710'`. The syntax for the new style of tables is stricter with types (similar to the parser for the VALUES input format). In addition, ALTER TABLE FREEZE PARTITION uses exact match for new-style tables (not prefix match).
 
-Было: `20140317_20140323_2_2_0` (минимальная дата - максимальная дата - номер минимального блока - номер максимального блока - уровень).
+In the `system.parts` table, the `partition` column specifies the value of the partition expression to use in ALTER queries (if quotas are removed). The `name` column should specify the name of the data part that has a new format.
 
-Стало: `201403_2_2_0` (ID партиции - номер минимального блока - номер максимального блока - уровень).
+Old: `20140317_20140323_2_2_0` (minimum date - maximum date - minimum block number - maximum block number - level).
 
-ID партиции - это её строковый идентификатор (по возможности человекочитаемый), используемый для имён кусков на файловой системе и в ZooKeeper. Его можно указывать в запросах ALTER вместо значения ключа партиционирования. Пример: ключ партиционирования `toYYYYMM(EventDate)`, в ALTER можно указывать либо `PARTITION 201710`, либо `PARTITION ID '201710'`.
+Now: `201403_2_2_0` (partition ID - minimum block number - maximum block number - level).
 
-Больше примеров в тестах [`00502_custom_partitioning_local`](https://github.com/yandex/ClickHouse/blob/master/dbms/tests/queries/0_stateless/00502_custom_partitioning_local.sql) и [`00502_custom_partitioning_replicated_zookeeper`](https://github.com/yandex/ClickHouse/blob/master/dbms/tests/queries/0_stateless/00502_custom_partitioning_replicated_zookeeper.sql).
+The partition ID is its string identifier (human-readable, if possible) that is used for the names of data parts in the file system and in ZooKeeper. You can specify it in ALTER queries in place of the partition key. Example: Partition key `toYYYYMM(EventDate)`; ALTER can specify either `PARTITION 201710` or `PARTITION ID '201710'`.
+
+For more examples, see the tests [`00502_custom_partitioning_local`](https://github.com/yandex/ClickHouse/blob/master/dbms/tests/queries/0_stateless/00502_custom_partitioning_local.sql) and [`00502_custom_partitioning_replicated_zookeeper`](https://github.com/yandex/ClickHouse/blob/master/dbms/tests/queries/0_stateless/00502_custom_partitioning_replicated_zookeeper.sql).
