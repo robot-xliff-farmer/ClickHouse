@@ -1,6 +1,6 @@
-# SELECT запросы
+# SELECT Queries Syntax
 
-`SELECT` осуществляет выборку данных.
+`SELECT` performs data retrieval.
 
 ```sql
 SELECT [DISTINCT] expr_list
@@ -20,44 +20,33 @@ SELECT [DISTINCT] expr_list
     [LIMIT n BY columns]
 ```
 
-Все секции, кроме списка выражений сразу после SELECT, являются необязательными.
-Ниже секции будут описаны в порядке, почти соответствующем конвейеру выполнения запроса.
+All the clauses are optional, except for the required list of expressions immediately after SELECT. The clauses below are described in almost the same order as in the query execution conveyor.
 
-Если в запросе отсутствуют секции `DISTINCT`, `GROUP BY`, `ORDER BY`, подзапросы в `IN` и `JOIN`, то запрос будет обработан полностью потоково, с использованием O(1) количества оперативки.
-Иначе запрос может съесть много оперативки, если не указаны подходящие ограничения `max_memory_usage`, `max_rows_to_group_by`, `max_rows_to_sort`, `max_rows_in_distinct`, `max_bytes_in_distinct`, `max_rows_in_set`, `max_bytes_in_set`, `max_rows_in_join`, `max_bytes_in_join`, `max_bytes_before_external_sort`, `max_bytes_before_external_group_by`. Подробнее смотрите в разделе "Настройки". Присутствует возможность использовать внешнюю сортировку (с сохранением временных данных на диск) и внешнюю агрегацию. `Merge join` в системе нет.
+If the query omits the `DISTINCT`, `GROUP BY` and `ORDER BY` clauses and the `IN` and `JOIN` subqueries, the query will be completely stream processed, using O(1) amount of RAM. Otherwise, the query might consume a lot of RAM if the appropriate restrictions are not specified: `max_memory_usage`, `max_rows_to_group_by`, `max_rows_to_sort`, `max_rows_in_distinct`, `max_bytes_in_distinct`, `max_rows_in_set`, `max_bytes_in_set`, `max_rows_in_join`, `max_bytes_in_join`, `max_bytes_before_external_sort`, `max_bytes_before_external_group_by`. For more information, see the section "Settings". It is possible to use external sorting (saving temporary tables to a disk) and external aggregation. `The system does not have "merge join"`.
 
-<a name="query_language-section-from"></a>
+### FROM Clause
 
-### Секция FROM
+If the FROM clause is omitted, data will be read from the `system.one` table. The 'system.one' table contains exactly one row (this table fulfills the same purpose as the DUAL table found in other DBMSs).
 
-Если секция FROM отсутствует, то данные будут читаться из таблицы `system.one`.
-Таблица system.one содержит ровно одну строку (то есть, эта таблица выполняет такую же роль, как таблица DUAL, которую можно найти в других СУБД).
+The FROM clause specifies the table to read data from, or a subquery, or a table function; ARRAY JOIN and the regular JOIN may also be included (see below).
 
-В секции FROM указывается таблица, из которой будут читаться данные, либо подзапрос, либо табличная функция; дополнительно могут присутствовать ARRAY JOIN и обычный JOIN (смотрите ниже).
+Instead of a table, the SELECT subquery may be specified in brackets. In this case, the subquery processing pipeline will be built into the processing pipeline of an external query. In contrast to standard SQL, a synonym does not need to be specified after a subquery. For compatibility, it is possible to write 'AS name' after a subquery, but the specified name isn't used anywhere.
 
-Вместо таблицы, может быть указан подзапрос SELECT в скобках.
-В этом случае, конвейер обработки подзапроса будет встроен в конвейер обработки внешнего запроса.
-В отличие от стандартного SQL, после подзапроса не нужно указывать его синоним. Для совместимости, присутствует возможность написать AS name после подзапроса, но указанное имя нигде не используется.
+A table function may be specified instead of a table. For more information, see the section "Table functions".
 
-Вместо таблицы, может быть указана табличная функция. Подробнее смотрите раздел "Табличные функции".
+To execute a query, all the columns listed in the query are extracted from the appropriate table. Any columns not needed for the external query are thrown out of the subqueries. If a query does not list any columns (for example, SELECT count() FROM t), some column is extracted from the table anyway (the smallest one is preferred), in order to calculate the number of rows.
 
-Для выполнения запроса, из соответствующей таблицы, вынимаются все столбцы, перечисленные в запросе. Из подзапросов выкидываются столбцы, не нужные для внешнего запроса.
-Если в запросе не перечислено ни одного столбца (например, SELECT count() FROM t), то из таблицы всё равно вынимается один какой-нибудь столбец (предпочитается самый маленький), для того, чтобы можно было хотя бы посчитать количество строк.
+The FINAL modifier can be used only for a SELECT from a CollapsingMergeTree table. When you specify FINAL, data is selected fully "collapsed". Keep in mind that using FINAL leads to a selection that includes columns related to the primary key, in addition to the columns specified in the SELECT. Additionally, the query will be executed in a single stream, and data will be merged during query execution. This means that when using FINAL, the query is processed more slowly. In most cases, you should avoid using FINAL. For more information, see the section "CollapsingMergeTree engine".
 
-Модификатор FINAL может быть использован только при SELECT-е из таблицы типа CollapsingMergeTree. При указании FINAL, данные будут выбираться полностью "сколлапсированными". Стоит учитывать, что использование FINAL приводит к выбору кроме указанных в SELECT-е столбцов также столбцов, относящихся к первичному ключу. Также, запрос будет выполняться в один поток, и при выполнении запроса будет выполняться слияние данных. Это приводит к тому, что при использовании FINAL, запрос выполняется медленнее. В большинстве случаев, следует избегать использования FINAL. Подробнее смотрите раздел "Движок CollapsingMergeTree".
+### SAMPLE Clause
 
-<a name="select-section-sample"></a>
+The SAMPLE clause allows for approximated query processing. Approximated query processing is only supported by MergeTree\* type tables, and only if the sampling expression was specified during table creation (see the section "MergeTree engine").
 
-### Секция SAMPLE
+`SAMPLE` has the `format SAMPLE k`, where `k` is a decimal number from 0 to 1, or `SAMPLE n`, where 'n' is a sufficiently large integer.
 
-Секция SAMPLE позволяет выполнить запрос приближённо. Приближённое выполнение запроса поддерживается только таблицами типа MergeTree\* и только если при создании таблицы было указано выражение, по которому производится выборка (смотрите раздел "Движок MergeTree").
+In the first case, the query will be executed on 'k' percent of data. For example, `SAMPLE 0.1` runs the query on 10% of data. In the second case, the query will be executed on a sample of no more than 'n' rows. For example, `SAMPLE 10000000` runs the query on a maximum of 10,000,000 rows.
 
-`SAMPLE` имеет вид `SAMPLE k`, где `k` - дробное число в интервале от 0 до 1, или `SAMPLE n`, где n - достаточно большое целое число.
-
-В первом случае, запрос будет выполнен по k-доле данных. Например, если указано `SAMPLE 0.1`, то запрос будет выполнен по 10% данных.
-Во втором случае, запрос будет выполнен по выборке из не более n строк. Например, если указано `SAMPLE 10000000`, то запрос будет выполнен по не более чем 10 000 000 строкам.
-
-Пример:
+Example:
 
 ```sql
 SELECT
@@ -76,19 +65,19 @@ GROUP BY Title
 ORDER BY PageViews DESC LIMIT 1000
 ```
 
-В этом примере, запрос выполняется по выборке из 0.1 (10%) данных. Значения агрегатных функций не корректируются автоматически, поэтому для получения приближённого результата, значение count() вручную домножается на 10.
+In this example, the query is executed on a sample from 0.1 (10%) of data. Values of aggregate functions are not corrected automatically, so to get an approximate result, the value 'count()' is manually multiplied by 10.
 
-При использовании варианта вида `SAMPLE 10000000`, нет информации, какая относительная доля данных была обработана, и на что следует домножить агрегатные функции, поэтому такой способ записи подходит не для всех случаев.
+When using something like `SAMPLE 10000000`, there isn't any information about which relative percent of data was processed or what the aggregate functions should be multiplied by, so this method of writing is not always appropriate to the situation.
 
-Выборка с указанием относительного коэффициента является "согласованной": если рассмотреть все возможные данные, которые могли бы быть в таблице, то выборка (при использовании одного выражения сэмплирования, указанного при создании таблицы), с одинаковым коэффициентом, выбирает всегда одно и то же подмножество этих всевозможных данных. То есть, выборка из разных таблиц, на разных серверах, в разное время, делается одинаковым образом.
+A sample with a relative coefficient is "consistent": if we look at all possible data that could be in the table, a sample (when using a single sampling expression specified during table creation) with the same coefficient always selects the same subset of possible data. In other words, a sample from different tables on different servers at different times is made the same way.
 
-Например, выборка по идентификаторам посетителей, выберет из разных таблиц строки с одинаковым подмножеством всех возможных идентификаторов посетителей. Это позволяет использовать выборку в подзапросах в секции IN, а также при ручном сопоставлении результатов разных запросов с выборками.
+For example, a sample of user IDs takes rows with the same subset of all the possible user IDs from different tables. This allows using the sample in subqueries in the IN clause, as well as for manually correlating results of different queries with samples.
 
-### Секция ARRAY JOIN
+### ARRAY JOIN Clause
 
-Позволяет выполнить JOIN с массивом или вложенной структурой данных. Смысл похож на функцию arrayJoin, но функциональность более широкая.
+Allows executing JOIN with an array or nested data structure. The intent is similar to the 'arrayJoin' function, but its functionality is broader.
 
-`ARRAY JOIN` - это, по сути, `INNER JOIN` с массивом. Пример:
+`ARRAY JOIN` is essentially `INNER JOIN` with an array. Example:
 
 ```text
 :) CREATE TABLE arrays_test (s String, arr Array(UInt8)) ENGINE = Memory
@@ -141,7 +130,7 @@ ARRAY JOIN arr
 5 rows in set. Elapsed: 0.001 sec.
 ```
 
-Для массива в секции ARRAY JOIN может быть указан алиас. В этом случае, элемент массива будет доступен под этим алиасом, а сам массив - под исходным именем. Пример:
+An alias can be specified for an array in the ARRAY JOIN clause. In this case, an array item can be accessed by this alias, but the array itself by the original name. Example:
 
 ```text
 :) SELECT s, arr, a FROM arrays_test ARRAY JOIN arr AS a
@@ -161,7 +150,7 @@ ARRAY JOIN arr AS a
 5 rows in set. Elapsed: 0.001 sec.
 ```
 
-В секции ARRAY JOIN может быть указано несколько массивов одинаковых размеров через запятую. В этом случае, JOIN делается с ними одновременно (прямая сумма, а не прямое произведение). Пример:
+Multiple arrays of the same size can be comma-separated in the ARRAY JOIN clause. In this case, JOIN is performed with them simultaneously (the direct sum, not the direct product). Example:
 
 ```text
 :) SELECT s, arr, a, num, mapped FROM arrays_test ARRAY JOIN arr AS a, arrayEnumerate(arr) AS num, arrayMap(x -> x + 1, arr) AS mapped
@@ -197,7 +186,7 @@ ARRAY JOIN arr AS a, arrayEnumerate(arr) AS num
 5 rows in set. Elapsed: 0.002 sec.
 ```
 
-ARRAY JOIN также работает с вложенными структурами данных. Пример:
+ARRAY JOIN also works with nested data structures. Example:
 
 ```text
 :) CREATE TABLE nested_test (s String, nest Nested(x UInt8, y UInt32)) ENGINE = Memory
@@ -252,7 +241,7 @@ ARRAY JOIN nest
 5 rows in set. Elapsed: 0.001 sec.
 ```
 
-При указании имени вложенной структуры данных в ARRAY JOIN, смысл такой же, как ARRAY JOIN со всеми элементами-массивами, из которых она состоит. Пример:
+When specifying names of nested data structures in ARRAY JOIN, the meaning is the same as ARRAY JOIN with all the array elements that it consists of. Example:
 
 ```text
 :) SELECT s, nest.x, nest.y FROM nested_test ARRAY JOIN nest.x, nest.y
@@ -272,7 +261,7 @@ ARRAY JOIN `nest.x`, `nest.y`
 5 rows in set. Elapsed: 0.001 sec.
 ```
 
-Такой вариант тоже имеет смысл:
+This variation also makes sense:
 
 ```text
 :) SELECT s, nest.x, nest.y FROM nested_test ARRAY JOIN nest.x
@@ -292,7 +281,7 @@ ARRAY JOIN `nest.x`
 5 rows in set. Elapsed: 0.001 sec.
 ```
 
-Алиас для вложенной структуры данных можно использовать, чтобы выбрать как результат JOIN-а, так и исходный массив. Пример:
+An alias may be used for a nested data structure, in order to select either the JOIN result or the source array. Example:
 
 ```text
 :) SELECT s, n.x, n.y, nest.x, nest.y FROM nested_test ARRAY JOIN nest AS n
@@ -312,7 +301,7 @@ ARRAY JOIN nest AS n
 5 rows in set. Elapsed: 0.001 sec.
 ```
 
-Пример использования функции arrayEnumerate:
+Example of using the arrayEnumerate function:
 
 ```text
 :) SELECT s, n.x, n.y, nest.x, nest.y, num FROM nested_test ARRAY JOIN nest AS n, arrayEnumerate(nest.x) AS num
@@ -332,53 +321,45 @@ ARRAY JOIN nest AS n, arrayEnumerate(`nest.x`) AS num
 5 rows in set. Elapsed: 0.002 sec.
 ```
 
-В запросе может быть указано не более одной секции ARRAY JOIN.
+The query can only specify a single ARRAY JOIN clause.
 
-Соответствующее преобразование может выполняться как до секции WHERE/PREWHERE (если его результат нужен в этой секции), так и после выполнения WHERE/PREWHERE (чтобы уменьшить объём вычислений).
+The corresponding conversion can be performed before the WHERE/PREWHERE clause (if its result is needed in this clause), or after completing WHERE/PREWHERE (to reduce the volume of calculations).
 
+### JOIN Clause
 
-<a name="query_language-join"></a>
-
-### Секция JOIN
-
-Обычный JOIN, не имеет отношения к ARRAY JOIN, который описан выше.
+The normal JOIN, which is not related to ARRAY JOIN described above.
 
 ```sql
 [GLOBAL] ANY|ALL INNER|LEFT [OUTER] JOIN (subquery)|table USING columns_list
 ```
 
-Выполняет соединение с данными из подзапроса. В начале выполнения запроса, выполняется подзапрос, указанный после JOIN, и его результат сохраняется в память. Затем производится чтение из "левой" таблицы, указанной в секции FROM, и во время этого чтения, для каждой прочитанной строчки из "левой" таблицы, из таблицы-результата подзапроса ("правой" таблицы) выбираются строчки, соответствующие условию на совпадение значений столбцов, указанных в USING.
+Performs joins with data from the subquery. At the beginning of query processing, the subquery specified after JOIN is run, and its result is saved in memory. Then it is read from the "left" table specified in the FROM clause, and while it is being read, for each of the read rows from the "left" table, rows are selected from the subquery results table (the "right" table) that meet the condition for matching the values of the columns specified in USING.
 
-Вместо подзапроса может быть указано имя таблицы. Это эквивалентно подзапросу `SELECT * FROM table`, кроме особого случая, когда таблица имеет движок Join - подготовленное множество для соединения.
+The table name can be specified instead of a subquery. This is equivalent to the `SELECT * FROM table` subquery, except in a special case when the table has the Join engine – an array prepared for joining.
 
-Из подзапроса удаляются все ненужные для JOIN-а столбцы.
+All columns that are not needed for the JOIN are deleted from the subquery.
 
-JOIN-ы бывают нескольких видов:
+There are several types of JOINs:
 
-`INNER` или `LEFT` - тип:
-Если указано INNER, то в результат попадают только строки, для которых найдена соответствующая строка в "правой" таблице.
-Если указано LEFT, то для строчек "левой" таблицы, для которых нет соответствующих в "правой" таблице, будут присоединены значения "по умолчанию" - нули, пустые строки. Вместо LEFT может быть написано LEFT OUTER - слово OUTER ни на что не влияет.
+`INNER` or `LEFT` type:If INNER is specified, the result will contain only those rows that have a matching row in the right table. If LEFT is specified, any rows in the left table that don't have matching rows in the right table will be assigned the default value - zeros or empty rows. LEFT OUTER may be written instead of LEFT; the word OUTER does not affect anything.
 
-`ANY` или `ALL` - строгость:
-Если указано `ANY`, то при наличии в "правой" таблице нескольких соответствующих строк, будет присоединена только первая попавшаяся.
-Если указано `ALL`, то при наличии в "правой" таблице нескольких соответствующих строк, данные будут размножены по количеству этих строк.
+`ANY` or `ALL` stringency:If `ANY` is specified and the right table has several matching rows, only the first one found is joined. If `ALL` is specified and the right table has several matching rows, the data will be multiplied by the number of these rows.
 
-Использование ALL соответствует обычной семантике JOIN-а из стандартного SQL.
-Использование ANY является более оптимальным. Если известно, что в "правой" таблице есть не более одной подходящей строки, то результаты ANY и ALL совпадают. Обязательно необходимо указать ANY или ALL (ни один из этих вариантов не выбран по умолчанию).
+Using ALL corresponds to the normal JOIN semantic from standard SQL. Using ANY is optimal. If the right table has only one matching row, the results of ANY and ALL are the same. You must specify either ANY or ALL (neither of them is selected by default).
 
-`GLOBAL` - распределённость:
+`GLOBAL` distribution:
 
-При использовании обычного JOIN-а, запрос отправляется на удалённые серверы, и на каждом из них выполняются подзапросы для формирования "правой" таблицы, и с этой таблицей выполняется соединение. То есть, "правая" таблица формируется на каждом сервере отдельно.
+When using a normal JOIN, the query is sent to remote servers. Subqueries are run on each of them in order to make the right table, and the join is performed with this table. In other words, the right table is formed on each server separately.
 
-При использовании `GLOBAL ... JOIN-а`, сначала, на сервере-инициаторе запроса, выполняется подзапрос для вычисления "правой" таблицы, и затем эта временная таблица передаётся на каждый удалённый сервер, и на них выполняются запросы, с использованием этих переданных временных данных.
+When using `GLOBAL ... JOIN`, first the requestor server runs a subquery to calculate the right table. This temporary table is passed to each remote server, and queries are run on them using the temporary data that was transmitted.
 
-Следует быть аккуратным при использовании GLOBAL JOIN-ов. Подробнее читайте в разделе "Распределённые подзапросы" ниже.
+Be careful when using GLOBAL JOINs. For more information, see the section "Distributed subqueries".
 
-Возможны все комбинации JOIN-ов. Например, `GLOBAL ANY LEFT OUTER JOIN`.
+Any combination of JOINs is possible. For example, `GLOBAL ANY LEFT OUTER JOIN`.
 
-При выполнении JOIN-а отсутствует оптимизация порядка выполнения по отношению к другим стадиям запроса: соединение (поиск в "правой" таблице) выполняется до фильтрации в WHERE, до агрегации. Поэтому, чтобы явно задать порядок вычислений, рекомендуется выполнять JOIN подзапроса с подзапросом.
+When running a JOIN, there is no optimization of the order of execution in relation to other stages of the query. The join (a search in the right table) is run before filtering in WHERE and before aggregation. In order to explicitly set the processing order, we recommend running a JOIN subquery with a subquery.
 
-Пример:
+Example:
 
 ```sql
 SELECT
@@ -419,86 +400,59 @@ LIMIT 10
 └───────────┴────────┴────────┘
 ```
 
-У подзапросов нет возможности задать имена и нет возможности их использовать для того, чтобы сослаться на столбец из конкретного подзапроса.
-Требуется, чтобы столбцы, указанные в USING, назывались одинаково в обоих подзапросах, а остальные столбцы - по-разному. Изменить имена столбцов в подзапросах можно с помощью алиасов (в примере используются алиасы hits и visits).
+Subqueries don't allow you to set names or use them for referencing a column from a specific subquery. The columns specified in USING must have the same names in both subqueries, and the other columns must be named differently. You can use aliases to change the names of columns in subqueries (the example uses the aliases 'hits' and 'visits').
 
-В секции USING указывается один или несколько столбцов для соединения, что обозначает условие на равенство этих столбцов. Список столбцов задаётся без скобок. Более сложные условия соединения не поддерживаются.
+The USING clause specifies one or more columns to join, which establishes the equality of these columns. The list of columns is set without brackets. More complex join conditions are not supported.
 
-"Правая" таблица (результат подзапроса) располагается в оперативке. Если оперативки не хватает, вы не сможете выполнить JOIN.
+The right table (the subquery result) resides in RAM. If there isn't enough memory, you can't run a JOIN.
 
-В запросе (на одном уровне) можно указать только один JOIN. Чтобы выполнить несколько JOIN-ов, вы можете разместить их в подзапросах.
+Only one JOIN can be specified in a query (on a single level). To run multiple JOINs, you can put them in subqueries.
 
-Каждый раз для выполнения запроса с одинаковым JOIN-ом, подзапрос выполняется заново - результат не кэшируется. Это можно избежать, используя специальный движок таблиц Join, представляющий собой подготовленное множество для соединения, которое всегда находится в оперативке. Подробнее смотрите в разделе "Движки таблиц, Join".
+Each time a query is run with the same JOIN, the subquery is run again – the result is not cached. To avoid this, use the special 'Join' table engine, which is a prepared array for joining that is always in RAM. For more information, see the section "Table engines, Join".
 
-В некоторых случаях, вместо использования JOIN достаточно использовать IN - это более эффективно.
-Среди разных типов JOIN-ов, наиболее эффективен ANY LEFT JOIN, затем ANY INNER JOIN; наименее эффективны ALL LEFT JOIN и ALL INNER JOIN.
+In some cases, it is more efficient to use IN instead of JOIN. Among the various types of JOINs, the most efficient is ANY LEFT JOIN, then ANY INNER JOIN. The least efficient are ALL LEFT JOIN and ALL INNER JOIN.
 
-Если JOIN необходим для соединения с таблицами измерений (dimension tables - сравнительно небольшие таблицы, которые содержат свойства измерений - например, имена для рекламных кампаний), то использование JOIN может быть не очень удобным из-за громоздкости синтаксиса, а также из-за того, что правая таблица читается заново при каждом запросе. Специально для таких случаев существует функциональность "Внешние словари", которую следует использовать вместо JOIN. Подробнее смотрите раздел "Внешние словари".
-
-#### Обработка NULL
-
-На поведение JOIN влияет настройка [join_use_nulls](../operations/settings/settings.md#settings-join_use_nulls). При `join_use_nulls=1`  `JOIN` работает как в стандартном SQL.
-
-Если ключами JOIN выступают поля типа [Nullable](../data_types/nullable.md#data_types-nullable), то строки, где хотя бы один из ключей имеет значение [NULL](syntax.md#null-literal), не соединяются.
-
+If you need a JOIN for joining with dimension tables (these are relatively small tables that contain dimension properties, such as names for advertising campaigns), a JOIN might not be very convenient due to the bulky syntax and the fact that the right table is re-accessed for every query. For such cases, there is an "external dictionaries" feature that you should use instead of JOIN. For more information, see the section "External dictionaries".
 
 <a name="query_language-queries-where"></a>
 
-### Секция WHERE
+### WHERE Clause
 
-Позволяет задать выражение, которое ClickHouse использует для фильтрации данных перед всеми другими действиями в запросе кроме выражений, содержащихся в секции [PREWHERE](#query_language-queries-prewhere). Обычно, это выражение с логическими операторами.
+The JOIN behavior is affected by the [join_use_nulls](../operations/settings/settings.md#settings-join_use_nulls) setting. With `join_use_nulls=1,` `JOIN` works like in standard SQL.
 
-Результат выражения должен иметь тип `UInt8`.
+If the JOIN keys are [Nullable](../data_types/nullable.md#data_types-nullable) fields, the rows where at least one of the keys has the value [NULL](syntax.md#null-literal) are not joined.
 
-ClickHouse использует в выражении индексы, если это позволяет [движок таблицы](../operations/table_engines/index.md#table_engines).
+If there is a WHERE clause, it must contain an expression with the UInt8 type. This is usually an expression with comparison and logical operators. This expression will be used for filtering data before all other transformations.
 
-Если в секции необходимо проверить [NULL](syntax.md#null-literal), то используйте операторы [IS NULL](operators.md#operator-is-null) и [IS NOT NULL](operators.md#operator-is-not-null), а также соответствующие функции `isNull` и `isNotNull`. В противном случае выражение будет считаться всегда не выполненным.
-
-Пример проверки на `NULL`:
-
-```bash
-:) SELECT * FROM t_null WHERE y IS NULL
-
-SELECT *
-FROM t_null
-WHERE isNull(y)
-
-┌─x─┬────y─┐
-│ 1 │ ᴺᵁᴸᴸ │
-└───┴──────┘
-
-1 rows in set. Elapsed: 0.002 sec.
-```
+If indexes are supported by the database table engine, the expression is evaluated on the ability to use indexes.
 
 <a name="query_language-queries-prewhere"></a>
 
-### Секция PREWHERE
+### PREWHERE Clause
 
-Имеет такой же смысл, как и секция [WHERE](#query_language-queries-where). Отличие состоит в том, какие данные читаются из таблицы.
-При использовании `PREWHERE`, из таблицы сначала читаются только столбцы, необходимые для выполнения `PREWHERE`. Затем читаются остальные столбцы, нужные для выполнения запроса, но из них только те блоки, в которых выражение в `PREWHERE` истинное.
+This clause has the same meaning as the WHERE clause. The difference is in which data is read from the table. When using PREWHERE, first only the columns necessary for executing PREWHERE are read. Then the other columns are read that are needed for running the query, but only those blocks where the PREWHERE expression is true.
 
-`PREWHERE` имеет смысл использовать, если есть условия фильтрации, не подходящие под индексы, которые использует меньшинство столбцов из тех, что есть в запросе, но достаточно сильно фильтрует данные. Таким образом, сокращается количество читаемых данных.
+It makes sense to use PREWHERE if there are filtration conditions that are not suitable for indexes that are used by a minority of the columns in the query, but that provide strong data filtration. This reduces the volume of data to read.
 
-Например, полезно писать `PREWHERE` для запросов, которые вынимают много столбцов, но в которых фильтрация производится лишь по нескольким столбцам.
+For example, it is useful to write PREWHERE for queries that extract a large number of columns, but that only have filtration for a few columns.
 
-`PREWHERE` поддерживается только таблицами семейства `*MergeTree`.
+PREWHERE is only supported by tables from the `*MergeTree` family.
 
-В запросе могут быть одновременно указаны секции `PREWHERE` и `WHERE`. В этом случае, `PREWHERE` идёт перед `WHERE`.
+A query may simultaneously specify PREWHERE and WHERE. In this case, PREWHERE precedes WHERE.
 
-Следует иметь ввиду, что указывать в `PREWHERE` только столбцы, по которым существует индекс, имеет мало смысла, так как при использовании индекса и так читаются лишь блоки данных, соответствующие индексу.
+Keep in mind that it does not make much sense for PREWHERE to only specify those columns that have an index, because when using an index, only the data blocks that match the index are read.
 
-Если настройка `optimize_move_to_prewhere` выставлена в `1`, то при отсутствии `PREWHERE`, система будет автоматически переносить части выражений из `WHERE` в `PREWHERE` согласно некоторой эвристике.
+If the 'optimize_move_to_prewhere' setting is set to 1 and PREWHERE is omitted, the system uses heuristics to automatically move parts of expressions from WHERE to PREWHERE.
 
-### Секция GROUP BY
+### GROUP BY Clause
 
-Это одна из наиболее важных частей СУБД.
+This is one of the most important parts of a column-oriented DBMS.
 
-Секция GROUP BY, если есть, должна содержать список выражений. Каждое выражение далее будем называть "ключом".
-При этом, все выражения в секциях SELECT, HAVING, ORDER BY, должны вычисляться из ключей или из агрегатных функций. То есть, каждый выбираемый из таблицы столбец, должен использоваться либо в ключах, либо внутри агрегатных функций.
+If there is a GROUP BY clause, it must contain a list of expressions. Each expression will be referred to here as a "key". All the expressions in the SELECT, HAVING, and ORDER BY clauses must be calculated from keys or from aggregate functions. In other words, each column selected from the table must be used either in keys or inside aggregate functions.
 
-Если запрос содержит столбцы таблицы только внутри агрегатных функций, то секция GROUP BY может не указываться, и подразумевается агрегация по пустому набору ключей.
+If a query contains only table columns inside aggregate functions, the GROUP BY clause can be omitted, and aggregation by an empty set of keys is assumed.
 
-Пример:
+Example:
 
 ```sql
 SELECT
@@ -508,11 +462,11 @@ SELECT
 FROM hits
 ```
 
-Но, в отличие от стандартного SQL, если в таблице нет строк (вообще нет или после фильтрации с помощью WHERE), в качестве результата возвращается пустой результат, а не результат из одной строки, содержащий "начальные" значения агрегатных функций.
+However, in contrast to standard SQL, if the table doesn't have any rows (either there aren't any at all, or there aren't any after using WHERE to filter), an empty result is returned, and not the result from one of the rows containing the initial values of aggregate functions.
 
-В отличие от MySQL (и в соответствии со стандартом SQL), вы не можете получить какое-нибудь значение некоторого столбца, не входящего в ключ или агрегатную функцию (за исключением константных выражений). Для обхода этого вы можете воспользоваться агрегатной функцией any (получить первое попавшееся значение) или min/max.
+As opposed to MySQL (and conforming to standard SQL), you can't get some value of some column that is not in a key or aggregate function (except constant expressions). To work around this, you can use the 'any' aggregate function (get the first encountered value) or 'min/max'.
 
-Пример:
+Example:
 
 ```sql
 SELECT
@@ -523,92 +477,85 @@ FROM hits
 GROUP BY domain
 ```
 
-GROUP BY вычисляет для каждого встретившегося различного значения ключей, набор значений агрегатных функций.
+For every different key value encountered, GROUP BY calculates a set of aggregate function values.
 
-Не поддерживается GROUP BY по столбцам-массивам.
+GROUP BY is not supported for array columns.
 
-Не поддерживается указание констант в качестве аргументов агрегатных функций. Пример: sum(1). Вместо этого, вы можете избавиться от констант. Пример: `count()`.
+A constant can't be specified as arguments for aggregate functions. Example: sum(1). Instead of this, you can get rid of the constant. Example: `count()`.
 
-#### Обработка NULL
+#### NULL processing
 
-При группировке, ClickHouse рассматривает [NULL](syntax.md#null-literal) как значение, причём `NULL=NULL`.
+For grouping, ClickHouse interprets [NULL](syntax.md#null-literal) as a value, and `NULL=NULL`.
 
-Рассмотрим, что это значит на примере.
+Here's an example to show what this means.
 
-Пусть есть таблица:
+Assume you have this table:
 
-```
-┌─x─┬────y─┐
-│ 1 │    2 │
-│ 2 │ ᴺᵁᴸᴸ │
-│ 3 │    2 │
-│ 3 │    3 │
-│ 3 │ ᴺᵁᴸᴸ │
-└───┴──────┘
-```
+    ┌─x─┬────y─┐
+     │ 1 │    2 │
+     │ 2 │ ᴺᵁᴸᴸ │
+     │ 3 │    2 │
+     │ 3 │    3 │
+     │ 3 │ ᴺᵁᴸᴸ │
+     └───┴──────┘
 
-В результате запроса `SELECT sum(x), y FROM t_null_big GROUP BY y` мы получим:
+The query `SELECT sum(x), y FROM t_null_big GROUP BY y` results in:
 
-```
-┌─sum(x)─┬────y─┐
-│      4 │    2 │
-│      3 │    3 │
-│      5 │ ᴺᵁᴸᴸ │
-└────────┴──────┘
-```
+    ┌─sum(x)─┬────y─┐
+     │      4 │    2 │
+     │      3 │    3 │
+     │      5 │ ᴺᵁᴸᴸ │
+     └────────┴──────┘
 
-Видно, что `GROUP BY` для `У = NULL` просуммировал `x`, как будто `NULL` — это значение.
+You can see that `GROUP BY` for `У = NULL` summed up `x`, as if `NULL` is this value.
 
-Если в `GROUP BY` передать несколько ключей, то в результате мы получим все комбинации выборки, как если бы `NULL` был конкретным значением.
+If you pass several keys to `GROUP BY`, the result will give you all the combinations of the selection, as if `NULL` were a specific value.
 
-#### Модификатор WITH TOTALS
+#### WITH TOTALS Modifier
 
-Если указан модификатор WITH TOTALS, то будет посчитана ещё одна строчка, в которой в столбцах-ключах будут содержаться значения по умолчанию (нули, пустые строки), а в столбцах агрегатных функций - значения, посчитанные по всем строкам ("тотальные" значения).
+If the WITH TOTALS modifier is specified, another row will be calculated. This row will have key columns containing default values (zeros or empty lines), and columns of aggregate functions with the values calculated across all the rows (the "total" values).
 
-Эта дополнительная строчка выводится в форматах JSON\*, TabSeparated\*, Pretty\* отдельно от остальных строчек. В остальных форматах эта строчка не выводится.
+This extra row is output in JSON\*, TabSeparated\*, and Pretty\* formats, separately from the other rows. In the other formats, this row is not output.
 
-В форматах JSON\* строчка выводится отдельным полем totals. В форматах TabSeparated\* строчка выводится после основного результата, и перед ней (после остальных данных) вставляется пустая строка. В форматах Pretty\* строчка выводится отдельной табличкой после основного результата.
+In JSON\* formats, this row is output as a separate 'totals' field. In TabSeparated\* formats, the row comes after the main result, preceded by an empty row (after the other data). In Pretty\* formats, the row is output as a separate table after the main result.
 
-`WITH TOTALS` может выполняться по-разному при наличии HAVING. Поведение зависит от настройки totals_mode.
-По умолчанию `totals_mode = 'before_having'`. В этом случае totals считается по всем строчкам, включая непрошедших через HAVING и max_rows_to_group_by.
+`WITH TOTALS` can be run in different ways when HAVING is present. The behavior depends on the 'totals_mode' setting. By default, `totals_mode = 'before_having'`. In this case, 'totals' is calculated across all rows, including the ones that don't pass through HAVING and 'max_rows_to_group_by'.
 
-Остальные варианты учитывают в totals только строчки, прошедшие через HAVING, и имеют разное поведение при наличии настройки `max_rows_to_group_by` и `group_by_overflow_mode = 'any'`.
+The other alternatives include only the rows that pass through HAVING in 'totals', and behave differently with the setting `max_rows_to_group_by` and `group_by_overflow_mode = 'any'`.
 
-`after_having_exclusive` - не учитывать строчки, не прошедшие `max_rows_to_group_by`. То есть в totals попадёт меньше или столько же строчек, чем если бы `max_rows_to_group_by` не было.
+`after_having_exclusive` – Don't include rows that didn't pass through `max_rows_to_group_by`. In other words, 'totals' will have less than or the same number of rows as it would if `max_rows_to_group_by` were omitted.
 
-`after_having_inclusive` - учитывать в totals все строчки, не прошедшие max_rows_to_group_by. То есть в totals попадёт больше или столько же строчек, чем если бы `max_rows_to_group_by` не было.
+`after_having_inclusive` – Include all the rows that didn't pass through 'max_rows_to_group_by' in 'totals'. In other words, 'totals' will have more than or the same number of rows as it would if `max_rows_to_group_by` were omitted.
 
-`after_having_auto` - считать долю строчек, прошедших через HAVING. Если она больше некоторого значения (по умолчанию - 50%), то включить все строчки, не прошедшие max_rows_to_group_by в totals, иначе - не включить.
+`after_having_auto` – Count the number of rows that passed through HAVING. If it is more than a certain amount (by default, 50%), include all the rows that didn't pass through 'max_rows_to_group_by' in 'totals'. Otherwise, do not include them.
 
-`totals_auto_threshold` - по умолчанию 0.5. Коэффициент для работы `after_having_auto`.
+`totals_auto_threshold` – By default, 0.5. The coefficient for `after_having_auto`.
 
-Если `max_rows_to_group_by` и `group_by_overflow_mode = 'any'` не используются, то все варианты вида `after_having` не отличаются, и вы можете использовать любой из них, например, `after_having_auto`.
+If `max_rows_to_group_by` and `group_by_overflow_mode = 'any'` are not used, all variations of `after_having` are the same, and you can use any of them (for example, `after_having_auto`).
 
-Вы можете использовать WITH TOTALS в подзапросах, включая подзапросы в секции JOIN (в этом случае соответствующие тотальные значения будут соединены).
+You can use WITH TOTALS in subqueries, including subqueries in the JOIN clause (in this case, the respective total values are combined).
 
-#### GROUP BY во внешней памяти
+#### GROUP BY in External Memory
 
-Существует возможность включить сброс временных данных на диск для ограничения потребления оперативной памяти при GROUP BY.
-Настройка `max_bytes_before_external_group_by` - потребление оперативки, при котором временные данные GROUP BY сбрасываются в файловую систему. Если равно 0 (по умолчанию) - значит выключено.
+You can enable dumping temporary data to the disk to restrict memory usage during GROUP BY. The `max_bytes_before_external_group_by` setting determines the threshold RAM consumption for dumping GROUP BY temporary data to the file system. If set to 0 (the default), it is disabled.
 
-При использовании `max_bytes_before_external_group_by` рекомендуется выставить max_memory_usage примерно в два раза больше. Это следует сделать, потому что агрегация выполняется в две стадии: чтение и формирование промежуточных данных (1) и слияние промежуточных данных (2). Сброс данных на файловую систему может производиться только на стадии 1. Если сброса временных данных не было, то на стадии 2 может потребляться до такого же объёма памяти, как на стадии 1.
+When using `max_bytes_before_external_group_by`, we recommend that you set max_memory_usage about twice as high. This is necessary because there are two stages to aggregation: reading the date and forming intermediate data (1) and merging the intermediate data (2). Dumping data to the file system can only occur during stage 1. If the temporary data wasn't dumped, then stage 2 might require up to the same amount of memory as in stage 1.
 
-Например, если у вас `max_memory_usage` было выставлено в 10000000000, и вы хотите использовать внешнюю агрегацию, то имеет смысл выставить `max_bytes_before_external_group_by` в 10000000000, а max_memory_usage в 20000000000. При срабатывании внешней агрегации (если был хотя бы один сброс временных данных в файловую систему) максимальное потребление оперативки будет лишь чуть-чуть больше `max_bytes_before_external_group_by`.
+For example, if `max_memory_usage` was set to 10000000000 and you want to use external aggregation, it makes sense to set `max_bytes_before_external_group_by` to 10000000000, and max_memory_usage to 20000000000. When external aggregation is triggered (if there was at least one dump of temporary data), maximum consumption of RAM is only slightly more than `max_bytes_before_external_group_by`.
 
-При распределённой обработке запроса внешняя агрегация производится на удалённых серверах. Для того чтобы на сервере-инициаторе запроса использовалось немного оперативки, нужно выставить настройку `distributed_aggregation_memory_efficient` в 1.
+With distributed query processing, external aggregation is performed on remote servers. In order for the requestor server to use only a small amount of RAM, set `distributed_aggregation_memory_efficient` to 1.
 
-При слиянии данных, сброшенных на диск, а также при слиянии результатов с удалённых серверов, при включенной настройке `distributed_aggregation_memory_efficient`, потребляется до 1/256 \* количество потоков от общего объёма оперативки.
+When merging data flushed to the disk, as well as when merging results from remote servers when the `distributed_aggregation_memory_efficient` setting is enabled, consumes up to 1/256 \* the number of threads from the total amount of RAM.
 
-При включенной внешней агрегации, если данных было меньше `max_bytes_before_external_group_by` (то есть сброса данных не было), то запрос работает так же быстро, как без внешней агрегации. Если же какие-то временные данные были сброшены, то время выполнения будет в несколько раз больше (примерно в три раза).
+When external aggregation is enabled, if there was less than `max_bytes_before_external_group_by` of data (i.e. data was not flushed), the query runs just as fast as without external aggregation. If any temporary data was flushed, the run time will be several times longer (approximately three times).
 
-Если после GROUP BY у вас есть ORDER BY с небольшим LIMIT, то на ORDER BY не будет тратиться существенного количества оперативки.
-Но если есть ORDER BY без LIMIT, то не забудьте включить внешнюю сортировку (`max_bytes_before_external_sort`).
+If you have an ORDER BY with a small LIMIT after GROUP BY, then the ORDER BY CLAUSE will not use significant amounts of RAM. But if the ORDER BY doesn't have LIMIT, don't forget to enable external sorting (`max_bytes_before_external_sort`).
 
-### Секция LIMIT N BY
+### LIMIT N BY Clause
 
-`LIMIT N BY COLUMNS` выбирает топ `N` строк для каждой группы `COLUMNS`. `LIMIT N BY` не связан с `LIMIT` и они могут использоваться в одном запросе. Ключ для `LIMIT N BY` может содержать произвольное число колонок или выражений.
+LIMIT N BY COLUMNS selects the top N rows for each group of COLUMNS. LIMIT N BY is not related to LIMIT; they can both be used in the same query. The key for LIMIT N BY can contain any number of columns or expressions.
 
-Пример:
+Example:
 
 ```sql
 SELECT
@@ -623,113 +570,101 @@ LIMIT 5 BY domain, device_type
 LIMIT 100
 ```
 
-Запрос выберет топ 5 рефереров для каждой пары `domain, device_type`, но не более 100 строк (`LIMIT n BY + LIMIT`).
+The query will select the top 5 referrers for each `domain, device_type` pair, but not more than 100 rows (`LIMIT n BY + LIMIT`).
 
-`LIMIT n BY` работает с [NULL](syntax.md#null-literal) как если бы это было конкретное значение. Т.е. в результате запроса пользователь получит все комбинации полей, указанных в `BY`.
+### HAVING Clause
 
-### Секция HAVING
-
-Позволяет отфильтровать результат, полученный после GROUP BY, аналогично секции WHERE.
-WHERE и HAVING отличаются тем, что WHERE выполняется до агрегации (GROUP BY), а HAVING - после.
-Если агрегации не производится, то HAVING использовать нельзя.
+Allows filtering the result received after GROUP BY, similar to the WHERE clause. WHERE and HAVING differ in that WHERE is performed before aggregation (GROUP BY), while HAVING is performed after it. If aggregation is not performed, HAVING can't be used.
 
 <a name="query_language-queries-order_by"></a>
 
-### Секция ORDER BY
+### ORDER BY Clause
 
-Секция ORDER BY содержит список выражений, к каждому из которых также может быть приписано DESC или ASC (направление сортировки). Если ничего не приписано - это аналогично приписыванию ASC. ASC - сортировка по возрастанию, DESC - сортировка по убыванию. Обозначение направления сортировки действует на одно выражение, а не на весь список. Пример: `ORDER BY Visits DESC, SearchPhrase`
+The ORDER BY clause contains a list of expressions, which can each be assigned DESC or ASC (the sorting direction). If the direction is not specified, ASC is assumed. ASC is sorted in ascending order, and DESC in descending order. The sorting direction applies to a single expression, not to the entire list. Example: `ORDER BY Visits DESC, SearchPhrase`
 
-Для сортировки по значениям типа String есть возможность указать collation (сравнение). Пример: `ORDER BY SearchPhrase COLLATE 'tr'` - для сортировки по поисковой фразе, по возрастанию, с учётом турецкого алфавита, регистронезависимо, при допущении, что строки в кодировке UTF-8. COLLATE может быть указан или не указан для каждого выражения в ORDER BY независимо. Если есть ASC или DESC, то COLLATE указывается после них. При использовании COLLATE сортировка всегда регистронезависима.
+For sorting by String values, you can specify collation (comparison). Example: `ORDER BY SearchPhrase COLLATE 'tr'` - for sorting by keyword in ascending order, using the Turkish alphabet, case insensitive, assuming that strings are UTF-8 encoded. COLLATE can be specified or not for each expression in ORDER BY independently. If ASC or DESC is specified, COLLATE is specified after it. When using COLLATE, sorting is always case-insensitive.
 
-Рекомендуется использовать COLLATE только для окончательной сортировки небольшого количества строк, так как производительность сортировки с указанием COLLATE меньше, чем обычной сортировки по байтам.
+We only recommend using COLLATE for final sorting of a small number of rows, since sorting with COLLATE is less efficient than normal sorting by bytes.
 
-Строки, для которых список выражений, по которым производится сортировка, принимает одинаковые значения, выводятся в произвольном порядке, который может быть также недетерминированным (каждый раз разным).
-Если секция ORDER BY отсутствует, то, аналогично, порядок, в котором идут строки, не определён, и может быть недетерминированным.
+Rows that have identical values for the list of sorting expressions are output in an arbitrary order, which can also be nondeterministic (different each time). If the ORDER BY clause is omitted, the order of the rows is also undefined, and may be nondeterministic as well.
 
-Порядок сортировки `NaN` и `NULL`:
+`NaN` and `NULL` sorting order:
 
-- С модификатором `NULLS FIRST` — Сначала `NULL`, затем `NaN`, затем остальные значения.
-- С модификатором `NULLS LAST` — Сначала значения, затем `NaN`, затем `NULL`.
-- По умолчанию — Как с модификатором `NULLS LAST`.
+- With the modifier `NULLS FIRST` — First `NULL`, then `NaN`, then other values.
+- With the modifier `NULLS LAST` — First the values, then `NaN`, then `NULL`.
+- Default — The same as with the `NULLS LAST` modifier.
+    
+    Example:
+    
+    For the table
+    
+        ┌─x─┬────y─┐
+        │ 1 │ ᴺᵁᴸᴸ │
+        │ 2 │    2 │
+        │ 1 │  nan │
+        │ 2 │    2 │
+        │ 3 │    4 │
+        │ 5 │    6 │
+        │ 6 │  nan │
+        │ 7 │ ᴺᵁᴸᴸ │
+        │ 6 │    7 │
+        │ 8 │    9 │
+        └───┴──────┘
+        
+    
+    Run the query `SELECT * FROM t_null_nan ORDER BY y NULLS FIRST` to get:
+    
+        ┌─x─┬────y─┐
+        │ 1 │ ᴺᵁᴸᴸ │
+        │ 7 │ ᴺᵁᴸᴸ │
+        │ 1 │  nan │
+        │ 6 │  nan │
+        │ 2 │    2 │
+        │ 2 │    2 │
+        │ 3 │    4 │
+        │ 5 │    6 │
+        │ 6 │    7 │
+        │ 8 │    9 │
+        └───┴──────┘
+        
 
-Пример:
+When floating point numbers are sorted, NaNs are separate from the other values. Regardless of the sorting order, NaNs come at the end. In other words, for ascending sorting they are placed as if they are larger than all the other numbers, while for descending sorting they are placed as if they are smaller than the rest.
 
-Для таблицы
+Less RAM is used if a small enough LIMIT is specified in addition to ORDER BY. Otherwise, the amount of memory spent is proportional to the volume of data for sorting. For distributed query processing, if GROUP BY is omitted, sorting is partially done on remote servers, and the results are merged on the requestor server. This means that for distributed sorting, the volume of data to sort can be greater than the amount of memory on a single server.
 
-```
-┌─x─┬────y─┐
-│ 1 │ ᴺᵁᴸᴸ │
-│ 2 │    2 │
-│ 1 │  nan │
-│ 2 │    2 │
-│ 3 │    4 │
-│ 5 │    6 │
-│ 6 │  nan │
-│ 7 │ ᴺᵁᴸᴸ │
-│ 6 │    7 │
-│ 8 │    9 │
-└───┴──────┘
-```
+If there is not enough RAM, it is possible to perform sorting in external memory (creating temporary files on a disk). Use the setting `max_bytes_before_external_sort` for this purpose. If it is set to 0 (the default), external sorting is disabled. If it is enabled, when the volume of data to sort reaches the specified number of bytes, the collected data is sorted and dumped into a temporary file. After all data is read, all the sorted files are merged and the results are output. Files are written to the /var/lib/clickhouse/tmp/ directory in the config (by default, but you can use the 'tmp_path' parameter to change this setting).
 
-Выполним запрос `SELECT * FROM t_null_nan ORDER BY y NULLS FIRST`, получим:
+Running a query may use more memory than 'max_bytes_before_external_sort'. For this reason, this setting must have a value significantly smaller than 'max_memory_usage'. As an example, if your server has 128 GB of RAM and you need to run a single query, set 'max_memory_usage' to 100 GB, and 'max_bytes_before_external_sort' to 80 GB.
 
-```
-┌─x─┬────y─┐
-│ 1 │ ᴺᵁᴸᴸ │
-│ 7 │ ᴺᵁᴸᴸ │
-│ 1 │  nan │
-│ 6 │  nan │
-│ 2 │    2 │
-│ 2 │    2 │
-│ 3 │    4 │
-│ 5 │    6 │
-│ 6 │    7 │
-│ 8 │    9 │
-└───┴──────┘
-```
+External sorting works much less effectively than sorting in RAM.
 
-Если кроме ORDER BY указан также не слишком большой LIMIT, то расходуется меньше оперативки. Иначе расходуется количество памяти, пропорциональное количеству данных для сортировки. При распределённой обработке запроса, если отсутствует GROUP BY, сортировка частично делается на удалённых серверах, а на сервере-инициаторе запроса производится слияние результатов. Таким образом, при распределённой сортировке, может сортироваться объём данных, превышающий размер памяти на одном сервере.
+### SELECT Clause
 
-Существует возможность выполнять сортировку во внешней памяти (с созданием временных файлов на диске), если оперативной памяти не хватает. Для этого предназначена настройка `max_bytes_before_external_sort`. Если она выставлена в 0 (по умолчанию), то внешняя сортировка выключена. Если она включена, то при достижении объёмом данных для сортировки указанного количества байт, накопленные данные будут отсортированы и сброшены во временный файл. После того, как все данные будут прочитаны, будет произведено слияние всех сортированных файлов и выдача результата. Файлы записываются в директорию /var/lib/clickhouse/tmp/ (по умолчанию, может быть изменено с помощью параметра tmp_path) в конфиге.
+The expressions specified in the SELECT clause are analyzed after the calculations for all the clauses listed above are completed. More specifically, expressions are analyzed that are above the aggregate functions, if there are any aggregate functions. The aggregate functions and everything below them are calculated during aggregation (GROUP BY). These expressions work as if they are applied to separate rows in the result.
 
-На выполнение запроса может расходоваться больше памяти, чем max_bytes_before_external_sort. Поэтому, значение этой настройки должно быть существенно меньше, чем max_memory_usage. Для примера, если на вашем сервере 128 GB оперативки, и вам нужно выполнить один запрос, то выставите max_memory_usage в 100 GB, а max_bytes_before_external_sort в 80 GB.
+### DISTINCT Clause
 
-Внешняя сортировка работает существенно менее эффективно, чем сортировка в оперативке.
+If DISTINCT is specified, only a single row will remain out of all the sets of fully matching rows in the result. The result will be the same as if GROUP BY were specified across all the fields specified in SELECT without aggregate functions. But there are several differences from GROUP BY:
 
-### Секция SELECT
+- DISTINCT can be applied together with GROUP BY.
+- When ORDER BY is omitted and LIMIT is defined, the query stops running immediately after the required number of different rows has been read.
+- Data blocks are output as they are processed, without waiting for the entire query to finish running.
 
-После вычислений, соответствующих всем перечисленным выше секциям, производится вычисление выражений, указанных в секции SELECT.
-Вернее, вычисляются выражения, стоящие над агрегатными функциями, если есть агрегатные функции.
-Сами агрегатные функции и то, что под ними, вычисляются при агрегации (GROUP BY).
-Эти выражения работают так, как будто применяются к отдельным строкам результата.
+DISTINCT is not supported if SELECT has at least one array column.
 
-### Секция DISTINCT
+### LIMIT Clause
 
-Если указано `DISTINCT`, то из всех множеств полностью совпадающих строк результата, будет оставляться только одна строка.
-Результат выполнения будет таким же, как если указано `GROUP BY` по всем указанным полям в `SELECT` и не указаны агрегатные функции. Но имеется несколько отличий от `GROUP BY`:
+LIMIT m allows you to select the first 'm' rows from the result. LIMIT n, m allows you to select the first 'm' rows from the result after skipping the first 'n' rows.
 
--   `DISTINCT` может применяться совместно с `GROUP BY`;
--   при отсутствии `ORDER BY` и наличии `LIMIT`, запрос прекратит выполнение сразу после того, как будет прочитано необходимое количество различных строк - в этом случае использование DISTINCT существенно более оптимально;
--   блоки данных будут выдаваться по мере их обработки, не дожидаясь выполнения всего запроса.
+'n' and 'm' must be non-negative integers.
 
-`DISTINCT` не поддерживается, если в `SELECT` присутствует хотя бы один столбец типа массив.
+If there isn't an ORDER BY clause that explicitly sorts results, the result may be arbitrary and nondeterministic.
 
-`DISTINCT` работает с [NULL](syntax.md#null-literal) как если бы `NULL` был конкретным значением, причём `NULL=NULL`. Т.е. в результате  `DISTINCT` разные комбинации с `NULL` встретятся только по одному разу.
+`DISTINCT` works with [NULL](syntax.md#null-literal) as if `NULL` were a specific value, and `NULL=NULL`. In other words, in the `DISTINCT` results, different combinations with `NULL` only occur once.
 
-### Секция LIMIT
+### UNION ALL Clause
 
-LIMIT m позволяет выбрать из результата первые m строк.
-LIMIT n, m позволяет выбрать из результата первые m строк после пропуска первых n строк.
-
-n и m должны быть неотрицательными целыми числами.
-
-При отсутствии секции ORDER BY, однозначно сортирующей результат, результат может быть произвольным и может являться недетерминированным.
-
-`DISTINCT` работает с [NULL](syntax.md#null-literal) как если бы `NULL` был конкретным значением, причём `NULL=NULL`. Т.е. в результате  `DISTINCT` разные комбинации с `NULL` встретятся только по одному разу.
-
-### Секция UNION ALL
-
-Произвольное количество запросов может быть объединено с помощью `UNION ALL`. Пример:
+You can use UNION ALL to combine any number of queries. Example:
 
 ```sql
 SELECT CounterID, 1 AS table, toInt64(count()) AS c
@@ -744,68 +679,60 @@ SELECT CounterID, 2 AS table, sum(Sign) AS c
     HAVING c > 0
 ```
 
-Поддерживается только `UNION ALL`. Обычный `UNION` (`UNION DISTINCT`) не поддерживается. Если вам нужен `UNION DISTINCT`, то вы можете написать `SELECT DISTINCT` из подзапроса, содержащего `UNION ALL`.
+Only UNION ALL is supported. The regular UNION (UNION DISTINCT) is not supported. If you need UNION DISTINCT, you can write SELECT DISTINCT from a subquery containing UNION ALL.
 
-Запросы - части `UNION ALL` могут выполняться параллельно, и их результаты могут возвращаться вперемешку.
+Queries that are parts of UNION ALL can be run simultaneously, and their results can be mixed together.
 
-Структура результатов (количество и типы столбцов) у запросов должна совпадать. Но имена столбцов могут отличаться. В этом случае, имена столбцов для общего результата будут взяты из первого запроса. При объединении выполняется приведение типов. Например, если в двух объединяемых запросах одно и тоже поле имеет типы не-`Nullable` и `Nullable` от совместимого типа, то в результате `UNION ALL` получим поле типа `Nullable`.
+The structure of results (the number and type of columns) must match for the queries. But the column names can differ. In this case, the column names for the final result will be taken from the first query. Type casting is performed for unions. For example, if two queries being combined have the same field with non-`Nullable` and `Nullable` types from a compatible type, the resulting `UNION ALL` has a `Nullable` type field.
 
-Запросы - части `UNION ALL` нельзя заключить в скобки. `ORDER BY` и `LIMIT` применяются к отдельным запросам, а не к общему результату. Если вам нужно применить какое-либо преобразование к общему результату, то вы можете разместить все запросы с `UNION ALL` в подзапросе в секции `FROM`.
+Queries that are parts of UNION ALL can't be enclosed in brackets. ORDER BY and LIMIT are applied to separate queries, not to the final result. If you need to apply a conversion to the final result, you can put all the queries with UNION ALL in a subquery in the FROM clause.
 
-### Секция INTO OUTFILE
+### INTO OUTFILE Clause
 
-При указании `INTO OUTFILE filename` (где filename - строковый литерал), результат запроса будет сохранён в файл filename.
-В отличие от MySQL, файл создаётся на стороне клиента. Если файл с таким именем уже существует, это приведёт к ошибке.
-Функциональность доступна в клиенте командной строки и clickhouse-local (попытка выполнить запрос с INTO OUTFILE через HTTP интерфейс приведёт к ошибке).
+Add the `INTO OUTFILE filename` clause (where filename is a string literal) to redirect query output to the specified file. In contrast to MySQL, the file is created on the client side. The query will fail if a file with the same filename already exists. This functionality is available in the command-line client and clickhouse-local (a query sent via HTTP interface will fail).
 
-Формат вывода по умолчанию - TabSeparated, как и в неинтерактивном режиме клиента командной строки.
+The default output format is TabSeparated (the same as in the command-line client batch mode).
 
-### Секция FORMAT
+### FORMAT Clause
 
-При указании FORMAT format вы можете получить данные в любом указанном формате.
-Это может использоваться для удобства или для создания дампов.
-Подробнее смотрите раздел "Форматы".
-Если секция FORMAT отсутствует, то используется формат по умолчанию, который зависит от используемого интерфейса для доступа к БД и от настроек. Для HTTP интерфейса, а также для клиента командной строки, используемого в batch-режиме, по умолчанию используется формат TabSeparated. Для клиента командной строки, используемого в интерактивном режиме, по умолчанию используется формат PrettyCompact (прикольные таблички, компактные).
+Specify 'FORMAT format' to get data in any specified format. You can use this for convenience, or for creating dumps. For more information, see the section "Formats". If the FORMAT clause is omitted, the default format is used, which depends on both the settings and the interface used for accessing the DB. For the HTTP interface and the command-line client in batch mode, the default format is TabSeparated. For the command-line client in interactive mode, the default format is PrettyCompact (it has attractive and compact tables).
 
-При использовании клиента командной строки данные на клиент передаются во внутреннем эффективном формате. При этом клиент самостоятельно интерпретирует секцию FORMAT запроса и форматирует данные на своей стороне (снимая нагрузку на сеть и сервер).
+When using the command-line client, data is passed to the client in an internal efficient format. The client independently interprets the FORMAT clause of the query and formats the data itself (thus relieving the network and the server from the load).
 
 <a name="query_language-in_operators"></a>
 
-### Операторы IN
+### IN Operators
 
-Операторы `IN`, `NOT IN`, `GLOBAL IN`, `GLOBAL NOT IN` рассматриваются отдельно, так как их функциональность достаточно богатая.
+The `IN`, `NOT IN`, `GLOBAL IN`, and `GLOBAL NOT IN` operators are covered separately, since their functionality is quite rich.
 
-В качестве левой части оператора, может присутствовать как один столбец, так и кортеж.
+The left side of the operator is either a single column or a tuple.
 
-Примеры:
+Examples:
 
 ```sql
 SELECT UserID IN (123, 456) FROM ...
 SELECT (CounterID, UserID) IN ((34, 123), (101500, 456)) FROM ...
 ```
 
-Если слева стоит один столбец, входящий в индекс, а справа - множество констант, то при выполнении запроса, система воспользуется индексом.
+If the left side is a single column that is in the index, and the right side is a set of constants, the system uses the index for processing the query.
 
-Не перечисляйте слишком большое количество значений (миллионы) явно. Если множество большое - лучше загрузить его во временную таблицу (например, смотрите раздел "Внешние данные для обработки запроса"), и затем воспользоваться подзапросом.
+Don't list too many values explicitly (i.e. millions). If a data set is large, put it in a temporary table (for example, see the section "External data for query processing"), then use a subquery.
 
-В качестве правой части оператора может быть множество константных выражений, множество кортежей с константными выражениями (показано в примерах выше), а также имя таблицы или подзапрос SELECT в скобках.
+The right side of the operator can be a set of constant expressions, a set of tuples with constant expressions (shown in the examples above), or the name of a database table or SELECT subquery in brackets.
 
+If the right side of the operator is the name of a table (for example, `UserID IN users`), this is equivalent to the subquery `UserID IN (SELECT * FROM users)`. Use this when working with external data that is sent along with the query. For example, the query can be sent together with a set of user IDs loaded to the 'users' temporary table, which should be filtered.
 
-Если в качестве правой части оператора указано имя таблицы (например, `UserID IN users`), то это эквивалентно подзапросу `UserID IN (SELECT * FROM users)`. Это используется при работе с внешними данными, отправляемым вместе с запросом. Например, вместе с запросом может быть отправлено множество идентификаторов посетителей, загруженное во временную таблицу users, по которому следует выполнить фильтрацию.
+If the right side of the operator is a table name that has the Set engine (a prepared data set that is always in RAM), the data set will not be created over again for each query.
 
-Если в качестве правой части оператора, указано имя таблицы, имеющий движок Set (подготовленное множество, постоянно находящееся в оперативке), то множество не будет создаваться заново при каждом запросе.
-
-В подзапросе может быть указано более одного столбца для фильтрации кортежей.
-Пример:
+The subquery may specify more than one column for filtering tuples. Example:
 
 ```sql
 SELECT (CounterID, UserID) IN (SELECT CounterID, UserID FROM ...) FROM ...
 ```
 
-Типы столбцов слева и справа оператора IN, должны совпадать.
+The columns to the left and right of the IN operator should have the same type.
 
-Оператор IN и подзапрос могут встречаться в любой части запроса, в том числе в агрегатных и лямбда функциях.
-Пример:
+The IN operator and subquery may occur in any part of the query, including in aggregate functions and lambda functions. Example:
 
 ```sql
 SELECT
@@ -833,169 +760,155 @@ ORDER BY EventDate ASC
 └────────────┴──────────┘
 ```
 
-за каждый день после 17 марта считаем долю хитов, сделанных посетителями, которые заходили на сайт 17 марта.
-Подзапрос в секции IN на одном сервере всегда выполняется только один раз. Зависимых подзапросов не существует.
+For each day after March 17th, count the percentage of pageviews made by users who visited the site on March 17th. A subquery in the IN clause is always run just one time on a single server. There are no dependent subqueries.
 
+#### NULL processing
 
-#### Обработка NULL
+During request processing, the IN operator assumes that the result of an operation with [NULL](syntax.md#null-literal) is always equal to `0`, regardless of whether `NULL` is on the right or left side of the operator. `NULL` values are not included in any dataset, do not correspond to each other and cannot be compared.
 
-При обработке запроса оператор IN будет считать, что результат операции с [NULL](syntax.md#null-literal) всегда равен `0`, независимо от того, находится `NULL` в правой или левой части оператора.  Значения `NULL` не входят ни в какое множество, не соответствуют друг другу и не могут сравниваться.
+Here is an example with the `t_null` table:
 
-Рассмотрим для примера таблицу `t_null`:
+    ┌─x─┬────y─┐
+     │ 1 │ ᴺᵁᴸᴸ │
+     │ 2 │    3 │
+     └───┴──────┘
 
-```
-┌─x─┬────y─┐
-│ 1 │ ᴺᵁᴸᴸ │
-│ 2 │    3 │
-└───┴──────┘
-```
+Running the query `SELECT x FROM t_null WHERE y IN (NULL,3)` gives you the following result:
 
-При выполнении запроса `SELECT x FROM t_null WHERE y IN (NULL,3)` получим следующий результат:
+    ┌─x─┐
+     │ 2 │
+     └───┘
 
-```
-┌─x─┐
-│ 2 │
-└───┘
-```
+You can see that the row in which `y = NULL` is thrown out of the query results. This is because ClickHouse can't decide whether `NULL` is included in the `(NULL,3)` set, returns `0` as the result of the operation, and `SELECT` excludes this row from the final output.
 
-Видно, что строка, в которой `y = NULL`, выброшена из результатов запроса. Это произошло потому, что ClickHouse не может решить входит ли `NULL` в множество `(NULL,3)`, возвращает результат операции `0`, а `SELECT` выбрасывает эту строку из финальной выдачи.
+``` SELECT y IN (NULL, 3) FROM t_null
 
-```
-SELECT y IN (NULL, 3)
-FROM t_null
-
-┌─in(y, tuple(NULL, 3))─┐
-│                     0 │
-│                     1 │
-└───────────────────────┘
-```
+┌─in(y, tuple(NULL, 3))─┐ │ 0 │ │ 1 │ └───────────────────────┘ ```
 
 <a name="queries-distributed-subrequests"></a>
 
-#### Распределённые подзапросы
+#### Distributed Subqueries
 
-Существует два варианта IN-ов с подзапросами (аналогично для JOIN-ов): обычный `IN` / `JOIN` и `GLOBAL IN` / `GLOBAL JOIN`. Они отличаются способом выполнения при распределённой обработке запроса.
+There are two options for IN-s with subqueries (similar to JOINs): normal `IN` / `OIN` and `IN GLOBAL` / `GLOBAL JOIN`. They differ in how they are run for distributed query processing.
 
-!!! attention
-    Помните, что алгоритмы, описанные ниже, могут работать иначе в зависимости от [настройки](../operations/settings/settings.md#settings-distributed_product_mode) `distributed_product_mode`.
+!!! attention Remember that the algorithms described below may work differently depending on the [settings](../operations/settings/settings.md#settings-distributed_product_mode) `distributed_product_mode` setting.
 
-При использовании обычного IN-а, запрос отправляется на удалённые серверы, и на каждом из них выполняются подзапросы в секциях `IN` / `JOIN`.
+When using the regular IN, the query is sent to remote servers, and each of them runs the subqueries in the `IN` or `JOIN` clause.
 
-При использовании `GLOBAL IN` / `GLOBAL JOIN-а`, сначала выполняются все подзапросы для `GLOBAL IN` / `GLOBAL JOIN-ов`, и результаты складываются во временные таблицы. Затем эти временные таблицы передаются на каждый удалённый сервер, и на них выполняются запросы, с использованием этих переданных временных данных.
+When using `GLOBAL IN` / `GLOBAL JOINs`, first all the subqueries are run for `GLOBAL IN` / `GLOBAL JOINs`, and the results are collected in temporary tables. Then the temporary tables are sent to each remote server, where the queries are run using this temporary data.
 
-Если запрос не распределённый, используйте обычный `IN` / `JOIN`.
+For a non-distributed query, use the regular `IN` / `JOIN`.
 
-Следует быть внимательным при использовании подзапросов в секции `IN` / `JOIN` в случае распределённой обработки запроса.
+Be careful when using subqueries in the `IN` / `JOIN` clauses for distributed query processing.
 
-Рассмотрим это на примерах. Пусть на каждом сервере кластера есть обычная таблица **local_table**. Пусть также есть таблица **distributed_table** типа **Distributed**, которая смотрит на все серверы кластера.
+Let's look at some examples. Assume that each server in the cluster has a normal **local_table**. Each server also has a **distributed_table** table with the **Distributed** type, which looks at all the servers in the cluster.
 
-При запросе к распределённой таблице **distributed_table**, запрос будет отправлен на все удалённые серверы, и на них будет выполнен с использованием таблицы **local_table**.
+For a query to the **distributed_table**, the query will be sent to all the remote servers and run on them using the **local_table**.
 
-Например, запрос
+For example, the query
 
 ```sql
 SELECT uniq(UserID) FROM distributed_table
 ```
 
-будет отправлен на все удалённые серверы в виде
+will be sent to all remote servers as
 
 ```sql
 SELECT uniq(UserID) FROM local_table
 ```
 
-, выполнен параллельно на каждом из них до стадии, позволяющей объединить промежуточные результаты; затем промежуточные результаты вернутся на сервер-инициатор запроса, будут на нём объединены, и финальный результат будет отправлен клиенту.
+and run on each of them in parallel, until it reaches the stage where intermediate results can be combined. Then the intermediate results will be returned to the requestor server and merged on it, and the final result will be sent to the client.
 
-Теперь рассмотрим запрос с IN-ом:
+Now let's examine a query with IN:
 
 ```sql
 SELECT uniq(UserID) FROM distributed_table WHERE CounterID = 101500 AND UserID IN (SELECT UserID FROM local_table WHERE CounterID = 34)
 ```
 
--   расчёт пересечения аудиторий двух сайтов.
+- Calculation of the intersection of audiences of two sites.
 
-Этот запрос будет отправлен на все удалённые серверы в виде
+This query will be sent to all remote servers as
 
 ```sql
 SELECT uniq(UserID) FROM local_table WHERE CounterID = 101500 AND UserID IN (SELECT UserID FROM local_table WHERE CounterID = 34)
 ```
 
-То есть, множество в секции IN будет собрано на каждом сервере независимо, только по тем данным, которые есть локально на каждом из серверов.
+In other words, the data set in the IN clause will be collected on each server independently, only across the data that is stored locally on each of the servers.
 
-Это будет работать правильно и оптимально, если вы предусмотрели такой случай, и раскладываете данные по серверам кластера таким образом, чтобы данные одного UserID-а лежали только на одном сервере. В таком случае все необходимые данные будут присутствовать на каждом сервере локально. В противном случае результат будет посчитан неточно. Назовём этот вариант запроса "локальный IN".
+This will work correctly and optimally if you are prepared for this case and have spread data across the cluster servers such that the data for a single UserID resides entirely on a single server. In this case, all the necessary data will be available locally on each server. Otherwise, the result will be inaccurate. We refer to this variation of the query as "local IN".
 
-Чтобы исправить работу запроса, когда данные размазаны по серверам кластера произвольным образом, можно было бы указать **distributed_table** внутри подзапроса. Запрос будет выглядеть так:
+To correct how the query works when data is spread randomly across the cluster servers, you could specify **distributed_table** inside a subquery. The query would look like this:
 
 ```sql
 SELECT uniq(UserID) FROM distributed_table WHERE CounterID = 101500 AND UserID IN (SELECT UserID FROM distributed_table WHERE CounterID = 34)
 ```
 
-Этот запрос будет отправлен на все удалённые серверы в виде
+This query will be sent to all remote servers as
 
 ```sql
 SELECT uniq(UserID) FROM local_table WHERE CounterID = 101500 AND UserID IN (SELECT UserID FROM distributed_table WHERE CounterID = 34)
 ```
 
-На каждом удалённом сервере начнёт выполняться подзапрос. Так как в подзапросе используется распределённая таблица, то подзапрос будет, на каждом удалённом сервере, снова отправлен на каждый удалённый сервер, в виде
+The subquery will begin running on each remote server. Since the subquery uses a distributed table, the subquery that is on each remote server will be resent to every remote server as
 
 ```sql
 SELECT UserID FROM local_table WHERE CounterID = 34
 ```
 
-Например, если у вас кластер из 100 серверов, то выполнение всего запроса потребует 10 000 элементарных запросов, что, как правило, является неприемлемым.
+For example, if you have a cluster of 100 servers, executing the entire query will require 10,000 elementary requests, which is generally considered unacceptable.
 
-В таких случаях всегда следует использовать GLOBAL IN вместо IN. Рассмотрим его работу для запроса
+In such cases, you should always use GLOBAL IN instead of IN. Let's look at how it works for the query
 
 ```sql
 SELECT uniq(UserID) FROM distributed_table WHERE CounterID = 101500 AND UserID GLOBAL IN (SELECT UserID FROM distributed_table WHERE CounterID = 34)
 ```
 
-На сервере-инициаторе запроса будет выполнен подзапрос
+The requestor server will run the subquery
 
 ```sql
 SELECT UserID FROM distributed_table WHERE CounterID = 34
 ```
 
-, и результат будет сложен во временную таблицу в оперативке. Затем запрос будет отправлен на каждый удалённый сервер в виде
+and the result will be put in a temporary table in RAM. Then the request will be sent to each remote server as
 
 ```sql
 SELECT uniq(UserID) FROM local_table WHERE CounterID = 101500 AND UserID GLOBAL IN _data1
 ```
 
-, и вместе с запросом, на каждый удалённый сервер будет отправлена временная таблица `_data1` (имя временной таблицы - implementation defined).
+and the temporary table `_data1` will be sent to every remote server with the query (the name of the temporary table is implementation-defined).
 
-Это гораздо более оптимально, чем при использовании обычного IN. Но при этом, следует помнить о нескольких вещах:
+This is more optimal than using the normal IN. However, keep the following points in mind:
 
-1.  При создании временной таблицы данные не уникализируются. Чтобы уменьшить объём передаваемых по сети данных, укажите в подзапросе DISTINCT (для обычного IN-а этого делать не нужно).
-2.  Временная таблица будет передана на все удалённые серверы. Передача не учитывает топологию сети. Например, если 10 удалённых серверов расположены в удалённом относительно сервера-инициатора запроса датацентре, то по каналу в удалённый датацентр данные будет переданы 10 раз. Старайтесь не использовать большие множества при использовании GLOBAL IN.
-3.  При передаче данных на удалённые серверы не настраивается ограничение использования сетевой полосы. Вы можете перегрузить сеть.
-4.  Старайтесь распределять данные по серверам так, чтобы в GLOBAL IN-ах не было частой необходимости.
-5.  Если в GLOBAL IN есть частая необходимость, то спланируйте размещение кластера ClickHouse таким образом, чтобы в каждом датацентре была хотя бы одна реплика каждого шарда, и среди них была быстрая сеть - чтобы запрос целиком можно было бы выполнить, передавая данные в пределах одного датацентра.
+1. When creating a temporary table, data is not made unique. To reduce the volume of data transmitted over the network, specify DISTINCT in the subquery. (You don't need to do this for a normal IN.)
+2. The temporary table will be sent to all the remote servers. Transmission does not account for network topology. For example, if 10 remote servers reside in a datacenter that is very remote in relation to the requestor server, the data will be sent 10 times over the channel to the remote datacenter. Try to avoid large data sets when using GLOBAL IN.
+3. When transmitting data to remote servers, restrictions on network bandwidth are not configurable. You might overload the network.
+4. Try to distribute data across servers so that you don't need to use GLOBAL IN on a regular basis.
+5. If you need to use GLOBAL IN often, plan the location of the ClickHouse cluster so that a single group of replicas resides in no more than one data center with a fast network between them, so that a query can be processed entirely within a single data center.
 
-В секции `GLOBAL IN` также имеет смысл указывать локальную таблицу - в случае, если эта локальная таблица есть только на сервере-инициаторе запроса, и вы хотите воспользоваться данными из неё на удалённых серверах.
+It also makes sense to specify a local table in the `GLOBAL IN` clause, in case this local table is only available on the requestor server and you want to use data from it on remote servers.
 
-### Экстремальные значения
+### Extreme Values
 
-Вы можете получить в дополнение к результату также минимальные и максимальные значения по столбцам результата. Для этого выставите настройку **extremes** в 1. Минимумы и максимумы считаются для числовых типов, дат, дат-с-временем. Для остальных столбцов будут выведены значения по умолчанию.
+In addition to results, you can also get minimum and maximum values for the results columns. To do this, set the **extremes** setting to 1. Minimums and maximums are calculated for numeric types, dates, and dates with times. For other columns, the default values are output.
 
-Вычисляются дополнительные две строчки - минимумы и максимумы, соответственно. Эти дополнительные две строчки выводятся в форматах JSON\*, TabSeparated\*, Pretty\* отдельно от остальных строчек. В остальных форматах они не выводится.
+An extra two rows are calculated – the minimums and maximums, respectively. These extra two rows are output in JSON\*, TabSeparated\*, and Pretty\* formats, separate from the other rows. They are not output for other formats.
 
-В форматах JSON\* экстремальные значения выводятся отдельным полем extremes. В форматах TabSeparated\* строчка выводится после основного результата и после totals, если есть. Перед ней (после остальных данных) вставляется пустая строка. В форматах Pretty\* строчка выводится отдельной табличкой после основного результата и после totals, если есть.
+In JSON\* formats, the extreme values are output in a separate 'extremes' field. In TabSeparated\* formats, the row comes after the main result, and after 'totals' if present. It is preceded by an empty row (after the other data). In Pretty\* formats, the row is output as a separate table after the main result, and after 'totals' if present.
 
-Экстремальные значения считаются по строчкам, прошедшим через LIMIT. Но при этом, при использовании LIMIT offset, size, строчки до offset учитываются в extremes. В потоковых запросах, в результате может учитываться также небольшое количество строчек, прошедших LIMIT.
+Extreme values are calculated for rows that have passed through LIMIT. However, when using 'LIMIT offset, size', the rows before 'offset' are included in 'extremes'. In stream requests, the result may also include a small number of rows that passed through LIMIT.
 
-### Замечания
+### Notes
 
-В секциях `GROUP BY`, `ORDER BY`, в отличие от диалекта MySQL, и в соответствии со стандартным SQL, не поддерживаются позиционные аргументы.
-Например, если вы напишите `GROUP BY 1, 2` - то это будет воспринято, как группировка по константам (то есть, агрегация всех строк в одну).
+The `GROUP BY` and `ORDER BY` clauses do not support positional arguments. This contradicts MySQL, but conforms to standard SQL. For example, `GROUP BY 1, 2` will be interpreted as grouping by constants (i.e. aggregation of all rows into one).
 
-Вы можете использовать синонимы (алиасы `AS`) в любом месте запроса.
+You can use synonyms (`AS` aliases) in any part of a query.
 
-В любом месте запроса, вместо выражения, может стоять звёздочка. При анализе запроса звёздочка раскрывается в список всех столбцов таблицы (за исключением `MATERIALIZED` и `ALIAS` столбцов). Есть лишь немного случаев, когда оправдано использовать звёздочку:
+You can put an asterisk in any part of a query instead of an expression. When the query is analyzed, the asterisk is expanded to a list of all table columns (excluding the `MATERIALIZED` and `ALIAS` columns). There are only a few cases when using an asterisk is justified:
 
--   при создании дампа таблицы;
--   для таблиц, содержащих всего несколько столбцов - например, системных таблиц;
--   для получения информации о том, какие столбцы есть в таблице; в этом случае, укажите `LIMIT 1`. Но лучше используйте запрос `DESC TABLE`;
--   при наличии сильной фильтрации по небольшому количеству столбцов с помощью `PREWHERE`;
--   в подзапросах (так как из подзапросов выкидываются столбцы, не нужные для внешнего запроса).
+- When creating a table dump.
+- For tables containing just a few columns, such as system tables.
+- For getting information about what columns are in a table. In this case, set `LIMIT 1`. But it is better to use the `DESC TABLE` query.
+- When there is strong filtration on a small number of columns using `PREWHERE`.
+- In subqueries (since columns that aren't needed for the external query are excluded from subqueries).
 
-В других случаях использование звёздочки является издевательством над системой, так как вместо преимуществ столбцовой СУБД вы получаете недостатки. То есть использовать звёздочку не рекомендуется.
+In all other cases, we don't recommend using the asterisk, since it only gives you the drawbacks of a columnar DBMS instead of the advantages. In other words using the asterisk is not recommended.
