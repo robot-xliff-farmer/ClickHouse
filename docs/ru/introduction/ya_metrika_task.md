@@ -1,47 +1,44 @@
-# Постановка задачи в Яндекс.Метрике
+# Yandex.Metrica Use Case
 
-ClickHouse изначально разрабатывался для обеспечения работы [Яндекс.Метрики](https://metrika.yandex.ru/), [второй крупнейшей в мире](http://w3techs.com/technologies/overview/traffic_analysis/all) платформы для веб аналитики, и продолжает быть её ключевым компонентом. При более 13 триллионах записей в базе данных и более 20 миллиардах событий в сутки, ClickHouse позволяет генерировать индивидуально настроенные отчёты на лету напрямую из неагрегированных данных. Данная статья вкратце демонстрирует какие цели исторически стояли перед ClickHouse на ранних этапах его развития.
+ClickHouse was originally developed to power [Yandex.Metrica](https://metrica.yandex.com/), [the second largest web analytics platform in the world](http://w3techs.com/technologies/overview/traffic_analysis/all), and continues to be the core component of this system. With more than 13 trillion records in the database and more than 20 billion events daily, ClickHouse allows generating custom reports on the fly directly from non-aggregated data. This article briefly covers the goals of ClickHouse in the early stages of its development.
 
-Яндекс.Метрика на лету строит индивидуальные отчёты на основе хитов и визитов, с периодом и произвольными сегментами, задаваемыми конечным пользователем. Часто требуется построение сложных агрегатов, например числа уникальных пользователей. Новые данные для построения отчета поступают в реальном времени.
+Yandex.Metrica builds customized reports on the fly based on hits and sessions, with arbitrary segments defined by the user. This often requires building complex aggregates, such as the number of unique users. New data for building a report is received in real time.
 
-На апрель 2014, в Яндекс.Метрику поступало около 12 миллиардов событий (показов страниц и кликов мыши) ежедневно. Все эти события должны быть сохранены для возможности строить произвольные отчёты. Один запрос может потребовать просканировать миллионы строк за время не более нескольких сотен миллисекунд, или сотни миллионов строк за время не более нескольких секунд.
+As of April 2014, Yandex.Metrica was tracking about 12 billion events (page views and clicks) daily. All these events must be stored in order to build custom reports. A single query may require scanning millions of rows within a few hundred milliseconds, or hundreds of millions of rows in just a few seconds.
 
-## Использование в Яндекс.Метрике и других отделах Яндекса
+## Usage in Yandex.Metrica and Other Yandex Services
 
-В Яндекс.Метрике ClickHouse используется для нескольких задач.
-Основная задача - построение отчётов в режиме онлайн по неагрегированным данным. Для решения этой задачи используется кластер из 374 серверов, хранящий более 20,3 триллионов строк в базе данных. Объём сжатых данных, без учёта дублирования и репликации, составляет около 2 ПБ. Объём несжатых данных (в формате tsv) составил бы, приблизительно, 17 ПБ.
+ClickHouse is used for multiple purposes in Yandex.Metrica. Its main task is to build reports in online mode using non-aggregated data. It uses a cluster of 374 servers, which store over 20.3 trillion rows in the database. The volume of compressed data, without counting duplication and replication, is about 2 PB. The volume of uncompressed data (in TSV format) would be approximately 17 PB.
 
-Также ClickHouse используется:
+ClickHouse is also used for:
 
--   для хранения данных Вебвизора;
--   для обработки промежуточных данных;
--   для построения глобальных отчётов Аналитиками;
--   для выполнения запросов в целях отладки движка Метрики;
--   для анализа логов работы API и пользовательского интерфейса.
+- Storing data for Session Replay from Yandex.Metrica.
+- Processing intermediate data.
+- Building global reports with Analytics.
+- Running queries for debugging the Yandex.Metrica engine.
+- Analyzing logs from the API and the user interface.
 
-ClickHouse имеет более десятка инсталляций в других отделах Яндекса: в Вертикальных сервисах, Маркете, Директе, БК, Бизнес аналитике, Мобильной разработке, AdFox, Персональных сервисах и т п.
+ClickHouse has at least a dozen installations in other Yandex services: in search verticals, Market, Direct, business analytics, mobile development, AdFox, personal services, and others.
 
-## Агрегированные и неагрегированные данные
+## Aggregated and Non-aggregated Data
 
-Существует мнение, что для того, чтобы эффективно считать статистику, данные нужно агрегировать, так как это позволяет уменьшить объём данных.
+There is a popular opinion that in order to effectively calculate statistics, you must aggregate data, since this reduces the volume of data.
 
-Но агрегированные данные являются очень ограниченным решением, по следующим причинам:
+But data aggregation is a very limited solution, for the following reasons:
 
--   вы должны заранее знать перечень отчётов, необходимых пользователю;
--   то есть, пользователь не может построить произвольный отчёт;
--   при агрегации по большому количеству ключей, объём данных не уменьшается и агрегация бесполезна;
--   при большом количестве отчётов, получается слишком много вариантов агрегации (комбинаторный взрыв);
--   при агрегации по ключам высокой кардинальности (например, URL) объём данных уменьшается не сильно (менее чем в 2 раза);
--   из-за этого, объём данных при агрегации может не уменьшиться, а вырасти;
--   пользователи будут смотреть не все отчёты, которые мы для них посчитаем - то есть, большая часть вычислений бесполезна;
--   возможно нарушение логической целостности данных для разных агрегаций;
+- You must have a pre-defined list of reports the user will need.
+- The user can't make custom reports.
+- When aggregating a large quantity of keys, the volume of data is not reduced, and aggregation is useless.
+- For a large number of reports, there are too many aggregation variations (combinatorial explosion).
+- When aggregating keys with high cardinality (such as URLs), the volume of data is not reduced by much (less than twofold).
+- For this reason, the volume of data with aggregation might grow instead of shrink.
+- Users do not view all the reports we generate for them. A large portion of calculations are useless.
+- The logical integrity of data may be violated for various aggregations.
 
-Как видно, если ничего не агрегировать, и работать с неагрегированными данными, то это даже может уменьшить объём вычислений.
+If we do not aggregate anything and work with non-aggregated data, this might actually reduce the volume of calculations.
 
-Впрочем, при агрегации, существенная часть работы выносится в оффлайне, и её можно делать сравнительно спокойно. Для сравнения, при онлайн вычислениях, вычисления надо делать так быстро, как это возможно, так как именно в момент вычислений пользователь ждёт результата.
+However, with aggregation, a significant part of the work is taken offline and completed relatively calmly. In contrast, online calculations require calculating as fast as possible, since the user is waiting for the result.
 
-В Яндекс.Метрике есть специализированная система для агрегированных данных - Metrage, на основе которой работает большинство отчётов.
-Также в Яндекс.Метрике с 2009 года использовалась специализированная OLAP БД для неагрегированных данных - OLAPServer, на основе которой раньше работал конструктор отчётов.
-OLAPServer хорошо подходил для неагрегированных данных, но содержал много ограничений, не позволяющих использовать его для всех отчётов так, как хочется: отсутствие поддержки типов данных (только числа), невозможность инкрементального обновления данных в реальном времени (только перезаписью данных за сутки). OLAPServer не является СУБД, а является специализированной БД.
+Yandex.Metrica has a specialized system for aggregating data called Metrage, which is used for the majority of reports. Starting in 2009, Yandex.Metrica also used a specialized OLAP database for non-aggregated data called OLAPServer, which was previously used for the report builder. OLAPServer worked well for non-aggregated data, but it had many restrictions that did not allow it to be used for all reports as desired. These included the lack of support for data types (only numbers), and the inability to incrementally update data in real-time (it could only be done by rewriting data daily). OLAPServer is not a DBMS, but a specialized DB.
 
-Чтобы снять ограничения OLAPServer-а и решить задачу работы с неагрегированными данными для всех отчётов, разработана СУБД ClickHouse.
+To remove the limitations of OLAPServer and solve the problem of working with non-aggregated data for all reports, we developed the ClickHouse DBMS.
