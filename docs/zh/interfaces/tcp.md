@@ -1,4 +1,3 @@
-# 原生接口（TCP）
+# Native Interface (TCP)
 
-TCP 原生接口用于 `clickhouse-client` 命令行，它可以在分布式查询执行中和服务器进行交互，并且可以用在 C++ 程序中。我们讲解只覆盖命令行客户端。
-
+The native interface is used in the "clickhouse-client" command-line client for interaction between servers with distributed query processing, and also in C++ programs. We will only cover the command-line client.
