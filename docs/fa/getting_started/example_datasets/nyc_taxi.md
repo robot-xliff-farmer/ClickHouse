@@ -1,18 +1,12 @@
-<div dir="rtl" markdown="1">
+# New York Taxi Data
 
-# داده های تاکسی New York
+## How to Import The Raw Data
 
-## چطور داده های raw را import کنیم
+See <https://github.com/toddwschneider/nyc-taxi-data> and <http://tech.marksblogg.com/billion-nyc-taxi-rides-redshift.html> for the description of a dataset and instructions for downloading.
 
+Downloading will result in about 227 GB of uncompressed data in CSV files. The download takes about an hour over a 1 Gbit connection (parallel downloading from s3.amazonaws.com recovers at least half of a 1 Gbit channel). Some of the files might not download fully. Check the file sizes and re-download any that seem doubtful.
 
-
-برای توضیحات بیشتر در ارتباط با دیتاست و موارد مربوط به دانلود به دو لینک <https://github.com/toddwschneider/nyc-taxi-data> و <http://tech.marksblogg.com/billion-nyc-taxi-rides-redshift.html> مراجعه کنید.
-
-دانلود فایل ها حدود 277 گیگابایت داده ی غیرفشرده در قالب فایل های CSV می باشد. دانلود با استفاده ازبیش از یک  کانکشن 1 Gbit نزدیک 1 ساعت طول می کشد (دانلود موازی از s3.amazonaws.com حداقل نصف کانال 1 Gbit رو جبران می کند). بعضی از فایل ها ممکن است به طول کامل دانلود نشوند. اندازه فایل ها را بررسی کنید و اگر فایلی مشکوک بود، مجددا دانلود کنید.
-
-بعضی از فایل ها ممکن است دارای سطرهای نامعتبر باشه. با اجرای دستورات زیر این موارد برطرف می شود:
-
-</div>
+Some of the files might contain invalid rows. You can fix them as follows:
 
 ```bash
 sed -E '/(.*,){18,}/d' data/yellow_tripdata_2010-02.csv > data/yellow_tripdata_2010-02.csv_
@@ -21,36 +15,28 @@ mv data/yellow_tripdata_2010-02.csv_ data/yellow_tripdata_2010-02.csv
 mv data/yellow_tripdata_2010-03.csv_ data/yellow_tripdata_2010-03.csv
 ```
 
-<div dir="rtl" markdown="1">
+Then the data must be pre-processed in PostgreSQL. This will create selections of points in the polygons (to match points on the map with the boroughs of New York City) and combine all the data into a single denormalized flat table by using a JOIN. To do this, you will need to install PostgreSQL with PostGIS support.
 
-سپس داده ها باید در PostgreSQL پیش پردازش شوند. این کار نقاط انتخابی چند ضلعی را ایجاد می کند (برای مطابقت با نقاط بر روی نقشه با مناطق شهر نیویورک) و تمام داده ها را با استفاده از JOIN  در یک جدول flat و denormal ترکیب می کند. برای این کار شما نیاز به نصب PostgreSQL با پشتیبانی از PostGIS دارید.
+Be careful when running `initialize_database.sh` and manually re-check that all the tables were created correctly.
 
-در هنگام اجرای `initialize_database.sh` مراقب باشید و به صورت دستی مجددا تمام جداول را چک کنید.
+It takes about 20-30 minutes to process each month's worth of data in PostgreSQL, for a total of about 48 hours.
 
-PostgreSQL تقریبا 20 تا 30 دقیقه برای پردازش هر ماه زمان نیاز میگیرد، در مجموع حدود 48 ساعت این عملیات طول می کشد.
-
-از طریق دستور زیر شما می توانید تعداد سطرهای دانلود شده را دریافت کنید:
-
-</div>
+You can check the number of downloaded rows as follows:
 
 ```text
 time psql nyc-taxi-data -c "SELECT count(*) FROM trips;"
-##    count
+## Count
  1298979494
 (1 row)
 
 real    7m9.164s
 ```
 
-<div dir="rtl" markdown="1">
+(This is slightly more than 1.1 billion rows reported by Mark Litwintschik in a series of blog posts.)
 
-(در یکی از پست های مقالات Mark Litwintschik این کمی بیشتر از 1.1 میلیارد سطر گزارش شده است.)
+The data in PostgreSQL uses 370 GB of space.
 
-حجم داده ها در PostgreSQL 370 گیگابایت می باشد.
-
-Export گیری داده ها از PostgreSQL:
-
-</div>
+Exporting the data from PostgreSQL:
 
 ```sql
 COPY
@@ -122,13 +108,9 @@ COPY
 ) TO '/opt/milovidov/nyc-taxi-data/trips.tsv';
 ```
 
-<div dir="rtl" markdown="1">
+The data snapshot is created at a speed of about 50 MB per second. While creating the snapshot, PostgreSQL reads from the disk at a speed of about 28 MB per second. This takes about 5 hours. The resulting TSV file is 590612904969 bytes.
 
-snapshot از داده ها با سرعت 50 مگابایت در ثانیه انجام می شود. در هنگام ایجاد snapshot، PostgreSQL داده ها را با سرعت 28 مگابایت در ثانیه از روی می خواند. این کار حدود 5 ساعت زمان میبرد. نتیجه کار فایل TSV با حجم 590612904969 بایت می باشد.
-
-ساخت جدول temporary در ClickHouse:
-
-</div>
+Create a temporary table in ClickHouse:
 
 ```sql
 CREATE TABLE trips
@@ -187,11 +169,7 @@ dropoff_puma            Nullable(String)
 ) ENGINE = Log;
 ```
 
-<div dir="rtl" markdown="1">
-
-برای تبدیل فیلد ها به data type های صحیح تر و در صورت امکان، حذف NULL ها لازم است.
-
-</div>
+It is needed for converting fields to more correct data types and, if possible, to eliminate NULLs.
 
 ```text
 time clickhouse-client --query="INSERT INTO trips FORMAT TabSeparated" < trips.tsv
@@ -199,19 +177,15 @@ time clickhouse-client --query="INSERT INTO trips FORMAT TabSeparated" < trips.t
 real    75m56.214s
 ```
 
-<div dir="rtl" markdown="1">
+Data is read at a speed of 112-140 Mb/second. Loading data into a Log type table in one stream took 76 minutes. The data in this table uses 142 GB.
 
-داده ها با سرعت 112 تا 140 مگابیت در ثانیه خوانده می شوند. load کردن داده ها در جدول Log Type در یک Stream، 76 دقیقه زمان کشید. این داده ها در این جدول 142 گیگابایت فضا اشغال می کنند.
+(Importing data directly from Postgres is also possible using `COPY ... TO PROGRAM`.)
 
-(import کردن داده ها به صورت مستقیم از Postgres با استفاده از ` COPY ... TO PROGRAM` هم امکان پذیر است.)
+Unfortunately, all the fields associated with the weather (precipitation...average_wind_speed) were filled with NULL. Because of this, we will remove them from the final data set.
 
-متاسفانه، تمام فیلد های مرتبط با آب و هوا (precipitation...average_wind_speed) با Null پر شدند. به خاطر همین، ما از دیتاست نهایی اینها رو حذف کردیم.
+To start, we'll create a table on a single server. Later we will make the table distributed.
 
-برای شروع، ما یک جدول در یک سرور ایجاد کردیم. بعدا ما یک جدول توزیع شده می سازیم.
-
-یک جدول خلاصه ایجاد و پر کنید:
-
-</div>
+Create and populate a summary table:
 
 ```text
 CREATE TABLE trips_mergetree
@@ -275,13 +249,9 @@ toUInt16(ifNull(dropoff_puma, '0')) AS dropoff_puma
 FROM trips
 ```
 
-<div dir="rtl" markdown="1">
+This takes 3030 seconds at a speed of about 428,000 rows per second. To load it faster, you can create the table with the `Log` engine instead of `MergeTree`. In this case, the download works faster than 200 seconds.
 
-این کار با سرعت 428 هزار رکورد در ثانیه و  3030 ثانیه طول خواهد کشید. برای load سریعتر، شما می توانید یک جدول با موتور `Log` به جای `MergeTree` بسازید. در این مورد، دانلود سریعتر از 200 ثانیه کار می کند.
-
-این جدول 126 گیابایت فضا بر روی دیسک اشغال می کند.
-
-</div>
+The table uses 126 GB of disk space.
 
 ```text
 :) SELECT formatReadableSize(sum(bytes)) FROM system.parts WHERE table = 'trips_mergetree' AND active
@@ -295,13 +265,9 @@ WHERE (table = 'trips_mergetree') AND active
 └────────────────────────────────┘
 ```
 
-<div dir="rtl" markdown="1">
+Among other things, you can run the OPTIMIZE query on MergeTree. But it's not required, since everything will be fine without it.
 
-در میان چیزهای دیگر، شما می تونید از دستور OPTIMIZE بر روی MergeTree استفاده کنید. اما از آنجایی که بدون این دستور همه چیز خوب است، اجرای این دستور ضروری نیست..
-
-## نتایج بر روی یک سرور
-
-</div>
+## Results on Single Server
 
 Q1:
 
@@ -338,74 +304,50 @@ ORDER BY year, count(*) DESC
 
 3.593 seconds.
 
-<div dir="rtl" markdown="1">
+The following server was used:
 
-کانفیگ سرور به این صورت بود:
+Two Intel(R) Xeon(R) CPU E5-2650 v2 @ 2.60GHz, 16 physical kernels total,128 GiB RAM,8x6 TB HD on hardware RAID-5
 
-Two Intel(R) Xeon(R) CPU E5-2650 v2 @ 2.60GHz, 16 physical kernels total,
-128 GiB RAM,
-8x6 TB HD on hardware RAID-5
+Execution time is the best of three runsBut starting from the second run, queries read data from the file system cache. No further caching occurs: the data is read out and processed in each run.
 
-زمان اجرا query ها از زمان دومین اجرا بهتر می شود، چون query ها داده ها رو از فایل system cache می خوانند. در ادامه cache دیگری رخ نمیدهد: داده ها در هر اجرا خوانده و پردازش شده اند.
+Creating a table on three servers:
 
-ساخت جداول در در سه سرور:
-
-در هر سرور دستور زیر را اجرا کنید:
-
-</div>
+On each server:
 
 ```text
 CREATE TABLE default.trips_mergetree_third ( trip_id UInt32,  vendor_id Enum8('1' = 1, '2' = 2, 'CMT' = 3, 'VTS' = 4, 'DDS' = 5, 'B02512' = 10, 'B02598' = 11, 'B02617' = 12, 'B02682' = 13, 'B02764' = 14),  pickup_date Date,  pickup_datetime DateTime,  dropoff_date Date,  dropoff_datetime DateTime,  store_and_fwd_flag UInt8,  rate_code_id UInt8,  pickup_longitude Float64,  pickup_latitude Float64,  dropoff_longitude Float64,  dropoff_latitude Float64,  passenger_count UInt8,  trip_distance Float64,  fare_amount Float32,  extra Float32,  mta_tax Float32,  tip_amount Float32,  tolls_amount Float32,  ehail_fee Float32,  improvement_surcharge Float32,  total_amount Float32,  payment_type_ Enum8('UNK' = 0, 'CSH' = 1, 'CRE' = 2, 'NOC' = 3, 'DIS' = 4),  trip_type UInt8,  pickup FixedString(25),  dropoff FixedString(25),  cab_type Enum8('yellow' = 1, 'green' = 2, 'uber' = 3),  pickup_nyct2010_gid UInt8,  pickup_ctlabel Float32,  pickup_borocode UInt8,  pickup_boroname Enum8('' = 0, 'Manhattan' = 1, 'Bronx' = 2, 'Brooklyn' = 3, 'Queens' = 4, 'Staten Island' = 5),  pickup_ct2010 FixedString(6),  pickup_boroct2010 FixedString(7),  pickup_cdeligibil Enum8(' ' = 0, 'E' = 1, 'I' = 2),  pickup_ntacode FixedString(4),  pickup_ntaname Enum16('' = 0, 'Airport' = 1, 'Allerton-Pelham Gardens' = 2, 'Annadale-Huguenot-Prince\'s Bay-Eltingville' = 3, 'Arden Heights' = 4, 'Astoria' = 5, 'Auburndale' = 6, 'Baisley Park' = 7, 'Bath Beach' = 8, 'Battery Park City-Lower Manhattan' = 9, 'Bay Ridge' = 10, 'Bayside-Bayside Hills' = 11, 'Bedford' = 12, 'Bedford Park-Fordham North' = 13, 'Bellerose' = 14, 'Belmont' = 15, 'Bensonhurst East' = 16, 'Bensonhurst West' = 17, 'Borough Park' = 18, 'Breezy Point-Belle Harbor-Rockaway Park-Broad Channel' = 19, 'Briarwood-Jamaica Hills' = 20, 'Brighton Beach' = 21, 'Bronxdale' = 22, 'Brooklyn Heights-Cobble Hill' = 23, 'Brownsville' = 24, 'Bushwick North' = 25, 'Bushwick South' = 26, 'Cambria Heights' = 27, 'Canarsie' = 28, 'Carroll Gardens-Columbia Street-Red Hook' = 29, 'Central Harlem North-Polo Grounds' = 30, 'Central Harlem South' = 31, 'Charleston-Richmond Valley-Tottenville' = 32, 'Chinatown' = 33, 'Claremont-Bathgate' = 34, 'Clinton' = 35, 'Clinton Hill' = 36, 'Co-op City' = 37, 'College Point' = 38, 'Corona' = 39, 'Crotona Park East' = 40, 'Crown Heights North' = 41, 'Crown Heights South' = 42, 'Cypress Hills-City Line' = 43, 'DUMBO-Vinegar Hill-Downtown Brooklyn-Boerum Hill' = 44, 'Douglas Manor-Douglaston-Little Neck' = 45, 'Dyker Heights' = 46, 'East Concourse-Concourse Village' = 47, 'East Elmhurst' = 48, 'East Flatbush-Farragut' = 49, 'East Flushing' = 50, 'East Harlem North' = 51, 'East Harlem South' = 52, 'East New York' = 53, 'East New York (Pennsylvania Ave)' = 54, 'East Tremont' = 55, 'East Village' = 56, 'East Williamsburg' = 57, 'Eastchester-Edenwald-Baychester' = 58, 'Elmhurst' = 59, 'Elmhurst-Maspeth' = 60, 'Erasmus' = 61, 'Far Rockaway-Bayswater' = 62, 'Flatbush' = 63, 'Flatlands' = 64, 'Flushing' = 65, 'Fordham South' = 66, 'Forest Hills' = 67, 'Fort Greene' = 68, 'Fresh Meadows-Utopia' = 69, 'Ft. Totten-Bay Terrace-Clearview' = 70, 'Georgetown-Marine Park-Bergen Beach-Mill Basin' = 71, 'Glen Oaks-Floral Park-New Hyde Park' = 72, 'Glendale' = 73, 'Gramercy' = 74, 'Grasmere-Arrochar-Ft. Wadsworth' = 75, 'Gravesend' = 76, 'Great Kills' = 77, 'Greenpoint' = 78, 'Grymes Hill-Clifton-Fox Hills' = 79, 'Hamilton Heights' = 80, 'Hammels-Arverne-Edgemere' = 81, 'Highbridge' = 82, 'Hollis' = 83, 'Homecrest' = 84, 'Hudson Yards-Chelsea-Flatiron-Union Square' = 85, 'Hunters Point-Sunnyside-West Maspeth' = 86, 'Hunts Point' = 87, 'Jackson Heights' = 88, 'Jamaica' = 89, 'Jamaica Estates-Holliswood' = 90, 'Kensington-Ocean Parkway' = 91, 'Kew Gardens' = 92, 'Kew Gardens Hills' = 93, 'Kingsbridge Heights' = 94, 'Laurelton' = 95, 'Lenox Hill-Roosevelt Island' = 96, 'Lincoln Square' = 97, 'Lindenwood-Howard Beach' = 98, 'Longwood' = 99, 'Lower East Side' = 100, 'Madison' = 101, 'Manhattanville' = 102, 'Marble Hill-Inwood' = 103, 'Mariner\'s Harbor-Arlington-Port Ivory-Graniteville' = 104, 'Maspeth' = 105, 'Melrose South-Mott Haven North' = 106, 'Middle Village' = 107, 'Midtown-Midtown South' = 108, 'Midwood' = 109, 'Morningside Heights' = 110, 'Morrisania-Melrose' = 111, 'Mott Haven-Port Morris' = 112, 'Mount Hope' = 113, 'Murray Hill' = 114, 'Murray Hill-Kips Bay' = 115, 'New Brighton-Silver Lake' = 116, 'New Dorp-Midland Beach' = 117, 'New Springville-Bloomfield-Travis' = 118, 'North Corona' = 119, 'North Riverdale-Fieldston-Riverdale' = 120, 'North Side-South Side' = 121, 'Norwood' = 122, 'Oakland Gardens' = 123, 'Oakwood-Oakwood Beach' = 124, 'Ocean Hill' = 125, 'Ocean Parkway South' = 126, 'Old Astoria' = 127, 'Old Town-Dongan Hills-South Beach' = 128, 'Ozone Park' = 129, 'Park Slope-Gowanus' = 130, 'Parkchester' = 131, 'Pelham Bay-Country Club-City Island' = 132, 'Pelham Parkway' = 133, 'Pomonok-Flushing Heights-Hillcrest' = 134, 'Port Richmond' = 135, 'Prospect Heights' = 136, 'Prospect Lefferts Gardens-Wingate' = 137, 'Queens Village' = 138, 'Queensboro Hill' = 139, 'Queensbridge-Ravenswood-Long Island City' = 140, 'Rego Park' = 141, 'Richmond Hill' = 142, 'Ridgewood' = 143, 'Rikers Island' = 144, 'Rosedale' = 145, 'Rossville-Woodrow' = 146, 'Rugby-Remsen Village' = 147, 'Schuylerville-Throgs Neck-Edgewater Park' = 148, 'Seagate-Coney Island' = 149, 'Sheepshead Bay-Gerritsen Beach-Manhattan Beach' = 150, 'SoHo-TriBeCa-Civic Center-Little Italy' = 151, 'Soundview-Bruckner' = 152, 'Soundview-Castle Hill-Clason Point-Harding Park' = 153, 'South Jamaica' = 154, 'South Ozone Park' = 155, 'Springfield Gardens North' = 156, 'Springfield Gardens South-Brookville' = 157, 'Spuyten Duyvil-Kingsbridge' = 158, 'St. Albans' = 159, 'Stapleton-Rosebank' = 160, 'Starrett City' = 161, 'Steinway' = 162, 'Stuyvesant Heights' = 163, 'Stuyvesant Town-Cooper Village' = 164, 'Sunset Park East' = 165, 'Sunset Park West' = 166, 'Todt Hill-Emerson Hill-Heartland Village-Lighthouse Hill' = 167, 'Turtle Bay-East Midtown' = 168, 'University Heights-Morris Heights' = 169, 'Upper East Side-Carnegie Hill' = 170, 'Upper West Side' = 171, 'Van Cortlandt Village' = 172, 'Van Nest-Morris Park-Westchester Square' = 173, 'Washington Heights North' = 174, 'Washington Heights South' = 175, 'West Brighton' = 176, 'West Concourse' = 177, 'West Farms-Bronx River' = 178, 'West New Brighton-New Brighton-St. George' = 179, 'West Village' = 180, 'Westchester-Unionport' = 181, 'Westerleigh' = 182, 'Whitestone' = 183, 'Williamsbridge-Olinville' = 184, 'Williamsburg' = 185, 'Windsor Terrace' = 186, 'Woodhaven' = 187, 'Woodlawn-Wakefield' = 188, 'Woodside' = 189, 'Yorkville' = 190, 'park-cemetery-etc-Bronx' = 191, 'park-cemetery-etc-Brooklyn' = 192, 'park-cemetery-etc-Manhattan' = 193, 'park-cemetery-etc-Queens' = 194, 'park-cemetery-etc-Staten Island' = 195),  pickup_puma UInt16,  dropoff_nyct2010_gid UInt8,  dropoff_ctlabel Float32,  dropoff_borocode UInt8,  dropoff_boroname Enum8('' = 0, 'Manhattan' = 1, 'Bronx' = 2, 'Brooklyn' = 3, 'Queens' = 4, 'Staten Island' = 5),  dropoff_ct2010 FixedString(6),  dropoff_boroct2010 FixedString(7),  dropoff_cdeligibil Enum8(' ' = 0, 'E' = 1, 'I' = 2),  dropoff_ntacode FixedString(4),  dropoff_ntaname Enum16('' = 0, 'Airport' = 1, 'Allerton-Pelham Gardens' = 2, 'Annadale-Huguenot-Prince\'s Bay-Eltingville' = 3, 'Arden Heights' = 4, 'Astoria' = 5, 'Auburndale' = 6, 'Baisley Park' = 7, 'Bath Beach' = 8, 'Battery Park City-Lower Manhattan' = 9, 'Bay Ridge' = 10, 'Bayside-Bayside Hills' = 11, 'Bedford' = 12, 'Bedford Park-Fordham North' = 13, 'Bellerose' = 14, 'Belmont' = 15, 'Bensonhurst East' = 16, 'Bensonhurst West' = 17, 'Borough Park' = 18, 'Breezy Point-Belle Harbor-Rockaway Park-Broad Channel' = 19, 'Briarwood-Jamaica Hills' = 20, 'Brighton Beach' = 21, 'Bronxdale' = 22, 'Brooklyn Heights-Cobble Hill' = 23, 'Brownsville' = 24, 'Bushwick North' = 25, 'Bushwick South' = 26, 'Cambria Heights' = 27, 'Canarsie' = 28, 'Carroll Gardens-Columbia Street-Red Hook' = 29, 'Central Harlem North-Polo Grounds' = 30, 'Central Harlem South' = 31, 'Charleston-Richmond Valley-Tottenville' = 32, 'Chinatown' = 33, 'Claremont-Bathgate' = 34, 'Clinton' = 35, 'Clinton Hill' = 36, 'Co-op City' = 37, 'College Point' = 38, 'Corona' = 39, 'Crotona Park East' = 40, 'Crown Heights North' = 41, 'Crown Heights South' = 42, 'Cypress Hills-City Line' = 43, 'DUMBO-Vinegar Hill-Downtown Brooklyn-Boerum Hill' = 44, 'Douglas Manor-Douglaston-Little Neck' = 45, 'Dyker Heights' = 46, 'East Concourse-Concourse Village' = 47, 'East Elmhurst' = 48, 'East Flatbush-Farragut' = 49, 'East Flushing' = 50, 'East Harlem North' = 51, 'East Harlem South' = 52, 'East New York' = 53, 'East New York (Pennsylvania Ave)' = 54, 'East Tremont' = 55, 'East Village' = 56, 'East Williamsburg' = 57, 'Eastchester-Edenwald-Baychester' = 58, 'Elmhurst' = 59, 'Elmhurst-Maspeth' = 60, 'Erasmus' = 61, 'Far Rockaway-Bayswater' = 62, 'Flatbush' = 63, 'Flatlands' = 64, 'Flushing' = 65, 'Fordham South' = 66, 'Forest Hills' = 67, 'Fort Greene' = 68, 'Fresh Meadows-Utopia' = 69, 'Ft. Totten-Bay Terrace-Clearview' = 70, 'Georgetown-Marine Park-Bergen Beach-Mill Basin' = 71, 'Glen Oaks-Floral Park-New Hyde Park' = 72, 'Glendale' = 73, 'Gramercy' = 74, 'Grasmere-Arrochar-Ft. Wadsworth' = 75, 'Gravesend' = 76, 'Great Kills' = 77, 'Greenpoint' = 78, 'Grymes Hill-Clifton-Fox Hills' = 79, 'Hamilton Heights' = 80, 'Hammels-Arverne-Edgemere' = 81, 'Highbridge' = 82, 'Hollis' = 83, 'Homecrest' = 84, 'Hudson Yards-Chelsea-Flatiron-Union Square' = 85, 'Hunters Point-Sunnyside-West Maspeth' = 86, 'Hunts Point' = 87, 'Jackson Heights' = 88, 'Jamaica' = 89, 'Jamaica Estates-Holliswood' = 90, 'Kensington-Ocean Parkway' = 91, 'Kew Gardens' = 92, 'Kew Gardens Hills' = 93, 'Kingsbridge Heights' = 94, 'Laurelton' = 95, 'Lenox Hill-Roosevelt Island' = 96, 'Lincoln Square' = 97, 'Lindenwood-Howard Beach' = 98, 'Longwood' = 99, 'Lower East Side' = 100, 'Madison' = 101, 'Manhattanville' = 102, 'Marble Hill-Inwood' = 103, 'Mariner\'s Harbor-Arlington-Port Ivory-Graniteville' = 104, 'Maspeth' = 105, 'Melrose South-Mott Haven North' = 106, 'Middle Village' = 107, 'Midtown-Midtown South' = 108, 'Midwood' = 109, 'Morningside Heights' = 110, 'Morrisania-Melrose' = 111, 'Mott Haven-Port Morris' = 112, 'Mount Hope' = 113, 'Murray Hill' = 114, 'Murray Hill-Kips Bay' = 115, 'New Brighton-Silver Lake' = 116, 'New Dorp-Midland Beach' = 117, 'New Springville-Bloomfield-Travis' = 118, 'North Corona' = 119, 'North Riverdale-Fieldston-Riverdale' = 120, 'North Side-South Side' = 121, 'Norwood' = 122, 'Oakland Gardens' = 123, 'Oakwood-Oakwood Beach' = 124, 'Ocean Hill' = 125, 'Ocean Parkway South' = 126, 'Old Astoria' = 127, 'Old Town-Dongan Hills-South Beach' = 128, 'Ozone Park' = 129, 'Park Slope-Gowanus' = 130, 'Parkchester' = 131, 'Pelham Bay-Country Club-City Island' = 132, 'Pelham Parkway' = 133, 'Pomonok-Flushing Heights-Hillcrest' = 134, 'Port Richmond' = 135, 'Prospect Heights' = 136, 'Prospect Lefferts Gardens-Wingate' = 137, 'Queens Village' = 138, 'Queensboro Hill' = 139, 'Queensbridge-Ravenswood-Long Island City' = 140, 'Rego Park' = 141, 'Richmond Hill' = 142, 'Ridgewood' = 143, 'Rikers Island' = 144, 'Rosedale' = 145, 'Rossville-Woodrow' = 146, 'Rugby-Remsen Village' = 147, 'Schuylerville-Throgs Neck-Edgewater Park' = 148, 'Seagate-Coney Island' = 149, 'Sheepshead Bay-Gerritsen Beach-Manhattan Beach' = 150, 'SoHo-TriBeCa-Civic Center-Little Italy' = 151, 'Soundview-Bruckner' = 152, 'Soundview-Castle Hill-Clason Point-Harding Park' = 153, 'South Jamaica' = 154, 'South Ozone Park' = 155, 'Springfield Gardens North' = 156, 'Springfield Gardens South-Brookville' = 157, 'Spuyten Duyvil-Kingsbridge' = 158, 'St. Albans' = 159, 'Stapleton-Rosebank' = 160, 'Starrett City' = 161, 'Steinway' = 162, 'Stuyvesant Heights' = 163, 'Stuyvesant Town-Cooper Village' = 164, 'Sunset Park East' = 165, 'Sunset Park West' = 166, 'Todt Hill-Emerson Hill-Heartland Village-Lighthouse Hill' = 167, 'Turtle Bay-East Midtown' = 168, 'University Heights-Morris Heights' = 169, 'Upper East Side-Carnegie Hill' = 170, 'Upper West Side' = 171, 'Van Cortlandt Village' = 172, 'Van Nest-Morris Park-Westchester Square' = 173, 'Washington Heights North' = 174, 'Washington Heights South' = 175, 'West Brighton' = 176, 'West Concourse' = 177, 'West Farms-Bronx River' = 178, 'West New Brighton-New Brighton-St. George' = 179, 'West Village' = 180, 'Westchester-Unionport' = 181, 'Westerleigh' = 182, 'Whitestone' = 183, 'Williamsbridge-Olinville' = 184, 'Williamsburg' = 185, 'Windsor Terrace' = 186, 'Woodhaven' = 187, 'Woodlawn-Wakefield' = 188, 'Woodside' = 189, 'Yorkville' = 190, 'park-cemetery-etc-Bronx' = 191, 'park-cemetery-etc-Brooklyn' = 192, 'park-cemetery-etc-Manhattan' = 193, 'park-cemetery-etc-Queens' = 194, 'park-cemetery-etc-Staten Island' = 195),  dropoff_puma UInt16) ENGINE = MergeTree(pickup_date, pickup_datetime, 8192)
 ```
 
-<div dir="rtl" markdown="1">
-
-بر روی سرور source دستور زیر را وارد کنید:
-
-</div>
+On the source server:
 
 ```sql
 CREATE TABLE trips_mergetree_x3 AS trips_mergetree_third ENGINE = Distributed(perftest, default, trips_mergetree_third, rand())
 ```
 
-<div dir="rtl" markdown="1">
-
-query زیر دادها را توزیع مجدد می کند:
-
-</div>
+The following query redistributes data:
 
 ```sql
 INSERT INTO trips_mergetree_x3 SELECT * FROM trips_mergetree
 ```
 
-<div dir="rtl" markdown="1">
+This takes 2454 seconds.
 
-این query 2454 ثانیه زمان میبرد.
+On three servers:
 
-در سه سرور:
+Q1: 0.212 seconds. Q2: 0.438 seconds. Q3: 0.733 seconds. Q4: 1.241 seconds.
 
-Q1: 0.212 ثانیه.
-Q2: 0.438 ثانیه.
-Q3: 0.733 ثانیه.
-Q4: 1.241 ثانیه.
+No surprises here, since the queries are scaled linearly.
 
-از آنجایی که query ها به صورت خطی scale شده اند، از نتایج به دست آمده شگفتی وجود ندارد.
+We also have results from a cluster of 140 servers:
 
-ما همچنین نتایج زیر را از اجرای این query در کلاستر 140 سرور دریافت کردیم:
+Q1: 0.028 sec. Q2: 0.043 sec. Q3: 0.051 sec. Q4: 0.072 sec.
 
-Q1: 0.028 ثانیه.
-Q2: 0.043 ثانیه.
-Q3: 0.051 ثانیه.
-Q4: 0.072 ثانیه.
+In this case, the query processing time is determined above all by network latency. We ran queries using a client located in a Yandex datacenter in Finland on a cluster in Russia, which added about 20 ms of latency.
 
-در این مورد، زمان پردازش query براساس latency شبکه مشخص می شود. ما این query ها را با استفاده از یک مشتری واقع در دیتاسنتر Yandex در فنلاند در یک کلاستر روسیه دریافت کردیم، که latency آن حدود 20 میلی ثانیه به نتایج اضافه کرد.
+## Summary
 
-## نتایج
-
-| نودها | Q1    | Q2    | Q3    | Q4    |
-| ----- | ----- | ----- | ----- | ----- |
-|     1 | 0.490 | 1.224 | 2.104 | 3.593 |
-|     3 | 0.212 | 0.438 | 0.733 | 1.241 |
-|   140 | 0.028 | 0.043 | 0.051 | 0.072 |
-
-</div>
+| servers | Q1    | Q2    | Q3    | Q4    |
+| ------- | ----- | ----- | ----- | ----- |
+| 1       | 0.490 | 1.224 | 2.104 | 3.593 |
+| 3       | 0.212 | 0.438 | 0.733 | 1.241 |
+| 140     | 0.028 | 0.043 | 0.051 | 0.072 |
