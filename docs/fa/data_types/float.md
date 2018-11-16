@@ -1,89 +1,65 @@
-<div dir="rtl" markdown="1">
-
 # Float32, Float64
 
-[اعداد Float](https://en.wikipedia.org/wiki/IEEE_754).
+[Floating point numbers](https://en.wikipedia.org/wiki/IEEE_754).
 
-Type های float در ClickHouse مشابه C می باشد:
+Types are equivalent to types of C:
 
 - `Float32` - `float`
-- `Float64`  - `double`
+- `Float64` - `double`
 
-توصیه می کنیم که داده ها را هرزمان که امکان پذیره است به جای float به صورت int ذخیره کنید. برای مثال: تبدیل دقت اعداد به یک مقدار int، مثل سرعت page load در قالب میلی ثانیه.
+We recommend that you store data in integer form whenever possible. For example, convert fixed precision numbers to integer values, such as monetary amounts or page load times in milliseconds.
 
-## استفاده از اعداد Float
+## Using Floating-point Numbers
 
-- محاسبات با اعداد با Float ممکن است خطای round شدن را ایجاد کنند.
-
-</div>
+- Computations with floating-point numbers might produce a rounding error.
 
 ```sql
 SELECT 1 - 0.9
 ```
-```
-┌───────minus(1, 0.9)─┐
-│ 0.09999999999999998 │
-└─────────────────────┘
-```
 
-<div dir="rtl" markdown="1">
+    ┌───────minus(1, 0.9)─┐
+    │ 0.09999999999999998 │
+    └─────────────────────┘
+    
 
-- نتایج محاسبات بسته به متد محاسباتی می باشد (نوع processor و معماری سیستم).
-- محاسبات Float ممکن اسن نتایجی مثل infinity (`inf`) و "Not-a-number" (`Nan`) داشته باشد. این در هنگام پردازش نتایج محاسبات باید مورد توجه قرار گیرد.
-- هنگام خواندن اعداد float از سطر ها، نتایج ممکن است نزدیک به اعداد machine-representable نباشد.
+- The result of the calculation depends on the calculation method (the processor type and architecture of the computer system).
+- Floating-point calculations might result in numbers such as infinity (`Inf`) and "not-a-number" (`NaN`). This should be taken into account when processing the results of calculations.
+- When reading floating point numbers from rows, the result might not be the nearest machine-representable number.
 
-## NaN و Inf
+## NaN and Inf
 
-در مقابل استاندارد SQL، ClickHouse از موارد زیر مربوط به اعداد float پشتیبانی می کند:
+In contrast to standard SQL, ClickHouse supports the following categories of floating-point numbers:
 
 - `Inf` – Infinity.
-
-</div>
 
 ```sql
 SELECT 0.5 / 0
 ```
 
-```
-┌─divide(0.5, 0)─┐
-│            inf │
-└────────────────┘
-```
-
-<div dir="rtl" markdown="1">
+    ┌─divide(0.5, 0)─┐
+    │            inf │
+    └────────────────┘
+    
 
 - `-Inf` – Negative infinity.
-
-</div>
 
 ```sql
 SELECT -0.5 / 0
 ```
 
-```
-┌─divide(-0.5, 0)─┐
-│            -inf │
-└─────────────────┘
-```
-
-<div dir="rtl" markdown="1">
+    ┌─divide(-0.5, 0)─┐
+    │            -inf │
+    └─────────────────┘
+    
 
 - `NaN` – Not a number.
 
-</div>
+    SELECT 0 / 0
+    
 
-```
-SELECT 0 / 0
-```
+    ┌─divide(0, 0)─┐
+    │          nan │
+    └──────────────┘
+    
 
-```
-┌─divide(0, 0)─┐
-│          nan │
-└──────────────┘
-```
-
-<div dir="rtl" markdown="1">
-
-قوانین مربوط به مرتب سازی ` Nan ` را در بخش [ORDER BY clause](../query_language/select.md#query_language-queries-order_by) ببینید.
-
-</div>
+See the rules for `NaN` sorting in the section [ORDER BY clause](../query_language/select.md#query_language-queries-order_by).
