@@ -2,82 +2,77 @@
 
 # Array(T)
 
-Массив из элементов типа `T`.
+Array of `T`-type items.
 
-`T` может любым, в том числе, массивом. Таким образом поддержаны многомерные массивы.
+`T` can be anything, including an array. Use multi-dimensional arrays with caution. ClickHouse has limited support for multi-dimensional arrays. For example, they can't be stored in `MergeTree` tables.
 
-## Создание массива
+## Creating an array
 
-Массив можно создать с помощью функции:
+You can use a function to create an array:
 
-```
-array(T)
-```
+    array(T)
+    
 
-Также можно использовать квадратные скобки
+You can also use square brackets.
 
-```
-[]
-```
+    []
+    
 
-Пример создания массива:
-```
-:) SELECT array(1, 2) AS x, toTypeName(x)
+Example of creating an array:
 
-SELECT
-    [1, 2] AS x,
-    toTypeName(x)
+    :) SELECT array(1, 2) AS x, toTypeName(x)
+    
+    SELECT
+        [1, 2] AS x,
+        toTypeName(x)
+    
+    ┌─x─────┬─toTypeName(array(1, 2))─┐
+    │ [1,2] │ Array(UInt8)            │
+    └───────┴─────────────────────────┘
+    
+    1 rows in set. Elapsed: 0.002 sec.
+    
+    :) SELECT [1, 2] AS x, toTypeName(x)
+    
+    SELECT
+        [1, 2] AS x,
+        toTypeName(x)
+    
+    ┌─x─────┬─toTypeName([1, 2])─┐
+    │ [1,2] │ Array(UInt8)       │
+    └───────┴────────────────────┘
+    
+    1 rows in set. Elapsed: 0.002 sec.
+    
 
-┌─x─────┬─toTypeName(array(1, 2))─┐
-│ [1,2] │ Array(UInt8)            │
-└───────┴─────────────────────────┘
+## Working with data types
 
-1 rows in set. Elapsed: 0.002 sec.
+When creating an array on the fly, ClickHouse automatically defines the argument type as the narrowest data type that can store all the listed arguments. If there are any [NULL](../query_language/syntax.md#null-literal) or [Nullable](nullable.md#data_type-nullable) type arguments, the type of array elements is [Nullable](nullable.md#data_type-nullable).
 
-:) SELECT [1, 2] AS x, toTypeName(x)
+If ClickHouse couldn't determine the data type, it will generate an exception. For instance, this will happen when trying to create an array with strings and numbers simultaneously (`SELECT array(1, 'a')`).
 
-SELECT
-    [1, 2] AS x,
-    toTypeName(x)
+Examples of automatic data type detection:
 
-┌─x─────┬─toTypeName([1, 2])─┐
-│ [1,2] │ Array(UInt8)       │
-└───────┴────────────────────┘
+    :) SELECT array(1, 2, NULL) AS x, toTypeName(x)
+    
+    SELECT
+        [1, 2, NULL] AS x,
+        toTypeName(x)
+    
+    ┌─x──────────┬─toTypeName(array(1, 2, NULL))─┐
+    │ [1,2,NULL] │ Array(Nullable(UInt8))        │
+    └────────────┴───────────────────────────────┘
+    
+    1 rows in set. Elapsed: 0.002 sec.
+    
 
-1 rows in set. Elapsed: 0.002 sec.
-```
+If you try to create an array of incompatible data types, ClickHouse throws an exception:
 
-## Особенности работы с типами данных
-
-При создании массива "на лету" ClickHouse автоматически определяет тип аргументов как наиболее узкий тип данных, в котором можно хранить все перечисленные аргументы. Если среди аргументов есть [NULL](../query_language/syntax.md#null-literal) или аргумент типа [Nullable](nullable.md#data_type-nullable), то тип элементов массива — [Nullable](nullable.md#data_type-nullable).
-
-Если ClickHouse не смог подобрать тип данных, то он сгенерирует исключение. Это произойдёт, например, при попытке создать массив одновременно со строками и числами `SELECT array(1, 'a')`.
-
-Примеры автоматического определения типа данных:
-
-```
-:) SELECT array(1, 2, NULL) AS x, toTypeName(x)
-
-SELECT
-    [1, 2, NULL] AS x,
-    toTypeName(x)
-
-┌─x──────────┬─toTypeName(array(1, 2, NULL))─┐
-│ [1,2,NULL] │ Array(Nullable(UInt8))        │
-└────────────┴───────────────────────────────┘
-
-1 rows in set. Elapsed: 0.002 sec.
-```
-
-Если попытаться создать массив из несовместимых типов данных, то ClickHouse выбросит исключение:
-
-```
-:) SELECT array(1, 'a')
-
-SELECT [1, 'a']
-
-Received exception from server (version 1.1.54388):
-Code: 386. DB::Exception: Received from localhost:9000, 127.0.0.1. DB::Exception: There is no supertype for types UInt8, String because some of them are String/FixedString and some of them are not.
-
-0 rows in set. Elapsed: 0.246 sec.
-```
+    :) SELECT array(1, 'a')
+    
+    SELECT [1, 'a']
+    
+    Received exception from server (version 1.1.54388):
+    Code: 386. DB::Exception: Received from localhost:9000, 127.0.0.1. DB::Exception: There is no supertype for types UInt8, String because some of them are String/FixedString and some of them are not.
+    
+    0 rows in set. Elapsed: 0.246 sec.
