@@ -1,6 +1,6 @@
-# Схема «Звезда»
+# Star Schema Benchmark
 
-Компилирование dbgen: <https://github.com/vadimtk/ssb-dbgen>
+Compiling dbgen: <https://github.com/vadimtk/ssb-dbgen>
 
 ```bash
 git clone git@github.com:vadimtk/ssb-dbgen.git
@@ -8,18 +8,18 @@ cd ssb-dbgen
 make
 ```
 
-В процессе будет некоторое количество предупреждений. Это нормально.
+There will be some warnings during the process, but this is normal.
 
-Разместите `dbgen` и `dists.dss` в какое-либо место с 800Гб свободного дискового пространства.
+Place `dbgen` and `dists.dss` in any location with 800 GB of free disk space.
 
-Генерация данных:
+Generating data:
 
 ```bash
 ./dbgen -s 1000 -T c
 ./dbgen -s 1000 -T l
 ```
 
-Создание таблиц в ClickHouse:
+Creating tables in ClickHouse:
 
 ```sql
 CREATE TABLE lineorder (
@@ -72,11 +72,9 @@ CREATE TABLE customerd AS customer ENGINE = Distributed(perftest_3shards_1replic
 CREATE TABLE partd AS part ENGINE = Distributed(perftest_3shards_1replicas, default, part, rand());
 ```
 
-Для тестирования на одном сервере, используете просто таблицы типа MergeTree.
-Для распределённого тестирования, нужно настроить кластер `perftest_3shards_1replicas` в конфигурационном файле.
-Далее создать MergeTree таблицы на каждом сервере и Distributed таблицу поверх них.
+For testing on a single server, just use MergeTree tables. For distributed testing, you need to configure the `perftest_3shards_1replicas` cluster in the config file. Next, create MergeTree tables on each server and a Distributed above them.
 
-Загрузка данных (нужно поменять customer на customerd в распределённом варианте):
+Downloading data (change 'customer' to 'customerd' in the distributed version):
 
 ```bash
 cat customer.tbl | sed 's/$/2000-01-01/' | clickhouse-client --query "INSERT INTO customer FORMAT CSV"
