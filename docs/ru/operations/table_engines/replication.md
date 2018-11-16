@@ -1,8 +1,8 @@
 <a name="table_engines-replication"></a>
 
-# Репликация данных
+# Data Replication
 
-Репликация поддерживается только для таблиц семейства MergeTree:
+Replication is only supported for tables in the MergeTree family:
 
 - ReplicatedMergeTree
 - ReplicatedSummingMergeTree
@@ -11,19 +11,19 @@
 - ReplicatedCollapsingMergeTree
 - ReplicatedGraphiteMergeTree
 
-Репликация работает на уровне отдельных таблиц, а не всего сервера. То есть, на сервере могут быть расположены одновременно реплицируемые и не реплицируемые таблицы.
+Replication works at the level of an individual table, not the entire server. A server can store both replicated and non-replicated tables at the same time.
 
-Репликация не зависит от шардирования. На каждом шарде репликация работает независимо.
+Replication does not depend on sharding. Each shard has its own independent replication.
 
-Реплицируются сжатые данные запросов `INSERT`, `ALTER` (см. подробности в описании запроса [ALTER](../../query_language/alter.md#query_language_queries_alter)).
+Compressed data for `INSERT` and `ALTER` queries is replicated (for more information, see the documentation for [ALTER](../../query_language/alter.md#query_language_queries_alter)).
 
-Запросы `CREATE`, `DROP`, `ATTACH`, `DETACH`, `RENAME` выполняются на одном сервере и не реплицируются:
+`CREATE`, `DROP`, `ATTACH`, `DETACH` and `RENAME` queries are executed on a single server and are not replicated:
 
-- `CREATE TABLE` создаёт новую реплицируемую таблицу на том сервере, где выполняется запрос, а если на других серверах такая таблица уже есть - добавляет новую реплику.
-- `DROP TABLE` удаляет реплику, расположенную на том сервере, где выполняется запрос.
-- `RENAME` переименовывает таблицу на одной из реплик - то есть, реплицируемые таблицы на разных репликах могут называться по разному.
+- `The CREATE TABLE` query creates a new replicatable table on the server where the query is run. If this table already exists on other servers, it adds a new replica.
+- `The DROP TABLE` query deletes the replica located on the server where the query is run.
+- `The RENAME` query renames the table on one of the replicas. In other words, replicated tables can have different names on different replicas.
 
-Чтобы использовать репликацию, укажите в конфигурационном файле адреса ZooKeeper кластера. Пример:
+To use replication, set the addresses of the ZooKeeper cluster in the config file. Example:
 
 ```xml
 <zookeeper>
@@ -42,47 +42,47 @@
 </zookeeper>
 ```
 
-Используйте ZooKeeper версии 3.4.5 или более новый.
+Use ZooKeeper version 3.4.5 or later.
 
-Можно указать любой имеющийся у вас ZooKeeper-кластер - система будет использовать в нём одну директорию для своих данных (директория указывается при создании реплицируемой таблицы).
+You can specify any existing ZooKeeper cluster and the system will use a directory on it for its own data (the directory is specified when creating a replicatable table).
 
-Если в конфигурационном файле не настроен ZooKeeper, то вы не сможете создать реплицируемые таблицы, а уже имеющиеся реплицируемые таблицы будут доступны в режиме только на чтение.
+If ZooKeeper isn't set in the config file, you can't create replicated tables, and any existing replicated tables will be read-only.
 
-При запросах `SELECT`, ZooKeeper не используется, т.е. репликация не влияет на производительность `SELECT` и запросы работают так же быстро, как и для нереплицируемых таблиц. При запросах к распределенным реплицированным таблицам поведение ClickHouse регулируется настройками [max_replica_delay_for_distributed_queries](../settings/settings.md#settings_settings_max_replica_delay_for_distributed_queries) и [fallback_to_stale_replicas_for_distributed_queries](../settings/settings.md#settings-settings-fallback_to_stale_replicas_for_distributed_queries).
+ZooKeeper is not used in `SELECT` queries because replication does not affect the performance of `SELECT` and queries run just as fast as they do for non-replicated tables. When querying distributed replicated tables, ClickHouse behavior is controlled by the settings [max_replica_delay_for_distributed_queries](../settings/settings.md#settings_settings_max_replica_delay_for_distributed_queries) and [fallback_to_stale_replicas_for_distributed_queries](../settings/settings.md#settings-settings-fallback_to_stale_replicas_for_distributed_queries).
 
-При каждом запросе `INSERT` (точнее, на каждый вставляемый блок данных; запрос INSERT содержит один блок, или по блоку на каждые `max_insert_block_size = 1048576` строк), делается около десятка записей в ZooKeeper в рамках нескольких транзакций. Это приводит к некоторому увеличению задержек при `INSERT`, по сравнению с нереплицируемыми таблицами. Но если придерживаться обычных рекомендаций - вставлять данные пачками не более одного `INSERT` в секунду, то это не составляет проблем. На всём кластере ClickHouse, использующим для координации один кластер ZooKeeper, может быть в совокупности несколько сотен `INSERT` в секунду. Пропускная способность при вставке данных (количество строчек в секунду) такая же высокая, как для нереплицируемых таблиц.
+For each `INSERT` query, approximately ten entries are added to ZooKeeper through several transactions. (To be more precise, this is for each inserted block of data; an INSERT query contains one block or one block per `max_insert_block_size = 1048576` rows.) This leads to slightly longer latencies for `INSERT` compared to non-replicated tables. But if you follow the recommendations to insert data in batches of no more than one `INSERT` per second, it doesn't create any problems. The entire ClickHouse cluster used for coordinating one ZooKeeper cluster has a total of several hundred `INSERTs` per second. The throughput on data inserts (the number of rows per second) is just as high as for non-replicated data.
 
-Для очень больших кластеров, можно использовать разные кластеры ZooKeeper для разных шардов. Впрочем, на кластере Яндекс.Метрики (примерно 300 серверов) такой необходимости не возникает.
+For very large clusters, you can use different ZooKeeper clusters for different shards. However, this hasn't proven necessary on the Yandex.Metrica cluster (approximately 300 servers).
 
-Репликация асинхронная, мульти-мастер. Запросы `INSERT` (а также `ALTER`) можно отправлять на любой доступный сервер. Данные вставятся на сервер, где выполнен запрос, а затем скопируются на остальные серверы. В связи с асинхронностью, только что вставленные данные появляются на остальных репликах с небольшой задержкой. Если часть реплик недоступна, данные на них запишутся тогда, когда они станут доступны. Если реплика доступна, то задержка составляет столько времени, сколько требуется для передачи блока сжатых данных по сети.
+Replication is asynchronous and multi-master. `INSERT` queries (as well as `ALTER`) can be sent to any available server. Data is inserted on the server where the query is run, and then it is copied to the other servers. Because it is asynchronous, recently inserted data appears on the other replicas with some latency. If part of the replicas are not available, the data is written when they become available. If a replica is available, the latency is the amount of time it takes to transfer the block of compressed data over the network.
 
-По умолчанию, запрос INSERT ждёт подтверждения записи только от одной реплики. Если данные были успешно записаны только на одну реплику, и сервер с этой репликой перестал существовать, то записанные данные будут потеряны. Вы можете включить подтверждение записи от нескольких реплик, используя настройку [insert_quorum](../settings/settings.md#setting-insert_quorum).
+By default, an INSERT query waits for confirmation of writing the data from only one replica. If the data was successfully written to only one replica and the server with this replica ceases to exist, the stored data will be lost. Tp enable getting confirmation of data writes from multiple replicas, use the `insert_quorum` option.
 
-Каждый блок данных записывается атомарно. Запрос INSERT разбивается на блоки данных размером до `max_insert_block_size = 1048576` строк. То есть, если в запросе `INSERT` менее 1048576 строк, то он делается атомарно.
+Each block of data is written atomically. The INSERT query is divided into blocks up to `max_insert_block_size = 1048576` rows. In other words, if the `INSERT` query has less than 1048576 rows, it is made atomically.
 
-Блоки данных дедуплицируются. При многократной записи одного и того же блока данных (блоков данных одинакового размера, содержащих одни и те же строчки в одном и том же порядке), блок будет записан только один раз. Это сделано для того, чтобы в случае сбоя в сети, когда клиентское приложение не может понять, были ли данные записаны в БД, можно было просто повторить запрос `INSERT`. При этом не имеет значения, на какую реплику будут отправлены INSERT-ы с одинаковыми данными. То есть, обеспечивается идемпотентность `INSERT`. Параметры дедупликации регулируются настройками сервера [merge_tree](../server_settings/settings.md#server_settings-merge_tree).
+Data blocks are deduplicated. For multiple writes of the same data block (data blocks of the same size containing the same rows in the same order), the block is only written once. The reason for this is in case of network failures when the client application doesn't know if the data was written to the DB, so the `INSERT` query can simply be repeated. It doesn't matter which replica INSERTs were sent to with identical data. `INSERTs` are idempotent. Deduplication parameters are controlled by [merge_tree](../server_settings/settings.md#server_settings-merge_tree) server settings.
 
-При репликации, по сети передаются только исходные вставляемые данные. Дальнейшие преобразования данных (слияния) координируются и делаются на всех репликах одинаковым образом. За счёт этого минимизируется использование сети, и благодаря этому, репликация хорошо работает при расположении реплик в разных датацентрах. (Стоит заметить, что дублирование данных в разных датацентрах, по сути, является основной задачей репликации).
+During replication, only the source data to insert is transferred over the network. Further data transformation (merging) is coordinated and performed on all the replicas in the same way. This minimizes network usage, which means that replication works well when replicas reside in different datacenters. (Note that duplicating data in different datacenters is the main goal of replication.)
 
-Количество реплик одних и тех же данных может быть произвольным. В Яндекс.Метрике в продакшене используется двухкратная репликация. На каждом сервере используется RAID-5 или RAID-6, в некоторых случаях RAID-10. Это является сравнительно надёжным и удобным для эксплуатации решением.
+You can have any number of replicas of the same data. Yandex.Metrica uses double replication in production. Each server uses RAID-5 or RAID-6, and RAID-10 in some cases. This is a relatively reliable and convenient solution.
 
-Система следит за синхронностью данных на репликах и умеет восстанавливаться после сбоя. Восстановление после сбоя автоматическое (в случае небольших различий в данных) или полуавтоматическое (когда данные отличаются слишком сильно, что может свидетельствовать об ошибке конфигурации).
+The system monitors data synchronicity on replicas and is able to recover after a failure. Failover is automatic (for small differences in data) or semi-automatic (when data differs too much, which may indicate a configuration error).
 
 <a name="table_engines-replication-creation_of_rep_tables"></a>
 
-## Создание реплицируемых таблиц
+## Creating Replicated Tables
 
-В начало имени движка таблицы добавляется `Replicated`. Например, `ReplicatedMergeTree`.
+The `Replicated` prefix is added to the table engine name. For example:`ReplicatedMergeTree`.
 
-Также добавляются два параметра в начало списка параметров - путь к таблице в ZooKeeper, имя реплики в ZooKeeper.
+Two parameters are also added in the beginning of the parameters list – the path to the table in ZooKeeper, and the replica name in ZooKeeper.
 
-Пример:
+Example:
 
 ```text
 ReplicatedMergeTree('/clickhouse/tables/{layer}-{shard}/hits', '{replica}', EventDate, intHash32(UserID), (CounterID, EventDate, intHash32(UserID), EventTime), 8192)
 ```
 
-Как видно в примере, эти параметры могут содержать подстановки в фигурных скобках. Подставляемые значения достаются из конфигурационного файла, из секции macros. Пример:
+As the example shows, these parameters can contain substitutions in curly brackets. The substituted values are taken from the 'macros' section of the config file. Example:
 
 ```xml
 <macros>
@@ -92,91 +92,88 @@ ReplicatedMergeTree('/clickhouse/tables/{layer}-{shard}/hits', '{replica}', Even
 </macros>
 ```
 
-Путь к таблице в ZooKeeper должен быть разным для каждой реплицируемой таблицы. В том числе, для таблиц на разных шардах, должны быть разные пути.
-В данном случае, путь состоит из следующих частей:
+The path to the table in ZooKeeper should be unique for each replicated table. Tables on different shards should have different paths. In this case, the path consists of the following parts:
 
-`/clickhouse/tables/` - общий префикс. Рекомендуется использовать именно его.
+`/clickhouse/tables/` is the common prefix. We recommend using exactly this one.
 
-`{layer}-{shard}` - идентификатор шарда. В данном примере он состоит из двух частей, так как на кластере Яндекс.Метрики используется двухуровневое шардирование. Для большинства задач, оставьте только подстановку {shard}, которая будет раскрываться в идентификатор шарда.
+`{layer}-{shard}` is the shard identifier. In this example it consists of two parts, since the Yandex.Metrica cluster uses bi-level sharding. For most tasks, you can leave just the {shard} substitution, which will be expanded to the shard identifier.
 
-`hits` - имя узла для таблицы в ZooKeeper. Разумно делать его таким же, как имя таблицы. Оно указывается явно, так как, в отличие от имени таблицы, оно не меняется после запроса RENAME.
+`hits` is the name of the node for the table in ZooKeeper. It is a good idea to make it the same as the table name. It is defined explicitly, because in contrast to the table name, it doesn't change after a RENAME query.
 
-Имя реплики - то, что идентифицирует разные реплики одной и той же таблицы. Можно использовать для него имя сервера, как показано в примере. Впрочем, достаточно, чтобы имя было уникально лишь в пределах каждого шарда.
+The replica name identifies different replicas of the same table. You can use the server name for this, as in the example. The name only needs to be unique within each shard.
 
-Можно не использовать подстановки, а указать соответствующие параметры явно. Это может быть удобным для тестирования и при настройке маленьких кластеров. Однако в этом случае нельзя пользоваться распределенными DDL-запросами (`ON CLUSTER`).
+You can define the parameters explicitly instead of using substitutions. This might be convenient for testing and for configuring small clusters. However, you can't use distributed DDL queries (`ON CLUSTER`) in this case.
 
-При работе с большими кластерами мы рекомендуем использовать подстановки, они уменьшают вероятность ошибки.
+When working with large clusters, we recommend using substitutions because they reduce the probability of error.
 
-Выполните запрос `CREATE TABLE` на каждой реплике. Запрос создаёт новую реплицируемую таблицу, или добавляет новую реплику к имеющимся.
+Run the `CREATE TABLE` query on each replica. This query creates a new replicated table, or adds a new replica to an existing one.
 
-Если вы добавляете новую реплику после того, как таблица на других репликах уже содержит некоторые данные, то после выполнения запроса, данные на новую реплику будут скачаны с других реплик. То есть, новая реплика синхронизирует себя с остальными.
+If you add a new replica after the table already contains some data on other replicas, the data will be copied from the other replicas to the new one after running the query. In other words, the new replica syncs itself with the others.
 
-Для удаления реплики, выполните запрос `DROP TABLE`. При этом, удаляется только одна реплика - расположенная на том сервере, где вы выполняете запрос.
+To delete a replica, run `DROP TABLE`. However, only one replica is deleted – the one that resides on the server where you run the query.
 
-## Восстановление после сбоя
+## Recovery After Failures
 
-Если при старте сервера, недоступен ZooKeeper, реплицируемые таблицы переходят в режим только для чтения. Система будет пытаться периодически установить соединение с ZooKeeper.
+If ZooKeeper is unavailable when a server starts, replicated tables switch to read-only mode. The system periodically attempts to connect to ZooKeeper.
 
-Если при `INSERT` недоступен ZooKeeper, или происходит ошибка при взаимодействии с ним, будет выкинуто исключение.
+If ZooKeeper is unavailable during an `INSERT`, or an error occurs when interacting with ZooKeeper, an exception is thrown.
 
-При подключении к ZooKeeper, система проверяет соответствие между имеющимся в локальной файловой системе набором данных и ожидаемым набором данных (информация о котором хранится в ZooKeeper). Если имеются небольшие несоответствия, то система устраняет их, синхронизируя данные с реплик.
+After connecting to ZooKeeper, the system checks whether the set of data in the local file system matches the expected set of data (ZooKeeper stores this information). If there are minor inconsistencies, the system resolves them by syncing data with the replicas.
 
-Обнаруженные битые куски данных (с файлами несоответствующего размера) или неизвестные куски (куски, записанные в файловую систему, но информация о которых не была записана в ZooKeeper) переносятся в поддиректорию detached (не удаляются). Недостающие куски скачиваются с реплик.
+If the system detects broken data parts (with the wrong size of files) or unrecognized parts (parts written to the file system but not recorded in ZooKeeper), it moves them to the 'detached' subdirectory (they are not deleted). Any missing parts are copied from the replicas.
 
-Стоит заметить, что ClickHouse не делает самостоятельно никаких деструктивных действий типа автоматического удаления большого количества данных.
+Note that ClickHouse does not perform any destructive actions such as automatically deleting a large amount of data.
 
-При старте сервера (или создании новой сессии с ZooKeeper), проверяется только количество и размеры всех файлов. Если у файлов совпадают размеры, но изменены байты где-то посередине, то это обнаруживается не сразу, а только при попытке их прочитать при каком-либо запросе `SELECT` - запрос кинет исключение о несоответствующей чексумме или размере сжатого блока. В этом случае, куски данных добавляются в очередь на проверку, и при необходимости, скачиваются с реплик.
+When the server starts (or establishes a new session with ZooKeeper), it only checks the quantity and sizes of all files. If the file sizes match but bytes have been changed somewhere in the middle, this is not detected immediately, but only when attempting to read the data for a `SELECT` query. The query throws an exception about a non-matching checksum or size of a compressed block. In this case, data parts are added to the verification queue and copied from the replicas if necessary.
 
-Если обнаруживается, что локальный набор данных слишком сильно отличается от ожидаемого, то срабатывает защитный механизм - сервер сообщает об этом в лог и отказывается запускаться. Это сделано, так как такой случай может свидетельствовать об ошибке конфигурации - например, если реплика одного шарда была случайно сконфигурирована, как реплика другого шарда. Тем не менее, пороги защитного механизма поставлены довольно низкими, и такая ситуация может возникнуть и при обычном восстановлении после сбоя. В этом случае, восстановление делается полуавтоматически - "по кнопке".
+If the local set of data differs too much from the expected one, a safety mechanism is triggered. The server enters this in the log and refuses to launch. The reason for this is that this case may indicate a configuration error, such as if a replica on a shard was accidentally configured like a replica on a different shard. However, the thresholds for this mechanism are set fairly low, and this situation might occur during normal failure recovery. In this case, data is restored semi-automatically - by "pushing a button".
 
-Для запуска восстановления, создайте в ZooKeeper узел `/path_to_table/replica_name/flags/force_restore_data` с любым содержимым или выполните команду для восстановления всех реплицируемых таблиц:
+To start recovery, create the node `/path_to_table/replica_name/flags/force_restore_data` in ZooKeeper with any content, or run the command to restore all replicated tables:
 
 ```bash
 sudo -u clickhouse touch /var/lib/clickhouse/flags/force_restore_data
 ```
 
-Затем запустите сервер. При старте, сервер удалит эти флаги и запустит восстановление.
+Then restart the server. On start, the server deletes these flags and starts recovery.
 
-## Восстановление в случае потери всех данных
+## Recovery After Complete Data Loss
 
-Если на одном из серверов исчезли все данные и метаданные, восстановление делается следующим образом:
+If all data and metadata disappeared from one of the servers, follow these steps for recovery:
 
-1.  Установите на сервер ClickHouse. Корректно пропишите подстановки в конфигурационном файле, отвечающие за идентификатор шарда и реплики, если вы их используете.
-2.  Если у вас были нереплицируемые таблицы, которые должны быть вручную продублированы на серверах, скопируйте их данные (в директории `/var/lib/clickhouse/data/db_name/table_name/`) с реплики.
-3.  Скопируйте с реплики определения таблиц, находящиеся в `/var/lib/clickhouse/metadata/`. Если в определениях таблиц, идентификатор шарда или реплики, прописаны в явном виде - исправьте их, чтобы они соответствовали данной реплике. (Альтернативный вариант - запустить сервер и сделать самостоятельно все запросы `ATTACH TABLE`, которые должны были бы быть в соответствующих .sql файлах в `/var/lib/clickhouse/metadata/`.)
-4.  Создайте в ZooKeeper узел `/path_to_table/replica_name/flags/force_restore_data` с любым содержимым или выполните команду для восстановления всех реплицируемых таблиц: `sudo -u clickhouse touch /var/lib/clickhouse/flags/force_restore_data`
+1. Install ClickHouse on the server. Define substitutions correctly in the config file that contains the shard identifier and replicas, if you use them.
+2. If you had unreplicated tables that must be manually duplicated on the servers, copy their data from a replica (in the directory `/var/lib/clickhouse/data/db_name/table_name/`).
+3. Copy table definitions located in `/var/lib/clickhouse/metadata/` from a replica. If a shard or replica identifier is defined explicitly in the table definitions, correct it so that it corresponds to this replica. (Alternatively, start the server and make all the `ATTACH TABLE` queries that should have been in the .sql files in `/var/lib/clickhouse/metadata/`.)
+4. To start recovery, create the ZooKeeper node `/path_to_table/replica_name/flags/force_restore_data` with any content, or run the command to restore all replicated tables: `sudo -u clickhouse touch /var/lib/clickhouse/flags/force_restore_data`
 
-Затем запустите сервер (перезапустите, если уже запущен). Данные будут скачаны с реплик.
+Then start the server (restart, if it is already running). Data will be downloaded from replicas.
 
-В качестве альтернативного варианта восстановления, вы можете удалить из ZooKeeper информацию о потерянной реплике - `/path_to_table/replica_name`, и затем создать реплику заново, как написано в разделе "[Создание реплицируемых таблиц](#table_engines-replication-creation_of_rep_tables)".
+An alternative recovery option is to delete information about the lost replica from ZooKeeper (`/path_to_table/replica_name`), then create the replica again as described in "[Creating replicatable tables](#table_engines-replication-creation_of_rep_tables)".
 
-Отсутствует ограничение на использование сетевой полосы при восстановлении. Имейте это ввиду, если восстанавливаете сразу много реплик.
+There is no restriction on network bandwidth during recovery. Keep this in mind if you are restoring many replicas at once.
 
 <a name="convert-mergetree-to-replicated"></a>
 
-## Преобразование из MergeTree в ReplicatedMergeTree
+## Converting from MergeTree to ReplicatedMergeTree
 
-Здесь и далее, под `MergeTree` подразумеваются все движки таблиц семейства `MergeTree`, так же для `ReplicatedMergeTree`.
+We use the term `MergeTree` to refer to all table engines in the `MergeTree family`, the same as for `ReplicatedMergeTree`.
 
-Если у вас была таблица типа `MergeTree`, репликация которой делалась вручную, вы можете преобразовать её в реплицируемую таблицу. Это может понадобиться лишь в случаях, когда вы уже успели накопить большое количество данных в таблице типа `MergeTree`, а сейчас хотите включить репликацию.
+If you had a `MergeTree` table that was manually replicated, you can convert it to a replicatable table. You might need to do this if you have already collected a large amount of data in a `MergeTree` table and now you want to enable replication.
 
-Если на разных репликах данные отличаются, то сначала синхронизируйте их, либо удалите эти данные на всех репликах кроме одной.
+If the data differs on various replicas, first sync it, or delete this data on all the replicas except one.
 
-Переименуйте имеющуюся MergeTree таблицу, затем создайте со старым именем таблицу типа `ReplicatedMergeTree`.
-Перенесите данные из старой таблицы в поддиректорию detached в директории с данными новой таблицы (`/var/lib/clickhouse/data/db_name/table_name/`).
-Затем добавьте эти куски данных в рабочий набор с помощью выполнения запросов `ALTER TABLE ATTACH PARTITION` на одной из реплик.
+Rename the existing MergeTree table, then create a `ReplicatedMergeTree` table with the old name. Move the data from the old table to the 'detached' subdirectory inside the directory with the new table data (`/var/lib/clickhouse/data/db_name/table_name/`). Then run `ALTER TABLE ATTACH PARTITION` on one of the replicas to add these data parts to the working set.
 
-## Преобразование из ReplicatedMergeTree в MergeTree
+## Converting from ReplicatedMergeTree to MergeTree
 
-Создайте таблицу типа MergeTree с другим именем. Перенесите в её директорию с данными все данные из директории с данными таблицы типа `ReplicatedMergeTree`. Затем удалите таблицу типа `ReplicatedMergeTree` и перезапустите сервер.
+Create a MergeTree table with a different name. Move all the data from the directory with the `ReplicatedMergeTree` table data to the new table's data directory. Then delete the `ReplicatedMergeTree` table and restart the server.
 
-Если вы хотите избавиться от таблицы `ReplicatedMergeTree`, не запуская сервер, то
+If you want to get rid of a `ReplicatedMergeTree` table without launching the server:
 
--   удалите соответствующий файл `.sql` в директории с метаданными (`/var/lib/clickhouse/metadata/`);
--   удалите соответствующий путь в ZooKeeper (`/path_to_table/replica_name`);
+- Delete the corresponding `.sql` file in the metadata directory (`/var/lib/clickhouse/metadata/`).
+- Delete the corresponding path in ZooKeeper (`/path_to_table/replica_name`).
 
-После этого, вы можете запустить сервер, создать таблицу типа `MergeTree`, перенести данные в её директорию, и перезапустить сервер.
+After this, you can launch the server, create a `MergeTree` table, move the data to its directory, and then restart the server.
 
-## Восстановление в случае потери или повреждения метаданных на ZooKeeper кластере
+## Recovery When Metadata in The ZooKeeper Cluster is Lost or Damaged
 
-Если данные в ZooKeeper оказались утеряны или повреждены, то вы можете сохранить данные, переместив их в нереплицируемую таблицу, как описано в пункте выше.
+If the data in ZooKeeper was lost or damaged, you can save data by moving it to an unreplicated table as described above.
