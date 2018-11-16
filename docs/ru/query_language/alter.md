@@ -1,98 +1,95 @@
 <a name="query_language_queries_alter"></a>
 
 ## ALTER
-Запрос `ALTER` поддерживается только для таблиц типа `*MergeTree`, а также `Merge` и `Distributed`. Запрос имеет несколько вариантов.
 
-### Манипуляции со столбцами
+The `ALTER` query is only supported for `*MergeTree` tables, as well as `Merge`and`Distributed`. The query has several variations.
 
-Изменение структуры таблицы.
+### Column Manipulations
+
+Changing the table structure.
 
 ```sql
 ALTER TABLE [db].name [ON CLUSTER cluster] ADD|DROP|MODIFY COLUMN ...
 ```
 
-В запросе указывается список из одного или более действий через запятую.
-Каждое действие - операция над столбцом.
+In the query, specify a list of one or more comma-separated actions. Each action is an operation on a column.
 
-Существуют следующие действия:
+The following actions are supported:
 
 ```sql
 ADD COLUMN name [type] [default_expr] [AFTER name_after]
 ```
 
-Добавляет в таблицу новый столбец с именем name, типом type и выражением для умолчания `default_expr` (смотрите раздел "Значения по умолчанию"). Если указано `AFTER name_after` (имя другого столбца), то столбец добавляется (в список столбцов таблицы) после указанного. Иначе, столбец добавляется в конец таблицы. Внимательный читатель может заметить, что отсутствует возможность добавить столбец в начало таблицы. Для цепочки действий, name_after может быть именем столбца, который добавляется в одном из предыдущих действий.
+Adds a new column to the table with the specified name, type, and `default_expr` (see the section "Default expressions"). If you specify `AFTER name_after` (the name of another column), the column is added after the specified one in the list of table columns. Otherwise, the column is added to the end of the table. Note that there is no way to add a column to the beginning of a table. For a chain of actions, 'name_after' can be the name of a column that is added in one of the previous actions.
 
-Добавление столбца всего лишь меняет структуру таблицы, и не производит никаких действий с данными - соответствующие данные не появляются на диске после ALTER-а. При чтении из таблицы, если для какого-либо столбца отсутствуют данные, то он заполняется значениями по умолчанию (выполняя выражение по умолчанию, если такое есть, или нулями, пустыми строками). Также, столбец появляется на диске при слиянии кусков данных (см. MergeTree).
+Adding a column just changes the table structure, without performing any actions with data. The data doesn't appear on the disk after ALTER. If the data is missing for a column when reading from the table, it is filled in with default values (by performing the default expression if there is one, or using zeros or empty strings). If the data is missing for a column when reading from the table, it is filled in with default values (by performing the default expression if there is one, or using zeros or empty strings). The column appears on the disk after merging data parts (see MergeTree).
 
-Такая схема позволяет добиться мгновенной работы запроса ALTER и отсутствия необходимости увеличивать объём старых данных.
+This approach allows us to complete the ALTER query instantly, without increasing the volume of old data.
 
 ```sql
 DROP COLUMN name
 ```
 
-Удаляет столбец с именем name.
-Удаляет данные из файловой системы. Так как это представляет собой удаление целых файлов, запрос выполняется почти мгновенно.
+Deletes the column with the name 'name'. Deletes data from the file system. Since this deletes entire files, the query is completed almost instantly.
 
 ```sql
 MODIFY COLUMN name [type] [default_expr]
 ```
 
-Изменяет тип столбца name на type и/или выражение для умолчания на default_expr. При изменении типа, значения преобразуются так, как если бы к ним была применена функция toType.
+Changes the 'name' column's type to 'type' and/or the default expression to 'default_expr'. When changing the type, values are converted as if the 'toType' function were applied to them.
 
-Если изменяется только выражение для умолчания, то запрос не делает никакой сложной работы и выполняется мгновенно.
+If only the default expression is changed, the query doesn't do anything complex, and is completed almost instantly.
 
-Изменение типа столбца - это единственное действие, которое выполняет сложную работу - меняет содержимое файлов с данными. Для больших таблиц, выполнение может занять длительное время.
+Changing the column type is the only complex action – it changes the contents of files with data. For large tables, this may take a long time.
 
-Выполнение производится в несколько стадий:
-- подготовка временных (новых) файлов с изменёнными данными;
-- переименование старых файлов;
-- переименование временных (новых) файлов в старые;
-- удаление старых файлов.
+There are several processing stages:
 
-Из них, длительной является только первая стадия. Если на этой стадии возникнет сбой, то данные не поменяются.
-Если на одной из следующих стадий возникнет сбой, то данные будет можно восстановить вручную. За исключением случаев, когда старые файлы удалены из файловой системы, а данные для новых файлов не доехали на диск и потеряны.
+- Preparing temporary (new) files with modified data.
+- Renaming old files.
+- Renaming the temporary (new) files to the old names.
+- Deleting the old files.
 
-Не поддерживается изменение типа столбца у массивов и вложенных структур данных.
+Only the first stage takes time. If there is a failure at this stage, the data is not changed. If there is a failure during one of the successive stages, data can be restored manually. The exception is if the old files were deleted from the file system but the data for the new files did not get written to the disk and was lost.
 
-Запрос `ALTER` позволяет создавать и удалять отдельные элементы (столбцы) вложенных структур данных, но не вложенные структуры данных целиком. Для добавления вложенной структуры данных, вы можете добавить столбцы с именем вида `name.nested_name` и типом `Array(T)` - вложенная структура данных полностью эквивалентна нескольким столбцам-массивам с именем, имеющим одинаковый префикс до точки.
+There is no support for changing the column type in arrays and nested data structures.
 
-Отсутствует возможность удалять столбцы, входящие в первичный ключ или ключ для сэмплирования (в общем, входящие в выражение `ENGINE`). Изменение типа у столбцов, входящих в первичный ключ возможно только в том случае, если это изменение не приводит к изменению данных (например, разрешено добавление значения в Enum или изменение типа с `DateTime` на `UInt32`).
+The `ALTER` query lets you create and delete separate elements (columns) in nested data structures, but not whole nested data structures. To add a nested data structure, you can add columns with a name like `name.nested_name` and the type `Array(T)`. A nested data structure is equivalent to multiple array columns with a name that has the same prefix before the dot.
 
-Если возможностей запроса `ALTER` не хватает для нужного изменения таблицы, вы можете создать новую таблицу, скопировать туда данные с помощью запроса `INSERT SELECT`, затем поменять таблицы местами с помощью запроса `RENAME`, и удалить старую таблицу.
+There is no support for deleting columns in the primary key or the sampling key (columns that are in the `ENGINE` expression). Changing the type for columns that are included in the primary key is only possible if this change does not cause the data to be modified (for example, it is allowed to add values to an Enum or change a type with `DateTime` to `UInt32`).
 
-Запрос `ALTER` блокирует все чтения и записи для таблицы. То есть, если на момент запроса `ALTER`, выполнялся долгий `SELECT`, то запрос `ALTER` сначала дождётся его выполнения. И в это время, все новые запросы к той же таблице, будут ждать, пока завершится этот `ALTER`.
+If the `ALTER` query is not sufficient for making the table changes you need, you can create a new table, copy the data to it using the `INSERT SELECT` query, then switch the tables using the `RENAME` query and delete the old table.
 
-Для таблиц, которые не хранят данные самостоятельно (типа `Merge` и `Distributed`), `ALTER` всего лишь меняет структуру таблицы, но не меняет структуру подчинённых таблиц. Для примера, при ALTER-е таблицы типа `Distributed`, вам также потребуется выполнить запрос `ALTER` для таблиц на всех удалённых серверах.
+The `ALTER` query blocks all reads and writes for the table. In other words, if a long `SELECT` is running at the time of the `ALTER` query, the `ALTER` query will wait for it to complete. At the same time, all new queries to the same table will wait while this `ALTER` is running.
 
-Запрос `ALTER` на изменение столбцов реплицируется. Соответствующие инструкции сохраняются в ZooKeeper, и затем каждая реплика их применяет. Все запросы `ALTER` выполняются в одном и том же порядке. Запрос ждёт выполнения соответствующих действий на всех репликах. Но при этом, запрос на изменение столбцов в реплицируемой таблице можно прервать, и все действия будут осуществлены асинхронно.
+For tables that don't store data themselves (such as `Merge` and `Distributed`), `ALTER` just changes the table structure, and does not change the structure of subordinate tables. For example, when running ALTER for a `Distributed` table, you will also need to run `ALTER` for the tables on all remote servers.
 
-### Манипуляции с партициями и кусками
+The `ALTER` query for changing columns is replicated. The instructions are saved in ZooKeeper, then each replica applies them. All `ALTER` queries are run in the same order. The query waits for the appropriate actions to be completed on the other replicas. However, a query to change columns in a replicated table can be interrupted, and all actions will be performed asynchronously.
 
-Работает только для таблиц семейства `MergeTree`. Существуют следующие виды операций:
+### Manipulations With Partitions and Parts
 
--   `DETACH PARTITION` - перенести партицию в директорию detached и забыть про неё.
--   `DROP PARTITION` - удалить партицию.
--   `ATTACH PART|PARTITION` - добавить в таблицу новый кусок или партицию из директории `detached`.
--   `FREEZE PARTITION` - создать бэкап партиции.
--   `FETCH PARTITION` - скачать партицию с другого сервера.
+It only works for tables in the `MergeTree` family. The following operations are available:
 
-Ниже будет рассмотрен каждый вид запроса по-отдельности.
+- `DETACH PARTITION` – Move a partition to the 'detached' directory and forget it.
+- `DROP PARTITION` – Delete a partition.
+- `ATTACH PART|PARTITION` – Add a new part or partition from the `detached` directory to the table.
+- `FREEZE PARTITION` – Create a backup of a partition.
+- `FETCH PARTITION` – Download a partition from another server.
 
-Партицией (partition) в таблице называются данные за один календарный месяц. Это определяется значениями ключа-даты, указанной в параметрах движка таблицы. Данные за каждый месяц хранятся отдельно, чтобы упростить всевозможные манипуляции с этими данными.
+Each type of query is covered separately below.
 
-Куском (part) в таблице называется часть данных одной партиции, отсортированная по первичному ключу.
+A partition in a table is data for a single calendar month. This is determined by the values of the date key specified in the table engine parameters. Each month's data is stored separately in order to simplify manipulations with this data.
 
-Чтобы посмотреть набор кусков и партиций таблицы, можно воспользоваться системной таблицей `system.parts`:
+A "part" in the table is part of the data from a single partition, sorted by the primary key.
+
+You can use the `system.parts` table to view the set of table parts and partitions:
 
 ```sql
 SELECT * FROM system.parts WHERE active
 ```
 
-`active` - учитывать только активные куски. Неактивными являются, например, исходные куски оставшиеся после слияния в более крупный кусок - такие куски удаляются приблизительно через 10 минут после слияния.
+`active` – Only count active parts. Inactive parts are, for example, source parts remaining after merging to a larger part – these parts are deleted approximately 10 minutes after merging.
 
-Другой способ посмотреть набор кусков и партиций - зайти в директорию с данными таблицы.
-Директория с данными - `/var/lib/clickhouse/data/database/table/`,
-где `/var/lib/clickhouse/` - путь к данным ClickHouse, database - имя базы данных, table - имя таблицы. Пример:
+Another way to view a set of parts and partitions is to go into the directory with table data. Data directory: `/var/lib/clickhouse/data/database/table/`,where `/var/lib/clickhouse/` is the path to the ClickHouse data, 'database' is the database name, and 'table' is the table name. Example:
 
 ```bash
 $ ls -l /var/lib/clickhouse/data/test/visits/
@@ -103,170 +100,159 @@ drwxrwxrwx 2 clickhouse clickhouse  4096 May  5 02:55 detached
 -rw-rw-rw- 1 clickhouse clickhouse     2 May  5 02:58 increment.txt
 ```
 
-Здесь `20140317_20140323_2_2_0`, `20140317_20140323_4_4_0` - директории кусков.
+Here, `20140317_20140323_2_2_0` and `20140317_20140323_4_4_0` are the directories of data parts.
 
-Рассмотрим по порядку имя первого куска: `20140317_20140323_2_2_0`.
+Let's break down the name of the first part: `20140317_20140323_2_2_0`.
 
--   `20140317` - минимальная дата данных куска
--   `20140323` - максимальная дата данных куска
--   `2` - минимальный номер блока данных
--   `2` - максимальный номер блока данных
--   `0` - уровень куска - глубина дерева слияний, которыми он образован
+- `20140317` is the minimum date of the data in the chunk.
+- `20140323` is the maximum date of the data in the chunk.
+- `2` is the minimum number of the data block.
+- `2` is the maximum number of the data block.
+- `0` is the chunk level (the depth of the merge tree it is formed from).
 
-Каждый кусок относится к одной партиции и содержит данные только за один месяц.
-`201403` - имя партиции. Партиция представляет собой набор кусков за один месяц.
+Each piece relates to a single partition and contains data for just one month. `201403` is the name of the partition. A partition is a set of parts for a single month.
 
-При работающем сервере, нельзя вручную изменять набор кусков или их данные на файловой системе, так как сервер не будет об этом знать.
-Для нереплицируемых таблиц, вы можете это делать при остановленном сервере, хотя это не рекомендуется.
-Для реплицируемых таблиц, набор кусков нельзя менять в любом случае.
+On an operating server, you can't manually change the set of parts or their data on the file system, since the server won't know about it. For non-replicated tables, you can do this when the server is stopped, but we don't recommended it. For replicated tables, the set of parts can't be changed in any case.
 
-Директория `detached` содержит куски, не используемые сервером - отцепленные от таблицы с помощью запроса `ALTER ... DETACH`. Также в эту директорию переносятся куски, признанные повреждёнными, вместо их удаления. Вы можете в любое время добавлять, удалять, модифицировать данные в директории detached - сервер не будет об этом знать, пока вы не сделаете запрос `ALTER TABLE ... ATTACH`.
+The `detached` directory contains parts that are not used by the server - detached from the table using the `ALTER ... DETACH` query. Parts that are damaged are also moved to this directory, instead of deleting them. You can add, delete, or modify the data in the 'detached' directory at any time – the server won't know about this until you make the `ALTER TABLE ... ATTACH` query.
 
 ```sql
 ALTER TABLE [db.]table DETACH PARTITION 'name'
 ```
 
-Перенести все данные для партиции с именем name в директорию detached и забыть про них.
-Имя партиции указывается в формате YYYYMM. Оно может быть указано в одинарных кавычках или без них.
+Move all data for partitions named 'name' to the 'detached' directory and forget about them. The partition name is specified in YYYYMM format. It can be indicated in single quotes or without them.
 
-После того, как запрос будет выполнен, вы можете самостоятельно сделать что угодно с данными в директории detached, например, удалить их из файловой системы, или ничего не делать.
+After the query is executed, you can do whatever you want with the data in the 'detached' directory — delete it from the file system, or just leave it.
 
-Запрос реплицируется - данные будут перенесены в директорию detached и забыты на всех репликах. Запрос может быть отправлен только на реплику-лидер. Вы можете узнать, является ли реплика лидером, сделав SELECT в системную таблицу system.replicas. Или, проще, вы можете выполнить запрос на всех репликах, и на всех кроме одной, он кинет исключение.
+The query is replicated – data will be moved to the 'detached' directory and forgotten on all replicas. The query can only be sent to a leader replica. To find out if a replica is a leader, perform SELECT to the 'system.replicas' system table. Alternatively, it is easier to make a query on all replicas, and all except one will throw an exception.
 
 ```sql
 ALTER TABLE [db.]table DROP PARTITION 'name'
 ```
 
-Аналогично операции `DETACH`. Удалить данные из таблицы. Куски с данными будут помечены как неактивные и будут полностью удалены примерно через 10 минут. Запрос реплицируется - данные будут удалены на всех репликах.
+The same as the `DETACH` operation. Deletes data from the table. Data parts will be tagged as inactive and will be completely deleted in approximately 10 minutes. The query is replicated – data will be deleted on all replicas.
 
 ```sql
 ALTER TABLE [db.]table ATTACH PARTITION|PART 'name'
 ```
 
-Добавить данные в таблицу из директории detached.
+Adds data to the table from the 'detached' directory.
 
-Существует возможность добавить данные для целой партиции (PARTITION) или отдельный кусок (PART). В случае PART, укажите полное имя куска в одинарных кавычках.
+It is possible to add data for an entire partition or a separate part. For a part, specify the full name of the part in single quotes.
 
-Запрос реплицируется. Каждая реплика проверяет, если ли данные в директории detached. Если данные есть - проверяет их целостность, проверяет их соответствие данным на сервере-инициаторе запроса, и если всё хорошо, то добавляет их. Если нет, то скачивает данные с реплики-инициатора запроса, или с другой реплики, на которой уже добавлены эти данные.
+The query is replicated. Each replica checks whether there is data in the 'detached' directory. If there is data, it checks the integrity, verifies that it matches the data on the server that initiated the query, and then adds it if everything is correct. If not, it downloads data from the query requestor replica, or from another replica where the data has already been added.
 
-То есть, вы можете разместить данные в директории detached на одной реплике и, с помощью запроса ALTER ... ATTACH добавить их в таблицу на всех репликах.
+So you can put data in the 'detached' directory on one replica, and use the ALTER ... ATTACH query to add it to the table on all replicas.
 
 ```sql
 ALTER TABLE [db.]table FREEZE PARTITION 'name'
 ```
 
-Создаёт локальный бэкап одной или нескольких партиций. В качестве имени может быть указано полное имя партиции (например, 201403) или его префикс (например, 2014) - тогда бэкап будет создан для всех соответствующих партиций.
+Creates a local backup of one or multiple partitions. The name can be the full name of the partition (for example, 201403), or its prefix (for example, 2014): then the backup will be created for all the corresponding partitions.
 
-Запрос делает следующее: для снэпшота данных на момент его выполнения, создаёт hardlink-и на данные таблиц в директории `/var/lib/clickhouse/shadow/N/...`
+The query does the following: for a data snapshot at the time of execution, it creates hardlinks to table data in the directory `/var/lib/clickhouse/shadow/N/...`
 
-`/var/lib/clickhouse/` - рабочая директория ClickHouse из конфига.
-`N` - инкрементальный номер бэкапа.
+`/var/lib/clickhouse/` is the working ClickHouse directory from the config. `N` is the incremental number of the backup.
 
-Структура директорий внутри бэкапа создаётся такой же, как внутри `/var/lib/clickhouse/`.
-Также делает chmod всех файлов, запрещая запись в них.
+The same structure of directories is created inside the backup as inside `/var/lib/clickhouse/`. It also performs 'chmod' for all files, forbidding writes to them.
 
-Создание бэкапа происходит почти мгновенно (но сначала дожидается окончания выполняющихся в данный момент запросов к соответствующей таблице). Бэкап изначально не занимает места на диске. При дальнейшей работе системы, бэкап может отнимать место на диске, по мере модификации данных. Если бэкап делается для достаточно старых данных, то он не будет отнимать место на диске.
+The backup is created almost instantly (but first it waits for current queries to the corresponding table to finish running). At first, the backup doesn't take any space on the disk. As the system works, the backup can take disk space, as data is modified. If the backup is made for old enough data, it won't take space on the disk.
 
-После создания бэкапа, данные из `/var/lib/clickhouse/shadow/` можно скопировать на удалённый сервер и затем удалить на локальном сервере.
-Весь процесс бэкапа не требует остановки сервера.
+After creating the backup, data from `/var/lib/clickhouse/shadow/` can be copied to the remote server and then deleted on the local server. The entire backup process is performed without stopping the server.
 
-Запрос `ALTER ... FREEZE PARTITION` не реплицируется. То есть, локальный бэкап создаётся только на локальном сервере.
+The `ALTER ... FREEZE PARTITION` query is not replicated. A local backup is only created on the local server.
 
-В качестве альтернативного варианта, вы можете скопировать данные из директории `/var/lib/clickhouse/data/database/table` вручную.
-Но если это делать при запущенном сервере, то возможны race conditions при копировании директории с добавляющимися/изменяющимися файлами, и бэкап может быть неконсистентным. Этот вариант может использоваться, если сервер не запущен - тогда полученные данные будут такими же, как после запроса `ALTER TABLE t FREEZE PARTITION`.
+As an alternative, you can manually copy data from the `/var/lib/clickhouse/data/database/table` directory. But if you do this while the server is running, race conditions are possible when copying directories with files being added or changed, and the backup may be inconsistent. You can do this if the server isn't running – then the resulting data will be the same as after the `ALTER TABLE t FREEZE PARTITION` query.
 
-`ALTER TABLE ... FREEZE PARTITION` копирует только данные, но не метаданные таблицы. Чтобы сделать бэкап метаданных таблицы, скопируйте файл `/var/lib/clickhouse/metadata/database/table.sql`
+`ALTER TABLE ... FREEZE PARTITION` only copies data, not table metadata. To make a backup of table metadata, copy the file `/var/lib/clickhouse/metadata/database/table.sql`
 
-Для восстановления из бэкапа:
+To restore from a backup:
 
-> -   создайте таблицу, если её нет, с помощью запроса CREATE. Запрос можно взять из .sql файла (замените в нём `ATTACH` на `CREATE`);
-> -   скопируйте данные из директории data/database/table/ внутри бэкапа в директорию `/var/lib/clickhouse/data/database/table/detached/`
-> -   выполните запросы `ALTER TABLE ... ATTACH PARTITION YYYYMM`, где `YYYYMM` - месяц, для каждого месяца.
+> - Use the CREATE query to create the table if it doesn't exist. The query can be taken from an .sql file (replace `ATTACH` in it with `CREATE`).
 
-Таким образом, данные из бэкапа будут добавлены в таблицу.
-Восстановление из бэкапа, так же, не требует остановки сервера.
+- Copy the data from the data/database/table/ directory inside the backup to the `/var/lib/clickhouse/data/database/table/detached/ directory.`
+- Run `ALTER TABLE ... ATTACH PARTITION YYYYMM` queries, where `YYYYMM` is the month, for every month.
 
-### Бэкапы и репликация
+In this way, data from the backup will be added to the table. Restoring from a backup doesn't require stopping the server.
 
-Репликация защищает от аппаратных сбоев. В случае, если на одной из реплик у вас исчезли все данные, то восстановление делается по инструкции в разделе "Восстановление после сбоя".
+### Backups and Replication
 
-Для защиты от аппаратных сбоев, обязательно используйте репликацию. Подробнее про репликацию написано в разделе "Репликация данных".
+Replication provides protection from device failures. If all data disappeared on one of your replicas, follow the instructions in the "Restoration after failure" section to restore it.
 
-Бэкапы защищают от человеческих ошибок (случайно удалили данные, удалили не те данные или не на том кластере, испортили данные).
-Для баз данных большого объёма, бывает затруднительно копировать бэкапы на удалённые серверы. В этих случаях, для защиты от человеческой ошибки, можно держать бэкап на том же сервере (он будет лежать в `/var/lib/clickhouse/shadow/`).
+For protection from device failures, you must use replication. For more information about replication, see the section "Data replication".
+
+Backups protect against human error (accidentally deleting data, deleting the wrong data or in the wrong cluster, or corrupting data). For high-volume databases, it can be difficult to copy backups to remote servers. In such cases, to protect from human error, you can keep a backup on the same server (it will reside in `/var/lib/clickhouse/shadow/`).
 
 ```sql
 ALTER TABLE [db.]table FETCH PARTITION 'name' FROM 'path-in-zookeeper'
 ```
 
-Запрос работает только для реплицируемых таблиц.
+This query only works for replicatable tables.
 
-Скачивает указанную партицию с шарда, путь в `ZooKeeper` к которому указан в секции `FROM` и помещает в директорию `detached` указанной таблицы.
+It downloads the specified partition from the shard that has its `ZooKeeper path` specified in the `FROM` clause, then puts it in the `detached` directory for the specified table.
 
-Не смотря на то, что запрос называется `ALTER TABLE`, он не изменяет структуру таблицы, и не изменяет сразу доступные данные в таблице.
+Although the query is called `ALTER TABLE`, it does not change the table structure, and does not immediately change the data available in the table.
 
-Данные помещаются в директорию `detached`, и их можно прикрепить с помощью запроса `ALTER TABLE ... ATTACH`.
+Data is placed in the `detached` directory. You can use the `ALTER TABLE ... ATTACH` query to attach the data.
 
-В секции `FROM` указывается путь в `ZooKeeper`. Например, `/clickhouse/tables/01-01/visits`.
-Перед скачиванием проверяется существование партиции и совпадение структуры таблицы. Автоматически выбирается наиболее актуальная реплика среди живых реплик.
+The `FROM` clause specifies the path in `ZooKeeper`. For example, `/clickhouse/tables/01-01/visits`. Before downloading, the system checks that the partition exists and the table structure matches. The most appropriate replica is selected automatically from the healthy replicas.
 
-Запрос `ALTER ... FETCH PARTITION` не реплицируется. То есть, партиция будет скачана в директорию detached только на локальном сервере. Заметим, что если вы после этого добавите данные в таблицу с помощью запроса `ALTER TABLE ... ATTACH`, то данные будут добавлены на всех репликах (на одной из реплик будут добавлены из директории detached, а на других - загружены с соседних реплик).
+The `ALTER ... FETCH PARTITION` query is not replicated. The partition will be downloaded to the 'detached' directory only on the local server. Note that if after this you use the `ALTER TABLE ... ATTACH` query to add data to the table, the data will be added on all replicas (on one of the replicas it will be added from the 'detached' directory, and on the rest it will be loaded from neighboring replicas).
 
-### Синхронность запросов ALTER
+### Synchronicity of ALTER Queries
 
-Для нереплицируемых таблиц, все запросы `ALTER` выполняются синхронно. Для реплицируемых таблиц, запрос всего лишь добавляет инструкцию по соответствующим действиям в `ZooKeeper`, а сами действия осуществляются при первой возможности. Но при этом, запрос может ждать завершения выполнения этих действий на всех репликах.
+For non-replicatable tables, all `ALTER` queries are performed synchronously. For replicatable tables, the query just adds instructions for the appropriate actions to `ZooKeeper`, and the actions themselves are performed as soon as possible. However, the query can wait for these actions to be completed on all the replicas.
 
-Для запросов `ALTER ... ATTACH|DETACH|DROP` можно настроить ожидание, с помощью настройки `replication_alter_partitions_sync`.
-Возможные значения: `0` - не ждать, `1` - ждать выполнения только у себя (по умолчанию), `2` - ждать всех.
+For `ALTER ... ATTACH|DETACH|DROP` queries, you can use the `replication_alter_partitions_sync` setting to set up waiting. Possible values: `0` – do not wait; `1` – only wait for own execution (default); `2` – wait for all.
 
 <a name="query_language_queries_show_databases"></a>
 
-### Мутации
+### Mutations
 
-Мутации - разновидность запроса ALTER, позволяющая изменять или удалять данные в таблице. В отличие от стандартных запросов `DELETE` и `UPDATE`, рассчитанных на точечное изменение данных, область применения мутаций - достаточно тяжёлые изменения, затрагивающие много строк в таблице.
+Mutations are an ALTER query variant that allows changing or deleting rows in a table. In contrast to standard `UPDATE` and `DELETE` queries that are intended for point data changes, mutations are intended for heavy operations that change a lot of rows in a table.
 
-Функциональность находится в состоянии beta и доступна начиная с версии 1.1.54388. Реализована поддержка \*MergeTree таблиц (с репликацией и без).
+The functionality is in beta stage and is available starting with the 1.1.54388 version. Currently *MergeTree table engines are supported (both replicated and unreplicated).
 
-Конвертировать существующие таблицы для работы с мутациями не нужно. Но после применения первой мутации формат данных таблицы становится несовместимым с предыдущими версиями и откатиться на предыдущую версию уже не получится.
+Existing tables are ready for mutations as-is (no conversion necessary), but after the first mutation is applied to a table, its metadata format becomes incompatible with previous server versions and falling back to a previous version becomes impossible.
 
-На данный момент доступны команды:
+Currently available commands:
 
 ```sql
 ALTER TABLE [db.]table DELETE WHERE filter_expr
 ```
 
-Выражение `filter_expr` должно иметь тип UInt8. Запрос удаляет строки таблицы, для которых это выражение принимает ненулевое значение.
+The `filter_expr` must be of type UInt8. The query deletes rows in the table for which this expression takes a non-zero value.
 
 ```sql
 ALTER TABLE [db.]table UPDATE column1 = expr1 [, ...] WHERE filter_expr
 ```
 
-Команда доступна начиная с версии 18.12.14. Выражение `filter_expr` должно иметь тип UInt8. Запрос изменяет значение указанных столбцов на вычисленное значение соответствующих выражений в каждой строке, для которой `filter_expr` пронимает ненулевое значение. Вычисленные значения преобразуются к типу столбца с помощью оператора `CAST`. Изменение столбцов, которые используются при вычислении первичного ключа или ключа партиционирования, не поддерживается.
+The command is available starting with the 18.12.14 version. The `filter_expr` must be of type UInt8. This query updates values of specified columns to the values of corresponding expressions in rows for which the `filter_expr` takes a non-zero value. Values are casted to the column type using the `CAST` operator. Updating columns that are used in the calculation of the primary or the partition key is not supported.
 
-В одном запросе можно указать несколько команд через запятую.
+One query can contain several commands separated by commas.
 
-Для \*MergeTree-таблиц мутации выполняются, перезаписывая данные по кускам (parts). При этом атомарности нет — куски заменяются на помутированные по мере выполнения и запрос `SELECT`, заданный во время выполнения мутации, увидит данные как из измененных кусков, так и из кусков, которые еще не были изменены.
+For *MergeTree tables mutations execute by rewriting whole data parts. There is no atomicity - parts are substituted for mutated parts as soon as they are ready and a `SELECT` query that started executing during a mutation will see data from parts that have already been mutated along with data from parts that have not been mutated yet.
 
-Мутации линейно упорядочены между собой и накладываются на каждый кусок в порядке добавления. Мутации также упорядочены со вставками - гарантируется, что данные, вставленные в таблицу до начала выполнения запроса мутации, будут изменены, а данные, вставленные после окончания запроса мутации, изменены не будут. При этом мутации никак не блокируют вставки.
+Mutations are totally ordered by their creation order and are applied to each part in that order. Mutations are also partially ordered with INSERTs - data that was inserted into the table before the mutation was submitted will be mutated and data that was inserted after that will not be mutated. Note that mutations do not block INSERTs in any way.
 
-Запрос завершается немедленно после добавления информации о мутации (для реплицированных таблиц - в ZooKeeper, для нереплицированных - на файловую систему). Сама мутация выполняется асинхронно, используя настройки системного профиля. Следить за ходом её выполнения можно по таблице `system.mutations`. Добавленные мутации будут выполняться до конца даже в случае перезапуска серверов ClickHouse. Откатить мутацию после её добавления нельзя.
+A mutation query returns immediately after the mutation entry is added (in case of replicated tables to ZooKeeper, for nonreplicated tables - to the filesystem). The mutation itself executes asynchronously using the system profile settings. To track the progress of mutations you can use the `system.mutations` table. A mutation that was successfully submitted will continue to execute even if ClickHouse servers are restarted. There is no way to roll back the mutation once it is submitted.
 
-Записи о последних выполненных мутациях удаляются не сразу (количество сохраняемых мутаций определяется параметром движка таблиц `finished_mutations_to_keep`). Более старые записи удаляются.
+Entries for finished mutations are not deleted right away (the number of preserved entries is determined by the `finished_mutations_to_keep` storage engine parameter). Older mutation entries are deleted.
 
-#### Таблица system.mutations
+#### system.mutations Table
 
-Таблица содержит информацию о ходе выполнения мутаций MergeTree-таблиц. Каждой команде мутации соответствует одна строка. В таблице есть следующие столбцы:
+The table contains information about mutations of MergeTree tables and their progress. Each mutation command is represented by a single row. The table has the following columns:
 
-**database**, **table** - имя БД и таблицы, к которой была применена мутация.
+**database**, **table** - The name of the database and table to which the mutation was applied.
 
-**mutation_id** - ID запроса. Для реплицированных таблиц эти ID соответствуют именам записей в директории `<table_path_in_zookeeper>/mutations/` в ZooKeeper, для нереплицированных - именам файлов в директории с данными таблицы.
+**mutation_id** - The ID of the mutation. For replicated tables these IDs correspond to znode names in the `<table_path_in_zookeeper>/mutations/` directory in ZooKeeper. For unreplicated tables the IDs correspond to file names in the data directory of the table.
 
-**command** - Команда мутации (часть запроса после `ALTER TABLE [db.]table`).
+**command** - The mutation command string (the part of the query after `ALTER TABLE [db.]table`).
 
-**create_time** - Время создания мутации.
+**create_time** - When this mutation command was submitted for execution.
 
-**block_numbers.partition_id**, **block_numbers.number** - Nested-столбец. Для мутаций реплицированных таблиц для каждой партиции содержит номер блока, полученный этой мутацией (в каждой партиции будут изменены только куски, содержащие блоки с номерами, меньшими номера, полученного мутацией в этой партиции). Для нереплицированных таблиц нумерация блоков сквозная по партициям, поэтому столбец содержит одну запись с единственным номером блока, полученным мутацией.
+**block_numbers.partition_id**, **block_numbers.number** - A Nested column. For mutations of replicated tables contains one record for each partition: the partition ID and the block number that was acquired by the mutation (in each partition only parts that contain blocks with numbers less than the block number acquired by the mutation in that partition will be mutated). Because in non-replicated tables blocks numbers in all partitions form a single sequence, for mutatations of non-replicated tables the column will contain one record with a single block number acquired by the mutation.
 
-**parts_to_do** - Количество кусков таблицы, которые ещё предстоит изменить.
+**parts_to_do** - The number of data parts that need to be mutated for the mutation to finish.
 
-**is_done** - Завершена ли мутация. Замечание: даже если `parts_to_do = 0`, для реплицированной таблицы возможна ситуация, когда мутация ещё не завершена из-за долго выполняющейся вставки, которая добавляет данные, которые нужно будет мутировать.
+**is_done** - Is the mutation done? Note that even if `parts_to_do = 0` it is possible that a mutation of a replicated table is not done yet because of a long-running INSERT that will create a new data part that will need to be mutated.
