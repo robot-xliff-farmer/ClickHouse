@@ -1,11 +1,9 @@
-<div dir="rtl" markdown="1">
+<a name="data_types-string"></a>
 
 # String
 
-String یک type برای قرار دادن رشته با طول دلخواه می باشد. این طول محدود نمی باشد. این مقدار می تواند شامل مجموعه ای دلخواه از بایت ها، از جمله null byte باشد. String type جایگزین type های VARCHAR, BLOB, CLOB و ... دیگر DBMS ها می باشد.
+Strings of an arbitrary length. The length is not limited. The value can contain an arbitrary set of bytes, including null bytes. The String type replaces the types VARCHAR, BLOB, CLOB, and others from other DBMSs.
 
 ## Encodings
 
-ClickHouse مفهومی به نام encoding ندارد. String ها می توانند شامل مجموعه ای بایت ها باشند که با همان شکل که نوشته می شوند به همان شکل هم در خروجی دیده شوند. اگر شما نیاز به ذخیره سازی متن دارید، توصیه می کنیم از UTF-8 استفاده کنید. حداقل اگر ترمینال شما از UTF-8 (پیشنهاد شده)، استفاده می کند، شما می توانید به راحتی مقادیر خود را نوشته و بخوانید.به طور مشابه توابع خاصی برای کار با رشته های متنوع وجود دارند که تخل این فرضیه عمل می کنند که رشته شامل مجوعه ای از بایت ها می باشند که نماینده ی متن های UTF-8 هستند. برای مثال تابع 'length' برای محاسبه طول رشته براساس بایت است، در حالی که تابع 'lengthUTF8' برای محاسبه طول رشته بر اساس UNICODE می باشد.
-
-</div>
+ClickHouse doesn't have the concept of encodings. Strings can contain an arbitrary set of bytes, which are stored and output as-is. If you need to store texts, we recommend using UTF-8 encoding. At the very least, if your terminal uses UTF-8 (as recommended), you can read and write your values without making conversions. Similarly, certain functions for working with strings have separate variations that work under the assumption that the string contains a set of bytes representing a UTF-8 encoded text. For example, the 'length' function calculates the string length in bytes, while the 'lengthUTF8' function calculates the string length in Unicode code points, assuming that the value is UTF-8 encoded.
