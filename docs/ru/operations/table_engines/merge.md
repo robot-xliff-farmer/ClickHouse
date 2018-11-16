@@ -1,41 +1,60 @@
-<a name="table_engine-merge"></a>
-
 # Merge
 
-Движок `Merge` (не путайте с движком `MergeTree`) не хранит данные самостоятельно, а позволяет читать одновременно из произвольного количества других таблиц.
-Чтение автоматически распараллеливается. Запись в таблицу не поддерживается. При чтении будут использованы индексы тех таблиц, из которых реально идёт чтение, если они существуют.
-Движок `Merge` принимает параметры: имя базы данных и регулярное выражение для таблиц.
+The `Merge` engine (not to be confused with `MergeTree`) does not store data itself, but allows reading from any number of other tables simultaneously. Reading is automatically parallelized. Writing to a table is not supported. When reading, the indexes of tables that are actually being read are used, if they exist. The `Merge` engine accepts parameters: the database name and a regular expression for tables.
 
-Пример:
+Example:
 
-```
-Merge(hits, '^WatchLog')
-```
+    Merge(hits, '^WatchLog')
+    
 
-Данные будут читаться из таблиц в базе `hits`, имена которых соответствуют регулярному выражению '`^WatchLog`'.
+Data will be read from the tables in the `hits` database that have names that match the regular expression '`^WatchLog`'.
 
-Вместо имени базы данных может использоваться константное выражение, возвращающее строку. Например, `currentDatabase()`.
+Instead of the database name, you can use a constant expression that returns a string. For example, `currentDatabase()`.
 
-Регулярные выражения — [re2](https://github.com/google/re2) (поддерживает подмножество PCRE), регистрозависимые.
-Смотрите замечание об экранировании в регулярных выражениях в разделе "match".
+Regular expressions — [re2](https://github.com/google/re2) (supports a subset of PCRE), case-sensitive. See the notes about escaping symbols in regular expressions in the "match" section.
 
-При выборе таблиц для чтения, сама `Merge`-таблица не будет выбрана, даже если попадает под регулярное выражение, чтобы не возникло циклов.
-Впрочем, вы можете создать две `Merge`-таблицы, которые будут пытаться бесконечно читать данные друг друга, но делать этого не нужно.
+When selecting tables to read, the `Merge` table itself will not be selected, even if it matches the regex. This is to avoid loops. It is possible to create two `Merge` tables that will endlessly try to read each others' data, but this is not a good idea.
 
-Типичный способ использования движка `Merge` — работа с большим количеством таблиц типа `TinyLog`, как с одной.
+The typical way to use the `Merge` engine is for working with a large number of `TinyLog` tables as if with a single table.
 
-## Виртуальные столбцы
+Example 2:
 
-Виртуальные столбцы — столбцы, предоставляемые движком таблиц независимо от определения таблицы. То есть, такие столбцы не указываются в `CREATE TABLE`, но доступны для `SELECT`.
+Let's say you have a old table (WatchLog_old) and decided to change partitioning without moving data to a new table (WatchLog_new) and you need to see data from both tables.
 
-Виртуальные столбцы отличаются от обычных следующими особенностями:
+    CREATE TABLE WatchLog_old(date Date, UserId Int64, EventType String, Cnt UInt64) 
+    ENGINE=MergeTree(date, (UserId, EventType), 8192);
+    INSERT INTO WatchLog_old VALUES ('2018-01-01', 1, 'hit', 3);
+    
+    CREATE TABLE WatchLog_new(date Date, UserId Int64, EventType String, Cnt UInt64) 
+    ENGINE=MergeTree PARTITION BY date ORDER BY (UserId, EventType) SETTINGS index_granularity=8192;
+    INSERT INTO WatchLog_new VALUES ('2018-01-02', 2, 'hit', 3);
+    
+    CREATE TABLE WatchLog as WatchLog_old ENGINE=Merge(currentDatabase(), '^WatchLog');
+    
+    SELECT *
+    FROM WatchLog
+    
+    ┌───────date─┬─UserId─┬─EventType─┬─Cnt─┐
+    │ 2018-01-01 │      1 │ hit       │   3 │
+    └────────────┴────────┴───────────┴─────┘
+    ┌───────date─┬─UserId─┬─EventType─┬─Cnt─┐
+    │ 2018-01-02 │      2 │ hit       │   3 │
+    └────────────┴────────┴───────────┴─────┘
+    
+    
 
--   они не указываются в определении таблицы;
--   в них нельзя вставить данные при `INSERT`;
--   при `INSERT` без указания списка столбцов виртуальные столбцы не учитываются;
--   они не выбираются при использовании звёздочки (`SELECT *`);
--   виртуальные столбцы не показываются в запросах `SHOW CREATE TABLE` и `DESC TABLE`;
+## Virtual Columns
 
-Таблица типа `Merge` содержит виртуальный столбец `_table` типа `String`. (Если в таблице уже есть столбец `_table`, то виртуальный столбец называется `_table1`; если уже есть `_table1`, то `_table2` и т. п.) Он содержит имя таблицы, из которой были прочитаны данные.
+Virtual columns are columns that are provided by the table engine, regardless of the table definition. In other words, these columns are not specified in `CREATE TABLE`, but they are accessible for `SELECT`.
 
-Если секция `WHERE/PREWHERE` содержит (в качестве одного из элементов конъюнкции или в качестве всего выражения) условия на столбец `_table`, не зависящие от других столбцов таблицы, то эти условия используются как индекс: условия выполняются над множеством имён таблиц, из которых нужно читать данные, и чтение будет производиться только из тех таблиц, для которых условия сработали.
+Virtual columns differ from normal columns in the following ways:
+
+- They are not specified in table definitions.
+- Data can't be added to them with `INSERT`.
+- When using `INSERT` without specifying the list of columns, virtual columns are ignored.
+- They are not selected when using the asterisk (`SELECT *`).
+- Virtual columns are not shown in `SHOW CREATE TABLE` and `DESC TABLE` queries.
+
+The `Merge` type table contains a virtual `_table` column of the `String` type. (If the table already has a `_table` column, the virtual column is called `_table1`; if you already have `_table1`, it's called `_table2`, and so on.) It contains the name of the table that data was read from.
+
+If the `WHERE/PREWHERE` clause contains conditions for the `_table` column that do not depend on other table columns (as one of the conjunction elements, or as an entire expression), these conditions are used as an index. The conditions are performed on a data set of table names to read data from, and the read operation will be performed from only those tables that the condition was triggered on.
