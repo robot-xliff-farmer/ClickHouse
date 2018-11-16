@@ -1,48 +1,44 @@
 <a name="internal_dicts"></a>
 
-# Встроенные словари
+# Internal dictionaries
 
-ClickHouse содержит встроенную возможность работы с геобазой.
+ClickHouse contains a built-in feature for working with a geobase.
 
-Это позволяет:
+This allows you to:
 
--   для идентификатора региона получить его имя на нужном языке;
--   по идентификатору региона получить идентификатор города, области, федерального округа, страны, континента;
--   проверить, что один регион входит в другой;
--   получить цепочку родительских регионов.
+- Use a region's ID to get its name in the desired language.
+- Use a region's ID to get the ID of a city, area, federal district, country, or continent.
+- Check whether a region is part of another region.
+- Get a chain of parent regions.
 
-Все функции поддерживают "транслокальность", то есть возможность использовать одновременно разные точки зрения на принадлежность регионов. Подробнее смотрите в разделе "Функции для работы со словарями Яндекс.Метрики".
+All the functions support "translocality," the ability to simultaneously use different perspectives on region ownership. For more information, see the section "Functions for working with Yandex.Metrica dictionaries".
 
-В пакете по умолчанию, встроенные словари выключены.
-Для включения, раскомментируйте параметры `path_to_regions_hierarchy_file` и `path_to_regions_names_files` в конфигурационном файле сервера.
+The internal dictionaries are disabled in the default package. To enable them, uncomment the parameters `path_to_regions_hierarchy_file` and `path_to_regions_names_files` in the server configuration file.
 
-Геобаза загружается из текстовых файлов.
+The geobase is loaded from text files.
 
-Положите файлы `regions_hierarchy*.txt` в директорию `path_to_regions_hierarchy_file`. Этот конфигурационный параметр должен содержать путь к файлу `regions_hierarchy.txt` (иерархия регионов по умолчанию), а другие файлы (`regions_hierarchy_ua.txt`) должны находиться рядом в той же директории.
+Place the `regions_hierarchy*.txt` files into the `path_to_regions_hierarchy_file` directory. This configuration parameter must contain the path to the `regions_hierarchy.txt` file (the default regional hierarchy), and the other files (`regions_hierarchy_ua.txt`) must be located in the same directory.
 
-Положите файлы `regions_names_*.txt` в директорию `path_to_regions_names_files`.
+Put the `regions_names_*.txt` files in the `path_to_regions_names_files` directory.
 
-Также вы можете создать эти файлы самостоятельно. Формат файлов такой:
+You can also create these files yourself. The file format is as follows:
 
-`regions_hierarchy*.txt`: TabSeparated (без заголовка), столбцы:
+`regions_hierarchy*.txt`: TabSeparated (no header), columns:
 
--   идентификатор региона (`UInt32`);
--   идентификатор родительского региона (`UInt32`);
--   тип региона (`UInt8`): 1 - континент, 3 - страна, 4 - федеральный округ, 5 - область, 6 - город; остальные типы не имеют значения;
--   население (`UInt32`) - не обязательный столбец.
+- region ID (`UInt32`)
+- parent region ID (`UInt32`)
+- region type (`UInt8`): 1 - continent, 3 - country, 4 - federal district, 5 - region, 6 - city; other types don't have values
+- population (`UInt32`) — optional column
 
-`regions_names_*.txt`: TabSeparated (без заголовка), столбцы:
+`regions_names_*.txt`: TabSeparated (no header), columns:
 
--   идентификатор региона (`UInt32`);
--   имя региона (`String`) - не может содержать табы или переводы строк, даже экранированные.
+- region ID (`UInt32`)
+- region name (`String`) — Can't contain tabs or line feeds, even escaped ones.
 
-Для хранения в оперативке используется плоский массив. Поэтому, идентификаторы не должны быть больше миллиона.
+A flat array is used for storing in RAM. For this reason, IDs shouldn't be more than a million.
 
-Словари могут обновляться без перезапуска сервера. Но набор доступных словарей не обновляется.
-Для обновления проверяется время модификации файлов; если файл изменился, то словарь будет обновлён.
-Периодичность проверки настраивается конфигурационным параметром `builtin_dictionaries_reload_interval`.
-Обновление словарей (кроме загрузки при первом использовании) не блокирует запросы - во время обновления запросы используют старую версию словарей. Если при обновлении возникнет ошибка, то ошибка пишется в лог сервера, а запросы продолжат использовать старую версию словарей.
+Dictionaries can be updated without restarting the server. However, the set of available dictionaries is not updated. For updates, the file modification times are checked. If a file has changed, the dictionary is updated. The interval to check for changes is configured in the `builtin_dictionaries_reload_interval` parameter. Dictionary updates (other than loading at first use) do not block queries. During updates, queries use the old versions of dictionaries. If an error occurs during an update, the error is written to the server log, and queries continue using the old version of dictionaries.
 
-Рекомендуется периодически обновлять словари с геобазой. При обновлении, генерируйте новые файлы, записывая их в отдельное место, а только когда всё готово - переименовывайте в файлы, которые использует сервер.
+We recommend periodically updating the dictionaries with the geobase. During an update, generate new files and write them to a separate location. When everything is ready, rename them to the files used by the server.
 
-Также имеются функции для работы с идентификаторами операционных систем и поисковых систем Яндекс.Метрики, пользоваться которыми не нужно.
+There are also functions for working with OS identifiers and Yandex.Metrica search engines, but they shouldn't be used.
