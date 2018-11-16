@@ -2,26 +2,25 @@
 
 # MySQL
 
-Движок MySQL позволяет выполнять `SELECT` запросы над данными, хранящимися на удалённом MySQL сервере.
+The MySQL engine allows you to perform `SELECT` queries on data that is stored on a remote MySQL server.
 
-Формат вызова:
+Call format:
 
-```
-MySQL('host:port', 'database', 'table', 'user', 'password'[, replace_query, 'on_duplicate_clause']);
-```
+    MySQL('host:port', 'database', 'table', 'user', 'password'[, replace_query, 'on_duplicate_clause']);
+    
 
-**Параметры вызова**
+**Call parameters**
 
-- `host:port` — Адрес сервера MySQL.
-- `database` — Имя базы данных на сервере MySQL.
-- `table` — Имя таблицы.
-- `user` — Пользователь MySQL.
-- `password` — Пароль пользователя.
-- `replace_query` — Флаг, устанавливающий замену запроса `INSERT INTO` на `REPLACE INTO`. Если `replace_query=1`, то запрос заменяется.
-- `'on_duplicate_clause'` — Добавляет выражение `ON DUPLICATE KEY UPDATE 'on_duplicate_clause'` в запрос `INSERT`. Например, `impression = VALUES(impression) + impression`. Чтобы указать `'on_duplicate_clause'` необходимо передать `0` в параметр `replace_query`. Если одновременно передать `replace_query = 1` и `'on_duplicate_clause'`, то ClickHouse сгенерирует исключение.
+- `host:port` — Address of the MySQL server.
+- `database` — Database name on the MySQL server.
+- `table` — Name of the table.
+- `user` — The MySQL User.
+- `password` — User password.
+- `replace_query` — Flag that sets query substitution `INSERT INTO` to `REPLACE INTO`. If `replace_query=1`, the query is replaced.
+- `'on_duplicate_clause'` — Adds the `ON DUPLICATE KEY UPDATE 'on_duplicate_clause'` expression to the `INSERT` query. For example: `impression = VALUES(impression) + impression`. To specify `'on_duplicate_clause'` you need to pass `0` to the `replace_query` parameter. If you simultaneously pass `replace_query = 1` and `'on_duplicate_clause'`, ClickHouse generates an exception.
 
-На данный момент простые условия `WHERE`, такие как `=, !=, >, >=, <, <=` будут выполняться на стороне сервера MySQL.
+At this time, simple `WHERE` clauses such as `=, !=, >, >=, <, <=` are executed on the MySQL server.
 
-Остальные условия и ограничение выборки `LIMIT` будут выполнены в ClickHouse только после выполнения запроса к MySQL.
+The rest of the conditions and the `LIMIT` sampling constraint are executed in ClickHouse only after the query to MySQL finishes.
 
-Движок `MySQL` не поддерживает тип данных [Nullable](../../data_types/nullable.md#data_type-nullable), поэтому при чтении данных из таблиц MySQL `NULL` преобразуются в значения по умолчанию для заданного типа столбца, обычно это 0 или пустая строка.
+The `MySQL` engine does not support the [Nullable](../../data_types/nullable.md#data_type-nullable) data type, so when reading data from MySQL tables, `NULL` is converted to default values for the specified column type (usually 0 or an empty string).
