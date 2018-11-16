@@ -1,23 +1,21 @@
-# HTTP-интерфейс
+# HTTP Interface
 
-HTTP интерфейс позволяет использовать ClickHouse на любой платформе, из любого языка программирования. У нас он используется для работы из Java и Perl, а также из shell-скриптов. В других отделах, HTTP интерфейс используется из Perl, Python и Go. HTTP интерфейс более ограничен по сравнению с родным интерфейсом, но является более совместимым.
+The HTTP interface lets you use ClickHouse on any platform from any programming language. We use it for working from Java and Perl, as well as shell scripts. In other departments, the HTTP interface is used from Perl, Python, and Go. The HTTP interface is more limited than the native interface, but it has better compatibility.
 
-По умолчанию, clickhouse-server слушает HTTP на порту 8123 (это можно изменить в конфиге).
-Если запросить GET / без параметров, то вернётся строка "Ok." (с переводом строки на конце). Это может быть использовано в скриптах проверки живости.
+By default, clickhouse-server listens for HTTP on port 8123 (this can be changed in the config). If you make a GET / request without parameters, it returns the string "Ok" (with a line feed at the end). You can use this in health-check scripts.
 
 ```bash
 $ curl 'http://localhost:8123/'
 Ok.
 ```
 
-Запрос отправляется в виде параметра URL query. Или POST-ом. Или начало запроса в параметре query, а продолжение POST-ом (зачем это нужно, будет объяснено ниже). Размер URL ограничен 16KB, это следует учитывать при отправке больших запросов.
+Send the request as a URL 'query' parameter, or as a POST. Or send the beginning of the query in the 'query' parameter, and the rest in the POST (we'll explain later why this is necessary). The size of the URL is limited to 16 KB, so keep this in mind when sending large queries.
 
-В случае успеха, вам вернётся код ответа 200 и результат обработки запроса в теле ответа.
-В случае ошибки, вам вернётся код ответа 500 и текст с описанием ошибки в теле ответа.
+If successful, you receive the 200 response code and the result in the response body. If an error occurs, you receive the 500 response code and an error description text in the response body.
 
-При использовании метода GET, выставляется настройка readonly. То есть, для запросов, модифицирующие данные, можно использовать только метод POST. Сам запрос при этом можно отправлять как в теле POST-а, так и в параметре URL.
+When using the GET method, 'readonly' is set. In other words, for queries that modify data, you can only use the POST method. You can send the query itself either in the POST body, or in the URL parameter.
 
-Примеры:
+Examples:
 
 ```bash
 $ curl 'http://localhost:8123/?query=SELECT%201'
@@ -34,8 +32,7 @@ Date: Fri, 16 Nov 2012 19:21:50 GMT
 1
 ```
 
-Как видно, curl немного неудобен тем, что надо URL-эскейпить пробелы.
-wget сам всё эскейпит, но его не рекомендуется использовать, так как он плохо работает по HTTP 1.1 при использовании keep-alive и Transfer-Encoding: chunked.
+As you can see, curl is somewhat inconvenient in that spaces must be URL escaped. Although wget escapes everything itself, we don't recommend using it because it doesn't work well over HTTP 1.1 when using keep-alive and Transfer-Encoding: chunked.
 
 ```bash
 $ echo 'SELECT 1' | curl 'http://localhost:8123/' --data-binary @-
@@ -48,8 +45,7 @@ $ echo '1' | curl 'http://localhost:8123/?query=SELECT' --data-binary @-
 1
 ```
 
-Если часть запроса отправляется в параметре, а часть POST-ом, то между этими двумя кусками данных ставится перевод строки.
-Пример (так работать не будет):
+If part of the query is sent in the parameter, and part in the POST, a line feed is inserted between these two data parts. Example (this won't work):
 
 ```bash
 $ echo 'ECT 1' | curl 'http://localhost:8123/?query=SEL' --data-binary @-
@@ -58,8 +54,7 @@ ECT 1
 , expected One of: SHOW TABLES, SHOW DATABASES, SELECT, INSERT, CREATE, ATTACH, RENAME, DROP, DETACH, USE, SET, OPTIMIZE., e.what() = DB::Exception
 ```
 
-По умолчанию, данные возвращаются в формате TabSeparated (подробнее смотри раздел "Форматы").
-Можно попросить любой другой формат - с помощью секции FORMAT запроса.
+By default, data is returned in TabSeparated format (for more information, see the "Formats" section). You use the FORMAT clause of the query to request any other format.
 
 ```bash
 $ echo 'SELECT 1 FORMAT Pretty' | curl 'http://localhost:8123/?' --data-binary @-
@@ -70,40 +65,39 @@ $ echo 'SELECT 1 FORMAT Pretty' | curl 'http://localhost:8123/?' --data-binary @
 └───┘
 ```
 
-Возможность передавать данные POST-ом нужна для INSERT-запросов. В этом случае вы можете написать начало запроса в параметре URL, а вставляемые данные передать POST-ом. Вставляемыми данными может быть, например, tab-separated дамп, полученный из MySQL. Таким образом, запрос INSERT заменяет LOAD DATA LOCAL INFILE из MySQL.
+The POST method of transmitting data is necessary for INSERT queries. In this case, you can write the beginning of the query in the URL parameter, and use POST to pass the data to insert. The data to insert could be, for example, a tab-separated dump from MySQL. In this way, the INSERT query replaces LOAD DATA LOCAL INFILE from MySQL.
 
-Примеры:
-Создаём таблицу:
+Examples: Creating a table:
 
 ```bash
 echo 'CREATE TABLE t (a UInt8) ENGINE = Memory' | curl 'http://localhost:8123/' --data-binary @-
 ```
 
-Используем привычный запрос INSERT для вставки данных:
+Using the familiar INSERT query for data insertion:
 
 ```bash
 echo 'INSERT INTO t VALUES (1),(2),(3)' | curl 'http://localhost:8123/' --data-binary @-
 ```
 
-Данные можно отправить отдельно от запроса:
+Data can be sent separately from the query:
 
 ```bash
 echo '(4),(5),(6)' | curl 'http://localhost:8123/?query=INSERT%20INTO%20t%20VALUES' --data-binary @-
 ```
 
-Можно указать любой формат для данных. Формат Values - то же, что используется при записи INSERT INTO t VALUES:
+You can specify any data format. The 'Values' format is the same as what is used when writing INSERT INTO t VALUES:
 
 ```bash
 echo '(7),(8),(9)' | curl 'http://localhost:8123/?query=INSERT%20INTO%20t%20FORMAT%20Values' --data-binary @-
 ```
 
-Можно вставить данные из tab-separated дампа, указав соответствующий формат:
+To insert data from a tab-separated dump, specify the corresponding format:
 
 ```bash
 echo -ne '10\n11\n12\n' | curl 'http://localhost:8123/?query=INSERT%20INTO%20t%20FORMAT%20TabSeparated' --data-binary @-
 ```
 
-Прочитаем содержимое таблицы. Данные выводятся в произвольном порядке из-за параллельной обработки запроса:
+Reading the table contents. Data is output in random order due to parallel query processing:
 
 ```bash
 $ curl 'http://localhost:8123/?query=SELECT%20a%20FROM%20t'
@@ -121,25 +115,23 @@ $ curl 'http://localhost:8123/?query=SELECT%20a%20FROM%20t'
 6
 ```
 
-Удаляем таблицу.
+Deleting the table.
 
 ```bash
 echo 'DROP TABLE t' | curl 'http://localhost:8123/' --data-binary @-
 ```
 
-Для запросов, которые не возвращают таблицу с данными, в случае успеха, выдаётся пустое тело ответа.
+For successful requests that don't return a data table, an empty response body is returned.
 
-Вы можете использовать внутренний формат сжатия Clickhouse при передаче данных. Формат сжатых данных нестандартный, и вам придётся использовать для работы с ним специальную программу clickhouse-compressor (устанавливается вместе с пакетом clickhouse-client).
+You can use the internal ClickHouse compression format when transmitting data. The compressed data has a non-standard format, and you will need to use the special clickhouse-compressor program to work with it (it is installed with the clickhouse-client package).
 
-Если вы указали в URL compress=1, то сервер будет сжимать отправляемые вам данные.
-Если вы указали в URL decompress=1, то сервер будет разжимать те данные, которые вы передаёте ему POST-ом.
+If you specified 'compress=1' in the URL, the server will compress the data it sends you. If you specified 'decompress=1' in the URL, the server will decompress the same data that you pass in the POST method.
 
-Также имеется возможность использования стандартного сжатия HTTP, на основе gzip. Чтобы отправить POST-запрос, сжатый с помощью gzip, добавьте к запросу заголовок `Content-Encoding: gzip`.
-Чтобы ClickHouse сжимал ответ на запрос с помощью gzip, необходимо добавить `Accept-Encoding: gzip` к заголовкам запроса, и включить настройку ClickHouse  `enable_http_compression`.
+It is also possible to use the standard gzip-based HTTP compression. To send a POST request compressed using gzip, append the request header `Content-Encoding: gzip`. In order for ClickHouse to compress the response using gzip, you must append `Accept-Encoding: gzip` to the request headers, and enable the ClickHouse setting `enable_http_compression`.
 
-Это может быть использовано для уменьшения трафика по сети при передаче большого количества данных, а также для создания сразу сжатых дампов.
+You can use this to reduce network traffic when transmitting a large amount of data, or for creating dumps that are immediately compressed.
 
-В параметре URL database может быть указана БД по умолчанию.
+You can use the 'database' URL parameter to specify the default database.
 
 ```bash
 $ echo 'SELECT number FROM numbers LIMIT 10' | curl 'http://localhost:8123/?database=system' --data-binary @-
@@ -155,27 +147,25 @@ $ echo 'SELECT number FROM numbers LIMIT 10' | curl 'http://localhost:8123/?data
 9
 ```
 
-По умолчанию используется БД, которая прописана в настройках сервера, как БД по умолчанию. По умолчанию, это - БД default. Также вы всегда можете указать БД через точку перед именем таблицы.
+By default, the database that is registered in the server settings is used as the default database. By default, this is the database called 'default'. Alternatively, you can always specify the database using a dot before the table name.
 
-Имя пользователя и пароль могут быть указаны в одном из двух вариантов:
+The username and password can be indicated in one of two ways:
 
-1.  С использованием HTTP Basic Authentification. Пример:
+1. Using HTTP Basic Authentication. Example:
 
 ```bash
 echo 'SELECT 1' | curl 'http://user:password@localhost:8123/' -d @-
 ```
 
-2.  В параметрах URL user и password. Пример:
+2. In the 'user' and 'password' URL parameters. Example:
 
 ```bash
 echo 'SELECT 1' | curl 'http://localhost:8123/?user=user&password=password' -d @-
 ```
 
-Если имя пользователя не указано, то используется имя пользователя default. Если пароль не указан, то используется пустой пароль.
-Также в параметрах URL вы можете указать любые настроки, которые будут использованы для обработки одного запроса, или целые профили настроек. Пример:
-http://localhost:8123/?profile=web&max_rows_to_read=1000000000&query=SELECT+1
+If the user name is not indicated, the username 'default' is used. If the password is not indicated, an empty password is used. You can also use the URL parameters to specify any settings for processing a single query, or entire profiles of settings. Example:http://localhost:8123/?profile=web&max_rows_to_read=1000000000&query=SELECT+1
 
-Подробнее см. раздел "Настройки".
+For more information, see the section "Settings".
 
 ```bash
 $ echo 'SELECT number FROM system.numbers LIMIT 10' | curl 'http://localhost:8123/?' --data-binary @-
@@ -191,31 +181,30 @@ $ echo 'SELECT number FROM system.numbers LIMIT 10' | curl 'http://localhost:812
 9
 ```
 
-Об остальных параметрах смотри раздел "SET".
+For information about other parameters, see the section "SET".
 
-В HTTP-протоколе можно использовать ClickHouse-сессии, для этого необходимо добавить к запросу GET-пaраметр `session_id`. В качестве идентификатора сессии можно использовать произвольную строку. По умолчанию через 60 секунд бездействия сессия будет прервана. Можно изменить этот таймаут, изменяя настройку `default_session_timeout` в конфигурации сервера, или добавив к запросу GET параметр `session_timeout`. Статус сессии можно проверить с помощью параметра `session_check=1`. В рамках одной сессии одновременно может испольняться только один запрос.
+Similarly, you can use ClickHouse sessions in the HTTP protocol. To do this, you need to add the `session_id` GET parameter to the request. You can use any string as the session ID. By default, the session is terminated after 60 seconds of inactivity. To change this timeout, modify the `default_session_timeout` setting in the server configuration, or add the `session_timeout` GET parameter to the request. To check the session status, use the `session_check=1` parameter. Only one query at a time can be executed within a single session.
 
-Имеется возможность получать информацию о прогрессе выполнения запроса в залоголвках X-ClickHouse-Progress, для этого нужно включить настройку send_progress_in_http_headers.
+You have the option to receive information about the progress of query execution in X-ClickHouse-Progress headers. To do this, enable the setting send_progress_in_http_headers.
 
-Запущенные запросы не останавливаются автоматически при разрыве HTTP соединения. Парсинг и форматирование данных производится на стороне сервера и использование сети может быть неэффективным.
-Может быть передан необязательный параметр query_id - идентификатор запроса, произвольная строка. Подробнее смотрите раздел "Настройки, replace_running_query".
+Running requests don't stop automatically if the HTTP connection is lost. Parsing and data formatting are performed on the server side, and using the network might be ineffective. The optional 'query_id' parameter can be passed as the query ID (any string). For more information, see the section "Settings, replace_running_query".
 
-Может быть передан необязательный параметр quota_key - ключ квоты, произвольная строка. Подробнее смотрите раздел "Квоты".
+The optional 'quota_key' parameter can be passed as the quota key (any string). For more information, see the section "Quotas".
 
-HTTP интерфейс позволяет передать внешние данные (внешние временные таблицы) для использования запроса. Подробнее смотрите раздел "Внешние данные для обработки запроса"
+The HTTP interface allows passing external data (external temporary tables) for querying. For more information, see the section "External data for query processing".
 
-## Буферизация ответа
+## Response Buffering
 
-Существует возможность включить буферизацию ответа на стороне сервера. Для этого предусмотрены параметры URL `buffer_size` и `wait_end_of_query`.
+You can enable response buffering on the server side. The `buffer_size` and `wait_end_of_query` URL parameters are provided for this purpose.
 
-`buffer_size` определяет количество байт результата которые будут буферизованы в памяти сервера. Если тело результата больше этого порога, то буфер будет переписан в HTTP канал, а оставшиеся данные будут отправляться в HTTP-канал напрямую.
+`buffer_size` determines the number of bytes in the result to buffer in the server memory. If the result body is larger than this threshold, the buffer is written to the HTTP channel, and the remaining data is sent directly to the HTTP channel.
 
-Чтобы гарантировать буферизацию всего ответа необходимо выставить `wait_end_of_query=1`. В этом случае данные, не поместившиеся в памяти, будут буферизованы во временном файле сервера.
+To ensure that the entire response is buffered, set `wait_end_of_query=1`. In this case, the data that is not stored in memory will be buffered in a temporary server file.
 
-Пример:
+Example:
 
 ```bash
 curl -sS 'http://localhost:8123/?max_result_bytes=4000000&buffer_size=3000000&wait_end_of_query=1' -d 'SELECT toUInt8(number) FROM system.numbers LIMIT 9000000 FORMAT RowBinary'
 ```
 
-Буферизация позволяет избежать ситуации когда код ответа и HTTP-заголовки были отправлены клиенту, после чего возникла ошибка выполнения запроса. В такой ситуации сообщение об ошибке записывается в конце тела ответа, и на стороне клиента ошибка может быть обнаружена только на этапе парсинга.
+Use buffering to avoid situations where a query processing error occurred after the response code and HTTP headers were sent to the client. In this situation, an error message is written at the end of the response body, and on the client side, the error can only be detected at the parsing stage.
