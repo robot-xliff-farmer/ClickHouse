@@ -2,162 +2,152 @@
 
 # MergeTree
 
-Движок `MergeTree`, а также другие движки этого семейства (`*MergeTree`) — это наиболее функциональные движки таблиц ClickHousе.
+The `MergeTree` engine and other engines of this family (`*MergeTree`) are the most robust ClickHousе table engines.
 
-!!!info
-    Движок [Merge](merge.md#table_engine-merge) не относится к семейству `*MergeTree`.
+!!! info The [Merge](merge.md#table_engine-merge) engine does not belong to the `*MergeTree` family.
 
-Основные возможности:
+Main features:
 
-- Хранит данные, отсортированные по первичному ключу.
+- Stores data sorted by primary key.
+    
+    This allows you to create a small sparse index that helps find data faster.
 
-    Это позволяет создавать разреженный индекс небольшого объёма, который позволяет быстрее находить данные.
+- This allows you to use partitions if the [partitioning key](custom_partitioning_key.md#table_engines-custom_partitioning_key) is specified.
+    
+    ClickHouse supports certain operations with partitions that are more effective than general operations on the same data with the same result. ClickHouse also automatically cuts off the partition data where the partitioning key is specified in the query. This also increases the query performance.
 
-- Позволяет оперировать партициями, если задан [ключ партиционирования](custom_partitioning_key.md#table_engines-custom_partitioning_key).
+- Data replication support.
+    
+    The family of `ReplicatedMergeTree` tables is used for this. For more information, see the [Data replication](replication.md#table_engines-replication) section.
 
-    ClickHouse поддерживает отдельные операции с партициями, которые работают эффективнее, чем общие операции с этим же результатом над этими же данными. Также, ClickHouse автоматически отсекает данные по партициям там, где ключ партиционирования указан в запросе. Это также увеличивает эффективность выполнения запросов.
+- Data sampling support.
+    
+    If necessary, you can set the data sampling method in the table.
 
-- Поддерживает репликацию данных.
+## Engine Configuration When Creating a Table
 
-    Для этого используется семейство таблиц `ReplicatedMergeTree`. Подробнее читайте в разделе [Репликация данных](replication.md#table_engines-replication).
+    ENGINE [=] MergeTree() [PARTITION BY expr] [ORDER BY expr] [SAMPLE BY expr] [SETTINGS name=value, ...]
+    
 
-- Поддерживает сэмплирование данных.
+**ENGINE clauses**
 
-    При необходимости можно задать способ сэмплирования данных в таблице.
+- `ORDER BY` — Primary key.
+    
+    A tuple of columns or arbitrary expressions. Example: `ORDER BY (CounterID, EventDate)`. If a sampling key is used, the primary key must contain it. Example: `ORDER BY (CounerID, EventDate, intHash32(UserID))`.
 
+- `PARTITION BY` — The [partitioning key](custom_partitioning_key.md#table_engines-custom_partitioning_key).
+    
+    For partitioning by month, use the `toYYYYMM(date_column)` expression, where `date_column` is a column with a date of the type [Date](../../data_types/date.md#data_type-date). The partition names here have the `"YYYYMM"` format.
 
-## Конфигурирование движка при создании таблицы
+- `SAMPLE BY` — An expression for sampling (optional). Example: `intHash32(UserID))`.
 
-```
-ENGINE [=] MergeTree() [PARTITION BY expr] [ORDER BY expr] [SAMPLE BY expr] [SETTINGS name=value, ...]
-```
+- `SETTINGS` — Additional parameters that control the behavior of the `MergeTree` (optional):
+    
+    - `index_granularity` — The granularity of an index. The number of data rows between the "marks" of an index. By default, 8192.
 
-**Секции ENGINE**
+**Example**
 
-- `ORDER BY` — первичный ключ.
+    ENGINE MergeTree() PARTITION BY toYYYYMM(EventDate) ORDER BY (CounterID, EventDate, intHash32(UserID)) SAMPLE BY intHash32(UserID) SETTINGS index_granularity=8192
+    
 
-    Кортеж столбцов или произвольных выражений. Пример: `ORDER BY (CounerID, EventDate)`.  
-    Если используется ключ сэмплирования, то первичный ключ должен содержать его. Пример: `ORDER BY (CounerID, EventDate, intHash32(UserID))`.
+In the example, we set partitioning by month.
 
-- `PARTITION BY` — [ключ партиционирования](custom_partitioning_key.md#table_engines-custom_partitioning_key).
+We also set an expression for sampling as a hash by the user ID. This allows you to pseudorandomize the data in the table for each `CounterID` and `EventDate`. If, when selecting the data, you define a [SAMPLE](../../query_language/select.md#select-section-sample) clause, ClickHouse will return an evenly pseudorandom data sample for a subset of users.
 
-    Для партиционирования по месяцам используйте выражение `toYYYYMM(date_column)`, где `date_column` — столбец с датой типа [Date](../../data_types/date.md#data_type-date). В этом случае имена партиций имеют формат `"YYYYMM"`.
+`index_granularity` could be omitted because 8192 is the default value.
 
-- `SAMPLE BY` — выражение для сэмплирования (не обязательно). Пример: `intHash32(UserID))`.
+### Deprecated Method for Engine Configuration
 
-- `SETTINGS` — дополнительные параметры, регулирующие поведение `MergeTree` (не обязательно):
+!!! attention Do not use this method in new projects and, if possible, switch the old projects to the method described above.
 
-    - `index_granularity` — гранулярность индекса. Число строк данных между «засечками» индекса. По умолчанию — 8192.
+    ENGINE [=] MergeTree(date-column [, sampling_expression], (primary, key), index_granularity)
+    
 
-**Пример**
+**MergeTree() parameters**
 
-```
-ENGINE MergeTree() PARTITION BY toYYYYMM(EventDate) ORDER BY (CounterID, EventDate, intHash32(UserID)) SAMPLE BY intHash32(UserID) SETTINGS index_granularity=8192
-```
+- `date-column` — The name of a column of the type [Date](../../data_types/date.md#data_type-date). ClickHouse automatically creates partitions by month on the basis of this column. The partition names are in the `"YYYYMM"` format.
+- `sampling_expression` — an expression for sampling.
+- `(primary, key)` — primary key. Type — [Tuple()](../../data_types/tuple.md#data_type-tuple). It may consist of arbitrary expressions, but it typically is a tuple of columns. It must include an expression for sampling if it is set. It must not include a column with a `date-column` date.
+- `index_granularity` — The granularity of an index. The number of data rows between the "marks" of an index. The value 8192 is appropriate for most tasks.
 
-В примере мы устанавливаем партиционирование по месяцам.
+**Example**
 
-Также мы задаем выражение для сэмплирования в виде хэша по идентификатору посетителя. Это позволяет псевдослучайным образом перемешать данные в таблице для каждого `CounterID` и `EventDate`. Если при выборке данных задать секцию [SAMPLE](../../query_language/select.md#select-section-sample) то ClickHouse вернёт равномерно-псевдослучайную выборку данных для подмножества посетителей.
+    MergeTree(EventDate, intHash32(UserID), (CounterID, EventDate, intHash32(UserID)), 8192)
+    
 
-`index_granularity` можно было не указывать, поскольку 8192 — это значение по умолчанию.
+The `MergeTree` engine is configured in the same way as in the example above for the main engine configuration method.
 
-### Устаревший способ конфигурирования движка
+## Data Storage
 
-!!!attention
-    Не используйте этот способ в новых проектах и по возможности переведите старые проекты на способ описанный выше.
+A table consists of data *parts* sorted by primary key.
 
-```
-ENGINE [=] MergeTree(date-column [, sampling_expression], (primary, key), index_granularity)
-```
+When data is inserted in a table, separate data parts are created and each of them is lexicographically sorted by primary key. For example, if the primary key is `(CounterID, Date)`, the data in the part is sorted by `CounterID`, and within each `CounterID`, it is ordered by `Date`.
 
-**Параметры MergeTree()**
+Data belonging to different partitions are separated into different parts. In the background, ClickHouse merges data parts for more efficient storage. Parts belonging to different partitions are not merged.
 
-- `date-column` — имя столбца с типом [Date](../../data_types/date.md#data_type-date). На основе этого столбца ClickHouse автоматически создаёт партиции по месяцам. Имена партиций имеют формат `"YYYYMM"`.
-- `sampling_expression` — выражение для сэмплирования.
-- `(primary, key)` — первичный ключ. Тип — [Tuple()](../../data_types/tuple.md#data_type-tuple). Может состоять из произвольных выражений, но обычно это кортеж столбцов.  Обязательно должен включать в себя выражение для сэмплирования, если оно задано. Не обязан включать в себя столбец с датой `date-column`.
-- `index_granularity` — гранулярность индекса. Число строк данных между «засечками» индекса. Для большинства задач подходит значение 8192.
+For each data part, ClickHouse creates an index file that contains the primary key value for each index row ("mark"). Index row numbers are defined as `n * index_granularity`. The maximum value `n` is equal to the integer part of dividing the total number of rows by the `index_granularity`. For each column, the "marks" are also written for the same index rows as the primary key. These "marks" allow you to find the data directly in the columns.
 
-**Пример**
+You can use a single large table and continually add data to it in small chunks – this is what the `MergeTree` engine is intended for.
 
-```
-MergeTree(EventDate, intHash32(UserID), (CounterID, EventDate, intHash32(UserID)), 8192)
-```
+## Primary Keys and Indexes in Queries
 
-Движок `MergeTree` сконфигурирован таким же образом, как и в примере выше для основного способа конфигурирования движка.
+Let's take the `(CounterID, Date)` primary key. In this case, the sorting and index can be illustrated as follows:
 
-## Хранение данных
+    Whole data:     [-------------------------------------------------------------------------]
+    CounterID:      [aaaaaaaaaaaaaaaaaabbbbcdeeeeeeeeeeeeefgggggggghhhhhhhhhiiiiiiiiikllllllll]
+    Date:           [1111111222222233331233211111222222333211111112122222223111112223311122333]
+    Marks:           |      |      |      |      |      |      |      |      |      |      |
+                    a,1    a,2    a,3    b,3    e,2    e,3    g,1    h,2    i,1    i,3    l,3
+    Marks numbers:   0      1      2      3      4      5      6      7      8      9      10
+    
 
-Таблица состоит из *кусков* данных (data parts), отсортированных по первичному ключу.
+If the data query specifies:
 
-При вставке в таблицу создаются отдельные куски данных, каждый из которых лексикографически отсортирован по первичному ключу. Например, если первичный ключ — `(CounterID, Date)`, то данные в куске будут лежать в порядке `CounterID`, а для каждого `CounterID` в порядке `Date`.
+- `CounterID in ('a', 'h')`, the server reads the data in the ranges of marks `[0, 3)` and `[6, 8)`.
+- `CounterID IN ('a', 'h') AND Date = 3`, the server reads the data in the ranges of marks `[1, 3)` and `[7, 8)`.
+- `Date = 3`, the server reads the data in the range of marks `[1, 10)`.
 
-Данные, относящиеся к разным партициям, разбиваются на разные куски. В фоновом режиме ClickHouse выполняет слияния (merge) кусков данных для более эффективного хранения. Куски, относящиеся к разным партициям не объединяются.
+The examples above show that it is always more effective to use an index than a full scan.
 
-Для каждого куска данных ClickHouse создаёт индексный файл, который содержит значение первичного ключа для каждой индексной строки («засечка»). Номера индексных строк определяются как `n * index_granularity`, а максимальное значение `n` равно целой части от деления общего количества строк на `index_granularity`. Для каждого столбца также пишутся «засечки» для тех же индексных строк, что и для первичного ключа, эти «засечки»  позволяют находить непосредственно данные в столбцах.
+A sparse index allows extra strings to be read. When reading a single range of the primary key, up to `index_granularity * 2` extra rows in each data block can be read. In most cases, ClickHouse performance does not degrade when `index_granularity = 8192`.
 
-Вы можете использовать одну большую таблицу, постоянно добавляя в неё данные пачками, именно для этого предназначен движок `MergeTree`.
+Sparse indexes allow you to work with a very large number of table rows, because such indexes are always stored in the computer's RAM.
 
-## Первичные ключи и индексы в запросах
+ClickHouse does not require a unique primary key. You can insert multiple rows with the same primary key.
 
-Рассмотрим первичный ключ — `(CounterID, Date)`, в этом случае, сортировку и индекс можно проиллюстрировать следующим образом:
+### Selecting the Primary Key
 
-```
-Whole data:     [-------------------------------------------------------------------------]
-CounterID:      [aaaaaaaaaaaaaaaaaabbbbcdeeeeeeeeeeeeefgggggggghhhhhhhhhiiiiiiiiikllllllll]
-Date:           [1111111222222233331233211111222222333211111112122222223111112223311122333]
-Marks:           |      |      |      |      |      |      |      |      |      |      |
-                a,1    a,2    a,3    b,3    e,2    e,3    g,1    h,2    i,1    i,3    l,3
-Marks numbers:   0      1      2      3      4      5      6      7      8      9      10
-```
+The number of columns in the primary key is not explicitly limited. Depending on the data structure, you can include more or fewer columns in the primary key. This may:
 
-Если в запросе к данным указать:
+- Improve the performance of an index.
+    
+    If the primary key is `(a, b)`, then adding another column `c` will improve the performance if the following conditions are met:
+    
+    - There are queries with a condition on column `c`.
+    - Long data ranges (several times longer than the `index_granularity`) with identical values for `(a, b)` are common. In other words, when adding another column allows you to skip quite long data ranges.
 
-- `CounterID IN ('a', 'h')`, то сервер читает данные в диапазонах засечек `[0, 3)` и `[6, 8)`.
-- `CounterID IN ('a', 'h') AND Date = 3`, то сервер читает данные в диапазонах засечек `[1, 3)` и `[7, 8)`.
-- `Date = 3`, то сервер читает данные в диапазоне засечек `[1, 10]`.
+- Improve data compression.
+    
+    ClickHouse sorts data by primary key, so the higher the consistency, the better the compression.
 
-Примеры выше показывают, что использование индекса всегда эффективнее, чем full scan.
+- To provide additional logic when merging in the [CollapsingMergeTree](collapsingmergetree.md#table_engine-collapsingmergetree) and [SummingMergeTree](summingmergetree.md#table_engine-summingmergetree) engines.
+    
+    You may need to have many fields in the primary key even if they are not necessary for the previous steps.
 
-Разреженный индекс допускает чтение лишних строк. При чтении одного диапазона первичного ключа, может быть прочитано до `index_granularity * 2` лишних строк в каждом блоке данных. В большинстве случаев ClickHouse не теряет производительности при `index_granularity = 8192`.
+A long primary key will negatively affect the insert performance and memory consumption, but extra columns in the primary key do not affect ClickHouse performance during `SELECT` queries.
 
-Разреженность индекса позволяет работать даже с очень большим количеством строк в таблицах, поскольку такой индекс всегда помещается в оперативную память компьютера.
+### Usage of Indexes and Partitions in Queries
 
-ClickHouse не требует уникального первичного ключа. Можно вставить много строк с одинаковым первичным ключом.
+For`SELECT` queries, ClickHouse analyzes whether an index can be used. An index can be used if the `WHERE/PREWHERE` clause has an expression (as one of the conjunction elements, or entirely) that represents an equality or inequality comparison operation, or if it has `IN` or `LIKE` with a fixed prefix on columns or expressions that are in the primary key or partitioning key, or on certain partially repetitive functions of these columns, or logical relationships of these expressions.
 
-### Выбор первичного ключа
+Thus, it is possible to quickly run queries on one or many ranges of the primary key. In this example, queries will be fast when run for a specific tracking tag; for a specific tag and date range; for a specific tag and date; for multiple tags with a date range, and so on.
 
-Количество столбцов в первичном ключе не ограничено явным образом. В зависимости от структуры данных в первичный ключ можно включать больше или меньше столбцов. Это может:
+Let's look at the engine configured as follows:
 
-- Увеличить эффективность индекса.
+    ENGINE MergeTree() PARTITION BY toYYYYMM(EventDate) ORDER BY (CounterID, EventDate) SETTINGS index_granularity=8192
+    
 
-    Пусть первичный ключ — `(a, b)`, тогда добавление ещё одного столбца `c` повысит эффективность, если выполнены условия:
-
-    - Есть запросы с условием на столбец `c`.
-    - Часто встречаются достаточно длинные (в несколько раз больше `index_granularity`) диапазоны данных с одинаковыми значениями `(a, b)`. Иначе говоря, когда добавление ещё одного столбца позволит пропускать достаточно длинные диапазоны данных.
-
-- Улучшить сжатие данных.
-
-    ClickHouse сортирует данные по первичному ключу, поэтому чем выше однородность, тем лучше сжатие.
-
-- Обеспечить дополнительную логику при слиянии в движках [CollapsingMergeTree](collapsingmergetree.md#table_engine-collapsingmergetree) и [SummingMergeTree](summingmergetree.md#table_engine-summingmergetree).
-
-    Может потребоваться иметь много полей в первичном ключе, даже если они не нужны для выполнения предыдущих пунктов.
-
-Длинный первичный ключ будет негативно влиять на производительность вставки и потребление памяти, однако на производительность ClickHouse при запросах `SELECT` лишние столбцы в первичном ключе не влияют.
-
-### Использование индексов и партиций в запросах
-
-Для запросов `SELECT` ClickHouse анализирует возможность использования индекса. Индекс может использоваться, если в секции `WHERE/PREWHERE`, в качестве одного из элементов конъюнкции, или целиком, есть выражение, представляющее операции сравнения на равенства, неравенства, а также `IN` или `LIKE` с фиксированным префиксом, над столбцами или выражениями, входящими в первичный ключ или ключ партиционирования, либо над некоторыми частично монотонными функциями от этих столбцов, а также логические связки над такими выражениями.
-
-Таким образом, обеспечивается возможность быстро выполнять запросы по одному или многим диапазонам первичного ключа. Например, в указанном примере будут быстро работать запросы для конкретного счётчика; для конкретного счётчика и диапазона дат; для конкретного счётчика и даты, для нескольких счётчиков и диапазона дат и т. п.
-
-Рассмотрим движок сконфигурированный следующим образом:
-
-```
-ENGINE MergeTree() PARTITION BY toYYYYMM(EventDate) ORDER BY (CounterID, EventDate) SETTINGS index_granularity=8192
-```
-
-В этом случае в запросах:
+In this case, in queries:
 
 ```sql
 SELECT count() FROM table WHERE EventDate = toDate(now()) AND CounterID = 34
@@ -165,23 +155,22 @@ SELECT count() FROM table WHERE EventDate = toDate(now()) AND (CounterID = 34 OR
 SELECT count() FROM table WHERE ((EventDate >= toDate('2014-01-01') AND EventDate <= toDate('2014-01-31')) OR EventDate = toDate('2014-05-01')) AND CounterID IN (101500, 731962, 160656) AND (CounterID = 101500 OR EventDate != toDate('2014-05-01'))
 ```
 
-ClickHouse будет использовать индекс по первичному ключу для отсечения не подходящих данных, а также ключ партиционирования по месяцам для отсечения партиций, которые находятся в не подходящих диапазонах дат.
+ClickHouse will use the primary key index to trim improper data and the monthly partitioning key to trim partitions that are in improper date ranges.
 
-Запросы выше показывают, что индекс используется даже для сложных выражений. Чтение из таблицы организовано так, что использование индекса не может быть медленнее, чем full scan.
+The queries above show that the index is used even for complex expressions. Reading from the table is organized so that using the index can't be slower than a full scan.
 
-В примере ниже индекс не может использоваться.
+In the example below, the index can't be used.
 
 ```sql
 SELECT count() FROM table WHERE CounterID = 34 OR URL LIKE '%upyachka%'
 ```
 
-Чтобы проверить, сможет ли ClickHouse использовать индекс при выполнении запроса, используйте настройки [force_index_by_date](../settings/settings.md#settings-settings-force_index_by_date) и [force_primary_key](../settings/settings.md#settings-settings-force_primary_key).
+To check whether ClickHouse can use the index when running a query, use the settings [force_index_by_date](../settings/settings.md#settings-settings-force_index_by_date) and [force_primary_key](../settings/settings.md#settings-settings-force_primary_key).
 
-Ключ партиционирования по месяцам обеспечивает чтение только тех блоков данных, которые содержат даты из нужного диапазона. При этом блок данных может содержать данные за многие даты (до целого месяца). В пределах одного блока данные упорядочены по первичному ключу, который может не содержать дату в качестве первого столбца. В связи с этим, при использовании запроса с указанием условия только на дату, но не на префикс первичного ключа, будет читаться данных больше, чем за одну дату.
+The key for partitioning by month allows reading only those data blocks which contain dates from the proper range. In this case, the data block may contain data for many dates (up to an entire month). Within a block, data is sorted by primary key, which might not contain the date as the first column. Because of this, using a query with only a date condition that does not specify the primary key prefix will cause more data to be read than for a single date.
 
+## Concurrent Data Access
 
-## Конкурентный доступ к данным
+For concurrent table access, we use multi-versioning. In other words, when a table is simultaneously read and updated, data is read from a set of parts that is current at the time of the query. There are no lengthy locks. Inserts do not get in the way of read operations.
 
-Для конкурентного доступа к таблице используется мультиверсионность. То есть, при одновременном чтении и обновлении таблицы, данные будут читаться из набора кусочков, актуального на момент запроса. Длинных блокировок нет. Вставки никак не мешают чтениям.
-
-Чтения из таблицы автоматически распараллеливаются.
+Reading from a table is automatically parallelized.
