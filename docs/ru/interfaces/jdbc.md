@@ -1,4 +1,4 @@
-# JDBC-драйвер
+# JDBC Driver
 
-- [Официальный драйвер](https://github.com/yandex/clickhouse-jdbc).
-- Драйвер от сторонней огранизации [ClickHouse-Native-JDBC](https://github.com/housepower/ClickHouse-Native-JDBC).
+- [Official driver](https://github.com/yandex/clickhouse-jdbc).
+- Third-party driver from [ClickHouse-Native-JDBC](https://github.com/housepower/ClickHouse-Native-JDBC).
