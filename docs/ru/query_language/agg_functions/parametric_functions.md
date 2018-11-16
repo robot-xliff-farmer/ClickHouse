@@ -1,129 +1,150 @@
 <a name="aggregate_functions_parametric"></a>
 
-# Параметрические агрегатные функции
+# Parametric aggregate functions
 
-Некоторые агрегатные функции могут принимать не только столбцы-аргументы (по которым производится свёртка), но и набор параметров - констант для инициализации. Синтаксис - две пары круглых скобок вместо одной. Первая - для параметров, вторая - для аргументов.
+Some aggregate functions can accept not only argument columns (used for compression), but a set of parameters – constants for initialization. The syntax is two pairs of brackets instead of one. The first is for parameters, and the second is for arguments.
 
 ## sequenceMatch(pattern)(time, cond1, cond2, ...)
 
-Сопоставление с образцом для цепочки событий.
+Pattern matching for event chains.
 
-`pattern` - строка, содержащая шаблон для сопоставления. Шаблон похож на регулярное выражение.
+`pattern` is a string containing a pattern to match. The pattern is similar to a regular expression.
 
-`time` - время события, тип DateTime
+`time` is the time of the event with the DateTime type.
 
-`cond1`, `cond2` ... - от одного до 32 аргументов типа UInt8 - признаков, было ли выполнено некоторое условие для события.
+`cond1`, `cond2` ... is from one to 32 arguments of type UInt8 that indicate whether a certain condition was met for the event.
 
-Функция собирает в оперативке последовательность событий. Затем производит проверку на соответствие этой последовательности шаблону.
-Возвращает UInt8 - 0, если шаблон не подходит и 1, если шаблон подходит.
+The function collects a sequence of events in RAM. Then it checks whether this sequence matches the pattern. It returns UInt8: 0 if the pattern isn't matched, or 1 if it matches.
 
-Пример: `sequenceMatch('(?1).*(?2)')(EventTime, URL LIKE '%company%', URL LIKE '%cart%')`
+Example: `sequenceMatch ('(?1).*(?2)')(EventTime, URL LIKE '%company%', URL LIKE '%cart%')`
 
--   была ли цепочка событий, в которой посещение страницы с адресом, содержащим company было раньше по времени посещения страницы с адресом, содержащим cart.
+- whether there was a chain of events in which a pageview with 'company' in the address occurred earlier than a pageview with 'cart' in the address.
 
-Это вырожденный пример. Его можно записать с помощью других агрегатных функций:
+This is a singular example. You could write it using other aggregate functions:
 
 ```text
 minIf(EventTime, URL LIKE '%company%') < maxIf(EventTime, URL LIKE '%cart%').
 ```
 
-Но в более сложных случаях, такого решения нет.
+However, there is no such solution for more complex situations.
 
-Синтаксис шаблонов:
+Pattern syntax:
 
-`(?1)` - ссылка на условие (вместо 1 - любой номер);
+`(?1)` refers to the condition (any number can be used in place of 1).
 
-`.*` - произвольное количество любых событий;
+`.*` is any number of any events.
 
-`(?t>=1800)` - условие на время;
+`(?t>=1800)` is a time condition.
 
-за указанное время допускается любое количество любых событий;
+Any quantity of any type of events is allowed over the specified time.
 
-вместо `>=` могут использоваться операторы `<`, `>`, `<=`;
+Instead of `>=`, the following operators can be used:`<`, `>`, `<=`.
 
-вместо 1800 может быть любое число;
+Any number may be specified in place of 1800.
 
-События, произошедшие в одну секунду, могут оказаться в цепочке в произвольном порядке. От этого может зависеть результат работы функции.
+Events that occur during the same second can be put in the chain in any order. This may affect the result of the function.
 
 ## sequenceCount(pattern)(time, cond1, cond2, ...)
 
-Аналогично функции sequenceMatch, но возвращает не факт наличия цепочки событий, а UInt64 - количество найденных цепочек.
-Цепочки ищутся без перекрытия. То есть, следующая цепочка может начаться только после окончания предыдущей.
+Works the same way as the sequenceMatch function, but instead of returning whether there is an event chain, it returns UInt64 with the number of event chains found. Chains are searched for without overlapping. In other words, the next chain can start only after the end of the previous one.
 
 ## windowFunnel(window)(timestamp, cond1, cond2, cond3, ...)
 
-Отыскивает цепочки событий в скользящем окне по времени и вычисляет максимальное количество произошедших событий из цепочки.
+Searches for event chains in a sliding time window and calculates the maximum number of events that occurred from the chain.
 
+    windowFunnel(window)(timestamp, cond1, cond2, cond3, ...)
+    
 
-```
-windowFunnel(window)(timestamp, cond1, cond2, cond3, ...)
-```
+**Parameters:**
 
-**Параметры**
+- `window` — Length of the sliding window in seconds.
+- `timestamp` — Name of the column containing the timestamp. Data type: [DateTime](../../data_types/datetime.md#data_type-datetime) or [UInt32](../../data_types/int_uint.md#data_type-int).
+- `cond1`, `cond2`... — Conditions or data describing the chain of events. Data type: `UInt8`. Values can be 0 or 1.
 
-- `window` — ширина скользящего окна по времени в секундах.
-- `timestamp` — имя столбца, содержащего отметки времени. Тип данных [DateTime](../../data_types/datetime.md#data_type-datetime) или [UInt32](../../data_types/int_uint.md#data_type-int).
-- `cond1`, `cond2`... — условия или данные, описывающие цепочку событий. Тип данных — `UInt8`. Значения могут быть 0 или 1.
+**Algorithm**
 
-**Алгоритм**
+- The function searches for data that triggers the first condition in the chain and sets the event counter to 1. This is the moment when the sliding window starts.
+- If events from the chain occur sequentially within the window, the counter is incremented. If the sequence of events is disrupted, the counter isn't incremented.
+- If the data has multiple event chains at varying points of completion, the function will only output the size of the longest chain.
 
-- Функция отыскивает данные, на которых срабатывает первое условие из цепочки, и присваивает счетчику событий значение 1. С этого же момента начинается отсчет времени скользящего окна.
-- Если в пределах окна последовательно попадаются события из цепочки, то счетчик увеличивается. Если последовательность событий нарушается, то счетчик не растёт.
-- Если в данных оказалось несколько цепочек разной степени завершенности, то функция выдаст только размер самой длинной цепочки.
+**Returned value**
 
-**Возвращаемое значение**
+- Integer. The maximum number of consecutive triggered conditions from the chain within the sliding time window. All the chains in the selection are analyzed.
 
-- Целое число. Максимальное количество последовательно сработавших условий из цепочки в пределах скользящего окна по времени. Исследуются все цепочки в выборке.
+**Example**
 
-**Пример**
+Determine if one hour is enough for the user to select a phone and purchase it in the online store.
 
-Определим, успевает ли пользователь за час выбрать телефон в интернет-магазине и купить его.
+Set the following chain of events:
 
-Зададим следующую цепочку событий:
+1. The user logged in to their account on the store (`eventID=1001`).
+2. The user searches for a phone (`eventID = 1003, product = 'phone'`).
+3. The user placed an order (`eventID = 1009`).
 
-1. Пользователь вошел в личный кабинет магазина (`eventID=1001`).
-2. Пользователь ищет телефон (`eventID = 1003, product = 'phone'`).
-3. Пользователь сделал заказ (`eventID = 1009`).
+To find out how far the user `user_id` could get through the chain in an hour in January of 2017, make the query:
 
-Чтобы узнать, как далеко пользователь `user_id` смог пройти по цепочке за час в январе 2017-го года, составим запрос:
-
-```
-SELECT
-    level,
-    count() AS c
-FROM
-(
     SELECT
-        user_id,
-        windowFunnel(3600)(timestamp, eventID = 1001, eventID = 1003 AND product = 'phone', eventID = 1009) AS level
-    FROM trend_event
-    WHERE (event_date >= '2017-01-01') AND (event_date <= '2017-01-31')
-    GROUP BY user_id
-)
-GROUP BY level
-ORDER BY level
-```
+        level,
+        count() AS c
+    FROM
+    (
+        SELECT
+            user_id,
+            windowFunnel(3600)(timestamp, eventID = 1001, eventID = 1003 AND product = 'phone', eventID = 1009) AS level
+        FROM trend_event
+        WHERE (event_date >= '2017-01-01') AND (event_date <= '2017-01-31')
+        GROUP BY user_id
+    )
+    GROUP BY level
+    ORDER BY level
+    
 
-В результате мы можем получить 0, 1, 2 или 3 в зависимости от действий пользователя.
+Simply, the level value could only be 0, 1, 2, 3, it means the maxium event action stage that one user could reach.
 
+## retention(cond1, cond2, ...)
+
+Retention refers to the ability of a company or product to retain its customers over some specified periods.
+
+`cond1`, `cond2` ... is from one to 32 arguments of type UInt8 that indicate whether a certain condition was met for the event
+
+Example:
+
+Consider you are doing a website analytics, intend to calculate the retention of customers
+
+This could be easily calculate by `retention`
+
+    SELECT
+        sum(r[1]) AS r1,
+        sum(r[2]) AS r2,
+        sum(r[3]) AS r3
+    FROM
+    (
+        SELECT
+            uid, 
+            retention(date = '2018-08-10', date = '2018-08-11', date = '2018-08-12') AS r
+        FROM events
+        WHERE date IN ('2018-08-10', '2018-08-11', '2018-08-12')
+        GROUP BY uid
+    )
+    
+
+Simply, `r1` means the number of unique visitors who met the `cond1` condition, `r2` means the number of unique visitors who met `cond1` and `cond2` conditions, `r3` means the number of unique visitors who met `cond1` and `cond3` conditions.
 
 ## uniqUpTo(N)(x)
 
-Вычисляет количество различных значений аргумента, если оно меньше или равно N.
-В случае, если количество различных значений аргумента больше N, возвращает N + 1.
+Calculates the number of different argument values ​​if it is less than or equal to N. If the number of different argument values is greater than N, it returns N + 1.
 
-Рекомендуется использовать для маленьких N - до 10. Максимальное значение N - 100.
+Recommended for use with small Ns, up to 10. The maximum value of N is 100.
 
-Для состояния агрегатной функции используется количество оперативки равное 1 + N \* размер одного значения байт.
-Для строк запоминается некриптографический хэш, имеющий размер 8 байт. То есть, для строк вычисление приближённое.
+For the state of an aggregate function, it uses the amount of memory equal to 1 + N \* the size of one value of bytes. For strings, it stores a non-cryptographic hash of 8 bytes. That is, the calculation is approximated for strings.
 
-Функция также работает для нескольких аргументов.
+The function also works for several arguments.
 
-Работает максимально быстро за исключением патологических случаев, когда используется большое значение N и количество уникальных значений чуть меньше N.
+It works as fast as possible, except for cases when a large N value is used and the number of unique values is slightly less than N.
 
-Пример применения:
+Usage example:
 
 ```text
-Задача: показывать в отчёте только поисковые фразы, по которым было хотя бы 5 уникальных посетителей.
-Решение: пишем в запросе GROUP BY SearchPhrase HAVING uniqUpTo(4)(UserID) >= 5
+Problem: Generate a report that shows only keywords that produced at least 5 unique users.
+Solution: Write in the GROUP BY query SearchPhrase HAVING uniqUpTo(4)(UserID) >= 5
 ```
