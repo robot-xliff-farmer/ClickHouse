@@ -1,29 +1,28 @@
-# Функции для работы с географическими координатами
+# Functions for working with geographical coordinates
 
 ## greatCircleDistance
 
-Вычисляет расстояние между двумя точками на поверхности Земли по [формуле большого круга](https://en.wikipedia.org/wiki/Great-circle_distance).
+Calculate the distance between two points on the Earth's surface using [the great-circle formula](https://en.wikipedia.org/wiki/Great-circle_distance).
 
-```
-greatCircleDistance(lon1Deg, lat1Deg, lon2Deg, lat2Deg)
-```
+    greatCircleDistance(lon1Deg, lat1Deg, lon2Deg, lat2Deg)
+    
 
-**Входные параметры**
+**Input parameters**
 
-- `lon1Deg` — широта первой точки в градусах. Диапазон — `[-90°, 90°]`.
-- `lat1Deg` — долгота первой точки в градусах. Диапазон — `[-180°, 180°]`.
-- `lon2Deg` — широта второй точки в градусах. Диапазон — `[-90°, 90°]`.
-- `lat2Deg` — долгота второй точки в градусах. Диапазон — `[-180°, 180°]`.
+- `lon1Deg` — Latitude of the first point in degrees. Range: `[-90°, 90°]`.
+- `lat1Deg` — Longitude of the first point in degrees. Range: `[-180°, 180°]`.
+- `lon2Deg` — Latitude of the second point in degrees. Range: `[-90°, 90°]`.
+- `lat2Deg` — Longitude of the second point in degrees. Range: `[-180°, 180°]`.
 
-Положительные значения соответствуют северной широте и восточной долготе, отрицательные — южной широте и западной долготе.
+Positive values correspond to North latitude and East longitude, and negative values correspond to South latitude and West longitude.
 
-**Возвращаемое значение**
+**Returned value**
 
-Расстояние между двумя точками на поверхности Земли в метрах.
+The distance between two points on the Earth's surface, in meters.
 
-Генерирует исключение, когда значения входных параметров выходят за границы диапазонов.
+Generates an exception when the input parameter values fall outside of the range.
 
-**Пример**
+**Example**
 
 ```sql
 SELECT greatCircleDistance(55.755831, 37.617673, -55.755831, -37.617673)
@@ -37,27 +36,25 @@ SELECT greatCircleDistance(55.755831, 37.617673, -55.755831, -37.617673)
 
 ## pointInEllipses
 
-Проверяет, принадлежит ли точка хотя бы одному из эллипсов.
+Checks whether the point belongs to at least one of the ellipses.
 
-```
-pointInEllipses(x, y, x₀, y₀, a₀, b₀,...,xₙ, yₙ, aₙ, bₙ)
-```
+    pointInEllipses(x, y, x₀, y₀, a₀, b₀,...,xₙ, yₙ, aₙ, bₙ)
+    
 
-**Входные параметры**
+**Input parameters**
 
-- `x` — широта точки.
-- `y` — долгота точки.
-- `xᵢ, yᵢ` — координаты центра `i`-го эллипса.
-- `aᵢ, bᵢ` — полуоси `i`-го эллипса в метрах.
+- `x` — Latitude of the point.
+- `y` — Longitude of the point.
+- `xᵢ, yᵢ` — Coordinates of the center of the `i`-th ellipsis.
+- `aᵢ, bᵢ` — Axes of the `i`-th ellipsis in meters.
 
-Входных параметров должно быть `2+4⋅n`, где `n` — количество эллипсов.
+The input parameters must be `2+4⋅n`, where `n` is the number of ellipses.
 
-**Возвращаемые значения**
+**Returned values**
 
-`1`, если точка внутри хотя бы одного из эллипсов, `0`, если нет.
+`1` if the point is inside at least one of the ellipses; `0`if it is not.
 
-
-**Пример**
+**Example**
 
 ```sql
 SELECT pointInEllipses(55.755831, 37.617673, 55.755831, 37.617673, 1.0, 2.0)
@@ -71,31 +68,27 @@ SELECT pointInEllipses(55.755831, 37.617673, 55.755831, 37.617673, 1.0, 2.0)
 
 ## pointInPolygon
 
-Проверяет, принадлежит ли точка многоугольнику на плоскости.
+Checks whether the point belongs to the polygon on the plane.
 
-```
-pointInPolygon((x, y), [(a, b), (c, d) ...], ...)
-```
+    pointInPolygon((x, y), [(a, b), (c, d) ...], ...)
+    
 
-**Входные значения**
+**Input values**
 
-- `(x, y)` — координаты точки на плоскости. Тип данных — [Tuple](../../data_types/tuple.md#data_type-tuple) - кортеж из двух чисел.
-- `[(a, b), (c, d) ...]` — вершины многоугольника. Тип данных — [Array](../../data_types/array.md#data_type-array). Каждая вершина представлена парой координат `(a, b)`. Вершины следует указывать в порядке обхода по или против часовой стрелки. Минимальное количество вершин — 3. Многоугольник должен быть константным.
-- функция поддерживает также многоугольники с дырками (вырезанными кусками). Для этого случая, добавьте многоугольники, описывающие вырезанные куски, дополнительными аргументами функции. Функция не поддерживает неодносвязные многоугольники.
+- `(x, y)` — Coordinates of a point on the plane. Data type — [Tuple](../../data_types/tuple.md#data_type-tuple) — A tuple of two numbers.
+- `[(a, b), (c, d) ...]` — Polygon vertices. Data type — [Array](../../data_types/array.md#data_type-array). Each vertex is represented by a pair of coordinates `(a, b)`. Vertices should be specified in a clockwise or counterclockwise order. The minimum number of vertices is 3. The polygon must be constant.
+- The function also supports polygons with holes (cut out sections). In this case, add polygons that define the cut out sections using additional arguments of the function. The function does not support non-simply-connected polygons.
 
-**Возвращаемые значения**
+**Returned values**
 
-`1`, если точка внутри многоугольника, `0`, если нет.
-Если точка находится на границе многоугольника, функция может возвращать как 0, так и 1.
+`1` if the point is inside the polygon, `0` if it is not. If the point is on the polygon boundary, the function may return either 0 or 1.
 
-
-**Пример**
+**Example**
 
 ```sql
 SELECT pointInPolygon((3., 3.), [(6, 0), (8, 4), (5, 8), (0, 2)]) AS res
 ```
-```
-┌─res─┐
-│   1 │
-└─────┘
-```
+
+    ┌─res─┐
+    │   1 │
+    └─────┘
