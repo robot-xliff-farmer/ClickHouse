@@ -1,289 +1,271 @@
-# Функции для работы с Nullable-агрументами
+# Functions for working with Nullable aggregates
 
 ## isNull
 
-Проверяет является ли аргумент [NULL](../syntax.md#null-literal).
+Checks whether the argument is [NULL](../syntax.md#null-literal).
 
-```
-isNull(x)
-```
+    isNull(x)
+    
 
-**Параметры**
+**Parameters:**
 
-- `x` — значение с не составным типом данных.
+- `x` — A value with a non-compound data type.
 
-**Возвращаемое значение**
+**Returned value**
 
-- `1`, если `x` — `NULL`.
-- `0`, если `x` — не `NULL`.
+- `1` if `x` is `NULL`.
+- `0` if `x` is not `NULL`.
 
-**Пример**
+**Example**
 
-Входная таблица
+Input table
 
-```
-┌─x─┬────y─┐
-│ 1 │ ᴺᵁᴸᴸ │
-│ 2 │    3 │
-└───┴──────┘
-```
+    ┌─x─┬────y─┐
+    │ 1 │ ᴺᵁᴸᴸ │
+    │ 2 │    3 │
+    └───┴──────┘
+    
 
-Запрос
+Query
 
-```
-:) SELECT x FROM t_null WHERE isNull(y)
-
-SELECT x
-FROM t_null
-WHERE isNull(y)
-
-┌─x─┐
-│ 1 │
-└───┘
-
-1 rows in set. Elapsed: 0.010 sec.
-```
+    :) SELECT x FROM t_null WHERE isNull(y)
+    
+    SELECT x
+    FROM t_null
+    WHERE isNull(y)
+    
+    ┌─x─┐
+    │ 1 │
+    └───┘
+    
+    1 rows in set. Elapsed: 0.010 sec.
+    
 
 ## isNotNull
 
-Проверяет не является ли аргумент [NULL](../syntax.md#null-literal).
+Checks whether the argument is [NULL](../syntax.md#null-literal).
 
-```
-isNotNull(x)
-```
+    isNotNull(x)
+    
 
-**Параметры**
+**Parameters:**
 
-- `x` — значение с не составным типом данных.
+- `x` — A value with a non-compound data type.
 
-**Возвращаемое значение**
+**Returned value**
 
-- `0`, если `x` — `NULL`.
-- `1`, если `x` — не `NULL`.
+- `0` if `x` is `NULL`.
+- `1` if `x` is not `NULL`.
 
-**Пример**
+**Example**
 
-Входная таблица
+Input table
 
-```
-┌─x─┬────y─┐
-│ 1 │ ᴺᵁᴸᴸ │
-│ 2 │    3 │
-└───┴──────┘
-```
+    ┌─x─┬────y─┐
+    │ 1 │ ᴺᵁᴸᴸ │
+    │ 2 │    3 │
+    └───┴──────┘
+    
 
-Запрос
+Query
 
-```
-:) SELECT x FROM t_null WHERE isNotNull(y)
-
-SELECT x
-FROM t_null
-WHERE isNotNull(y)
-
-┌─x─┐
-│ 2 │
-└───┘
-
-1 rows in set. Elapsed: 0.010 sec.
-```
+    :) SELECT x FROM t_null WHERE isNotNull(y)
+    
+    SELECT x
+    FROM t_null
+    WHERE isNotNull(y)
+    
+    ┌─x─┐
+    │ 2 │
+    └───┘
+    
+    1 rows in set. Elapsed: 0.010 sec.
+    
 
 ## coalesce
 
-Последовательно слева-направо проверяет являются ли переданные аргументы `NULL` и возвращает первый не `NULL`.
+Checks from left to right whether `NULL` arguments were passed and returns the first non-`NULL` argument.
 
-```
-coalesce(x,...)
-```
-**Параметры**
+    coalesce(x,...)
+    
 
-- Произвольное количество параметров не составного типа. Все параметры должны быть совместимы по типу данных.
+**Parameters:**
 
-**Возвращаемые значения**
+- Any number of parameters of a non-compound type. All parameters must be compatible by data type.
 
-- Первый не `NULL` аргумент.
-- `NULL`, если все аргументы — `NULL`.
+**Returned values**
 
-**Пример**
+- The first non-`NULL` argument.
+- `NULL`, if all arguments are `NULL`.
 
-Рассмотрим адресную книгу, в которой может быть указано несколько способов связи с клиентом.
+**Example**
 
-```
-┌─name─────┬─mail─┬─phone─────┬──icq─┐
-│ client 1 │ ᴺᵁᴸᴸ │ 123-45-67 │  123 │
-│ client 2 │ ᴺᵁᴸᴸ │ ᴺᵁᴸᴸ      │ ᴺᵁᴸᴸ │
-└──────────┴──────┴───────────┴──────┘
-```
+Consider a list of contacts that may specify multiple ways to contact a customer.
 
-Поля `mail` и `phone` имеют тип String, а поле `icq` — `UInt32`, его необходимо будет преобразовать в `String`.
+    ┌─name─────┬─mail─┬─phone─────┬──icq─┐
+    │ client 1 │ ᴺᵁᴸᴸ │ 123-45-67 │  123 │
+    │ client 2 │ ᴺᵁᴸᴸ │ ᴺᵁᴸᴸ      │ ᴺᵁᴸᴸ │
+    └──────────┴──────┴───────────┴──────┘
+    
 
-Получим из адресной книги первый доступный способ связаться с клиентом:
+The `mail` and `phone` fields are of type String, but the `icq` field is `UInt32`, so it needs to be converted to `String`.
 
-```
-:) SELECT coalesce(mail, phone, CAST(icq,'Nullable(String)')) FROM aBook
+Get the first available contact method for the customer from the contact list:
 
-SELECT coalesce(mail, phone, CAST(icq, 'Nullable(String)'))
-FROM aBook
-
-┌─name─────┬─coalesce(mail, phone, CAST(icq, 'Nullable(String)'))─┐
-│ client 1 │ 123-45-67                                            │
-│ client 2 │ ᴺᵁᴸᴸ                                                 │
-└──────────┴──────────────────────────────────────────────────────┘
-
-2 rows in set. Elapsed: 0.006 sec.
-```
+    :) SELECT coalesce(mail, phone, CAST(icq,'Nullable(String)')) FROM aBook
+    
+    SELECT coalesce(mail, phone, CAST(icq, 'Nullable(String)'))
+    FROM aBook
+    
+    ┌─name─────┬─coalesce(mail, phone, CAST(icq, 'Nullable(String)'))─┐
+    │ client 1 │ 123-45-67                                            │
+    │ client 2 │ ᴺᵁᴸᴸ                                                 │
+    └──────────┴──────────────────────────────────────────────────────┘
+    
+    2 rows in set. Elapsed: 0.006 sec.
+    
 
 ## ifNull
 
-Возвращает альтернативное значение, если основной аргумент — `NULL`.
+Returns an alternative value if the main argument is `NULL`.
 
-```
-ifNull(x,alt)
-```
+    ifNull(x,alt)
+    
 
-**Параметры**
+**Parameters:**
 
-- `x` — значение для проверки на `NULL`,
-- `alt` — значение, которое функция вернёт, если `x` — `NULL`.
+- `x` — The value to check for `NULL`.
+- `alt` — The value that the function returns if `x` is `NULL`.
 
-**Возвращаемые значения**
+**Returned values**
 
-- Значение `x`, если `x` — не `NULL`.
-- Значение `alt`, если `x` — `NULL`.
+- The value `x`, if `x` is not `NULL`.
+- The value `alt`, if `x` is `NULL`.
 
-**Пример**
+**Example**
 
-```
-SELECT ifNull('a', 'b')
+    SELECT ifNull('a', 'b')
+    
+    ┌─ifNull('a', 'b')─┐
+    │ a                │
+    └──────────────────┘
+    
 
-┌─ifNull('a', 'b')─┐
-│ a                │
-└──────────────────┘
-```
-```
-SELECT ifNull(NULL, 'b')
-
-┌─ifNull(NULL, 'b')─┐
-│ b                 │
-└───────────────────┘
-```
+    SELECT ifNull(NULL, 'b')
+    
+    ┌─ifNull(NULL, 'b')─┐
+    │ b                 │
+    └───────────────────┘
+    
 
 ## nullIf
 
-Возвращает `NULL`, если аргументы равны.
+Returns `NULL` if the arguments are equal.
 
-```
-nullIf(x, y)
-```
+    nullIf(x, y)
+    
 
-**Параметры**
+**Parameters:**
 
-`x`, `y` — значения для сравнивания. Они должны быть совместимых типов, иначе ClickHouse сгенерирует исключение.
+`x`, `y` — Values for comparison. They must be compatible types, or ClickHouse will generate an exception.
 
-**Возвращаемые значения**
+**Returned values**
 
-- `NULL`, если аргументы равны.
-- Значение `x`, если аргументы не равны.
+- `NULL`, if the arguments are equal.
+- The `x` value, if the arguments are not equal.
 
-**Пример**
+**Example**
 
-```
-SELECT nullIf(1, 1)
+    SELECT nullIf(1, 1)
+    
+    ┌─nullIf(1, 1)─┐
+    │         ᴺᵁᴸᴸ │
+    └──────────────┘
+    
 
-┌─nullIf(1, 1)─┐
-│         ᴺᵁᴸᴸ │
-└──────────────┘
-```
-```
-SELECT nullIf(1, 2)
-
-┌─nullIf(1, 2)─┐
-│            1 │
-└──────────────┘
-```
+    SELECT nullIf(1, 2)
+    
+    ┌─nullIf(1, 2)─┐
+    │            1 │
+    └──────────────┘
+    
 
 ## assumeNotNull
 
-Приводит значение типа [Nullable](../../data_types/nullable.md#data_type-nullable) к не `Nullable`, если значение не `NULL`.
+Results in a value of type [Nullable](../../data_types/nullable.md#data_type-nullable) for a non- `Nullable`, if the value is not `NULL`.
 
-```
-assumeNotNull(x)
-```
+    assumeNotNull(x)
+    
 
-**Параметры**
+**Parameters:**
 
-- `x` — исходное значение.
+- `x` — The original value.
 
-**Возвращаемые значения**
+**Returned values**
 
-- Исходное значение с не `Nullable` типом, если оно — не `NULL`.
-- Значение по умолчанию для не `Nullable` типа, если исходное значение — `NULL`.
+- The original value from the non-`Nullable` type, if it is not `NULL`.
+- The default value for the non-`Nullable` type if the original value was `NULL`.
 
-**Пример**
+**Example**
 
-Рассмотрим таблицу `t_null`.
+Consider the `t_null` table.
 
-```
-SHOW CREATE TABLE t_null
+    SHOW CREATE TABLE t_null
+    
+    ┌─statement─────────────────────────────────────────────────────────────────┐
+    │ CREATE TABLE default.t_null ( x Int8,  y Nullable(Int8)) ENGINE = TinyLog │
+    └───────────────────────────────────────────────────────────────────────────┘
+    
 
-┌─statement─────────────────────────────────────────────────────────────────┐
-│ CREATE TABLE default.t_null ( x Int8,  y Nullable(Int8)) ENGINE = TinyLog │
-└───────────────────────────────────────────────────────────────────────────┘
-```
-```
-┌─x─┬────y─┐
-│ 1 │ ᴺᵁᴸᴸ │
-│ 2 │    3 │
-└───┴──────┘
-```
+    ┌─x─┬────y─┐
+    │ 1 │ ᴺᵁᴸᴸ │
+    │ 2 │    3 │
+    └───┴──────┘
+    
 
-Применим функцию `assumeNotNull` к столбцу `y`.
+Apply the `resumenotnull` function to the `y` column.
 
-```
-SELECT assumeNotNull(y) FROM t_null
+    SELECT assumeNotNull(y) FROM t_null
+    
+    ┌─assumeNotNull(y)─┐
+    │                0 │
+    │                3 │
+    └──────────────────┘
+    
 
-┌─assumeNotNull(y)─┐
-│                0 │
-│                3 │
-└──────────────────┘
-```
-```
-SELECT toTypeName(assumeNotNull(y)) FROM t_null
-
-┌─toTypeName(assumeNotNull(y))─┐
-│ Int8                         │
-│ Int8                         │
-└──────────────────────────────┘
-```
+    SELECT toTypeName(assumeNotNull(y)) FROM t_null
+    
+    ┌─toTypeName(assumeNotNull(y))─┐
+    │ Int8                         │
+    │ Int8                         │
+    └──────────────────────────────┘
+    
 
 ## toNullable
 
-Преобразует тип аргумента к `Nullable`.
+Converts the argument type to `Nullable`.
 
-```
-toNullable(x)
-```
+    toNullable(x)
+    
 
-**Параметры**
+**Parameters:**
 
-- `x` — значение произвольного не составного типа.
+- `x` — The value of any non-compound type.
 
-**Возвращаемое значение**
+**Returned value**
 
-- Входное значение с типом не `Nullable`.
+- The input value with a non-`Nullable` type.
 
-**Пример**
+**Example**
 
-```
-SELECT toTypeName(10)
-
-┌─toTypeName(10)─┐
-│ UInt8          │
-└────────────────┘
-
-SELECT toTypeName(toNullable(10))
-
-┌─toTypeName(toNullable(10))─┐
-│ Nullable(UInt8)            │
-└────────────────────────────┘
-```
+    SELECT toTypeName(10)
+    
+    ┌─toTypeName(10)─┐
+    │ UInt8          │
+    └────────────────┘
+    
+    SELECT toTypeName(toNullable(10))
+    
+    ┌─toTypeName(toNullable(10))─┐
+    │ Nullable(UInt8)            │
+    └────────────────────────────┘
