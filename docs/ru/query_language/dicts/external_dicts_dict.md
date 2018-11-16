@@ -1,8 +1,8 @@
 <a name="dicts-external_dicts_dict"></a>
 
-# Настройка внешнего словаря
+# Configuring an External Dictionary
 
-Конфигурация словаря имеет следующую структуру:
+The dictionary configuration has the following structure:
 
 ```xml
 <dictionary>
@@ -26,8 +26,8 @@
 </dictionary>
 ```
 
--   name - Идентификатор, под которым словарь будет доступен для использования. Используйте символы `[a-zA-Z0-9_\-]`.
--  [source](external_dicts_dict_sources.md#dicts-external_dicts_dict_sources) - Источник словаря.
--  [layout](external_dicts_dict_layout.md#dicts-external_dicts_dict_layout) - Размещение словаря в памяти.
--  [structure](external_dicts_dict_structure.md#dicts-external_dicts_dict_structure) - Структура словаря. Ключ и атрибуты, которые можно получить по ключу.
--  [lifetime](external_dicts_dict_lifetime.md#dicts-external_dicts_dict_lifetime) - Периодичность обновления словарей.
+- name – The identifier that can be used to access the dictionary. Use the characters `[a-zA-Z0-9_\-]`.
+- [source](external_dicts_dict_sources.md#dicts-external_dicts_dict_sources) — Source of the dictionary.
+- [layout](external_dicts_dict_layout.md#dicts-external_dicts_dict_layout) — Dictionary layout in memory.
+- [structure](external_dicts_dict_structure.md#dicts-external_dicts_dict_structure) — Structure of the dictionary . A key and attributes that can be retrieved by this key.
+- [lifetime](external_dicts_dict_lifetime.md#dicts-external_dicts_dict_lifetime) — Frequency of dictionary updates.
