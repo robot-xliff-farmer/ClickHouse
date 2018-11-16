@@ -1,1 +1,1 @@
-../../en/operations/settings/index.md
+# Operations
