@@ -1,66 +1,59 @@
-<div dir="rtl" markdown="1">
+# Distinctive Features of ClickHouse
 
-# ویژگی های برجسته ClickHouse
+## True Column-Oriented DBMS
 
-## مدیریت دیتابیس ستون گرای واقعی
+In a true column-oriented DBMS, no extra data is stored with the values. Among other things, this means that constant-length values must be supported, to avoid storing their length "number" next to the values. As an example, a billion UInt8-type values should actually consume around 1 GB uncompressed, or this will strongly affect the CPU use. It is very important to store data compactly (without any "garbage") even when uncompressed, since the speed of decompression (CPU usage) depends mainly on the volume of uncompressed data.
 
-در یک مدیریت دیتابیس ستون گرای واقعی، هیچ مقداری فضای اضافی برای ذخیره سازی ندارد. برای مثال، این به این معنیست که برای  مقادیر، constant-length باید پشتیبانی شوند تا از ذخیره سازی طول مقدار به عنوان یه عدد integer کنار مقدار جلوگیری شود. در این مورد، یک میلیارد مقدار Uint8 باید در واقع در حالت غیرفشرده 1 گیگابایت فضا اشغال کند، در غیراین صورت به شدت بر عملکرد CPU تاثیر میگذارد. این خیلی مهم هست که داده ها به صورت compact ذخیره سازی شوند حتی زمانی که uncompressed هستند، از آنجا که سرعت سرعت decompress (CPU Usage) عمدتا به حجم داده های uncompress بستگی دارد.
+This is worth noting because there are systems that can store values of different columns separately, but that can't effectively process analytical queries due to their optimization for other scenarios. Examples are HBase, BigTable, Cassandra, and HyperTable. In these systems, you will get throughput around a hundred thousand rows per second, but not hundreds of millions of rows per second.
 
-این بسیار قابل توجه است چون سیستم هایی وجود دارند که توانایی ذخیره سازی مقادیر ستون ها را به صورت جداگانه دارند، اما به دلیل بهینه سازی آنها برای دیگر سناریو ها، نمیتوانند به طور موثر پردازش های تحیلی انجام دهند. برای مثال HBase، BigTable، Cassandra و HyperTable. در این سیستم ها، شما توان عملیاتی حدود صدها هزار سطر در ثانیه را دارید، اما نه صدها میلیون سطر در ثانیه.
+It's also worth noting that ClickHouse is a database management system, not a single database. ClickHouse allows creating tables and databases in runtime, loading data, and running queries without reconfiguring and restarting the server.
 
-همچنین توجه داشته باشید که ClickHouse یک مدیریت دیتابیس است نه فقط یک دیتابیس. ClickHouse اجازه میدهد که در زمان اجرا اقدام به ساخت جدول، دیتابیس کنید، داده load کنید و query های خود را بدون restart و یا reconfigure مجدد سرور، اجرا کنید
+## Data Compression
 
-## فشرده سازی داده ها
+Some column-oriented DBMSs (InfiniDB CE and MonetDB) do not use data compression. However, data compression does play a key role in achieving excellent performance.
 
-بعضی دیتابیس های ستون گرا (InfiniDB CE یا MonetDB) از فشرده سازی داده ها استفاده نمی کنند. با این حال، فشرده سازی داده ها برای رسیدن به عملکرد عالی ضروری است.
+## Disk Storage of Data
 
-## Disk storage of data
+Mving a data physically sorted by primary key makes it possible to extract data for it's specific values or value ranges with low latency, less than few dozen milliseconds.any column-oriented DBMSs (such as SAP HANA and Google PowerDrill) can only work in RAM. This approach encourages the allocation of a larger hardware budget than is actually necessary for real-time analysis. ClickHouse is designed to work on regular hard drives, which means the cost per GB of data storage is low, but SSD and additional RAM are also fully used if available.
 
-خیلی از مدیریت دیتابیس های ستون گرا (مثل SAP HANA و Google PowerDrill) فقط داخل RAM کار می کنند. این رویکرد منجر به تخصیص بودجه سخت افزاری بالا برای تحقق آنالیز های real-time می شود. ClickHouse برای کار بر روی هارد دیسک های معمولی طراحی شده است، که هزینه ی برای هر گیگابایت داده را تضمین می کند، اما اگر SSD و RAM موجود باشد به طور کامل مورد استفاده قرار می گیرد.
+## Parallel Processing on Multiple Cores
 
-## پردازش موازی روی چندین هسته
+Large queries are parallelized in a natural way, taking all the necessary resources that available on the current server.
 
-query های بزرگ به طور طبیعی با استفاده از تمام منابع موجود در روی سرور فعلی، موازی سازی می شوند.
+## Distributed Processing on Multiple Servers
 
+Almost none of the columnar DBMSs mentioned above have support for distributed query processing. In ClickHouse, data can reside on different shards. Each shard can be a group of replicas that are used for fault tolerance. The query is processed on all the shards in parallel. This is transparent for the user.
 
-## پردازش توزیع شده بر روی چندین سرور
+## SQL Support
 
-تقریبا هیچ کدام از DBMS هایی که بالاتر ذکر شد، از اجرای query ها به صورت توزیع شده پشتیبانی نمی کنند. در ClickHouse، داده ها می توانن در shard های مختلف مستقر شوند. هر shard میتوامند گروهی از replica ها برای بالا بردن تحمل پذیری در برابر خطا (fault tolerance) را داشته باشد. یک query به صورت موازی بر روی تمامی shard های اجرا می شود. این برای کاربر شفاف است.
+ClickHouse supports a declarative query language based on SQL that is identical to the SQL standard in many cases. Supported queries include GROUP BY, ORDER BY, subqueries in FROM, IN, and JOIN clauses, and scalar subqueries. Dependent subqueries and window functions are not supported.
 
-## پشتیبانی SQL
+## Vector Engine
 
-اگر شما با SQL آشنا باشید، ما واقعا نمیتونیم در مورد پشتیبانی از SQL صحبت کنیم. تمام توابع اسم های مختلفی دارند. با این حال، این یک زبان بر پایه SQL هست که نمیتواند در بسیاری از موارد با SQL متفاوت باشد. JOIN ها پشتیبانی می شود. subquery ها در FROM، IN و JOIN پشتیبانی می شود. Dependent subquery ها پشتیبانی نمی شود.
+Data is not only stored by columns, but is processed by vectors (parts of columns). This allows us to achieve high CPU efficiency.
 
-ClickHouse زبان بر پایه SQL است که در بسیاری از موارد از استاندارد SQL پیروی می کند. GROUP BY، ORDER BY، scalar subquery ها در FROM، IN و JOIN پشتیبانی می شود. subquery های مرتبط و window function ها پشتیبانی نمی شود.
+## Real-time Data Updates
 
-## موتور بردارد
-
-داده ها نه فقط براساس ستون ها ذخیره می شوند، بلکه با استفاده از برداردها (بخشی از ستون ها) پردازش می شوند. این قابلیت باعث رسیدن به بهره وری بالای CPU می شود.
-
-## بروزرسانی داده ها به صورت Real-Time
-
-ClickHouse از جداول دارای Primary Key پشتیبانی می کند. به منظور اجرای query های range بر روی Primary Key، داده ها به صورت افزایشی (مرتب شده) با استفاده از merge tree ذخیره سازی می شوند. با توجه به این، داده ها می توانند به طور پیوسته به جدول اضافه شوند. هیچ نوع lock در هنگام مصرف داده ها وجود ندارد.
+ClickHouse supports tables with a primary key. In order to quickly perform queries on the range of the primary key, the data is sorted incrementally using the merge tree. Due to this, data can continually be added to the table. No locks are taken when new data is ingested.
 
 ## Index
 
-داشتن داده ها به صورت فیزیکی و مرتب شده براساس Primary Key این قابلیت را می دهد که استخراج کردن داده برای مقدار خاص و یا مقادیر range با کمترین latencey، یعنی کمتر از چند هزار میلی ثانیه ممکن شود.
+Having a data physically sorted by primary key makes it possible to extract data for it's specific values or value ranges with low latency, less than few dozen milliseconds.
 
-## مناسب برای query های آنلاین
+## Suitable for Online Queries
 
-latency پایین به این معنی است که query ها بتونن بدون delay و بدون تلاش برای رسیدن به پیش پاسخ(از قبل محاسبه شده) دقیقا در همان لحظه که کاربر در حال load صفحه است پردازش شوند. به عبارتی دیگر، آنلاین
+Low latency means that queries can be processed without delay and without trying to prepare answer in advance, right at the same moment while user interface page is loading. In other words, online.
 
-## پشتیبانی از محاسبات تقریبی
+## Support for Approximated Calculations
 
-ClickHouse روش های مختلفی برای کسب دقیق performance ارائه می دهد:
+ClickHouse provides various ways to trade accuracy for performance:
 
-1. توابع Aggregate برای محاسبات تقریبی تعداد مقادیر متمایز (distinct)، median و quantity ها
-2. اجرای یک query بر پایه بخشی از داده ها (داده ی sample) و دریافت خروجی تقریبی. در این مورد داده ی نسبتا کمتری از دیسک بازیابی می شود.
-3. اجرای یک Aggregation برای تعداد محدودی از کلید های تصافی، به جای تمام کلید ها. در شرایط خاص برای توزیع کلید در داده ها، این روش کمک می کند به نتایج منطقی برسیم با استفاده از منابع کمتر.
+1. Aggregate functions for approximated calculation of the number of distinct values, medians, and quantiles. 
+2. Running a query based on a part (sample) of data and getting an approximated result. In this case, proportionally less data is retrieved from the disk. 
+3. Running an aggregation for a limited number of random keys, instead of for all keys. Under certain conditions for key distribution in the data, this provides a reasonably accurate result while using fewer resources.
 
-## Replication داده ها و integrity
+## Data replication and data integrity support
 
-ClickHouse از روش asynchronous multimaster replication استفاده می کند. بعد از نوشتن داده در یکی از replica های موجود، داده به صورت توزیع شده به بقیه replica ها منتقل می شود. این سیستم داده های مشابه را در replica های مختلف نگه داری می کند. در اکثر موارد که سیستم fail می شوند، داده ها به صورت اتوماتیک restore می شوند و یا در موارد پیچیده به صورت نیمه اتوماتیک restore می شوند.
+Uses asynchronous multimaster replication. After being written to any available replica, data is distributed to all the remaining replicas in the background. The system maintains identical data on different replicas. Recovery after most failures is performed automatically, and in complex cases — semi-automatically.
 
-برای اطلاعات بیشتر، به بخش [replication داده ها](../operations/table_engines/replication.md#table_engines-replication) مراجعه کنید.
-
-</div>
+For more information, see the section [Data replication](../operations/table_engines/replication.md#table_engines-replication).
