@@ -1,6 +1,5 @@
-# Особенности ClickHouse, которые могут считаться недостатками
+# ClickHouse Features that Can be Considered Disadvantages
 
-1. Отсутствие полноценных транзакций.
-2. Возможность изменять или удалять ранее записанные данные с низкими задержками и высокой частотой запросов не предоставляется. Есть массовое удаление данных для очистки более не нужного или соответствия [GDPR](https://gdpr-info.eu). Массовое изменение данных находится в разработке (на момент июля 2018).
-3. Разреженный индекс делает ClickHouse плохо пригодным для точечных чтений одиночных строк по своим
-ключам.
+1. No full-fledged transactions.
+2. Lack of ability to modify or delete already inserted data with high rate and low latency. There are batch deletes and updates available to clean up or modify data, for example to comply with [GDPR](https://gdpr-info.eu).
+3. The sparse index makes ClickHouse not really suitable for point queries retrieving single rows by their keys.
