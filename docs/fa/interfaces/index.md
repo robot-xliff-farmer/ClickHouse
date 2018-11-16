@@ -1,9 +1,5 @@
 <a name="interfaces"></a>
 
-<div dir="rtl" markdown="1">
+# Interfaces
 
-# Interface ها
-
-برای کشف قابلیت های سیستم، دانلو داده ها به جداول، یا ساخت query های دستی، از برنامه clikhouse-client استفاده کنید.
-
-</div>
+To explore the system's capabilities, download data to tables, or make manual queries, use the clickhouse-client program.
